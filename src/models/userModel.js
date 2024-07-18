@@ -40,7 +40,11 @@ const userSchema = new mongoose.Schema({
   },
   passwordChangedAt: Date,
   passwordResetToken: String,
-  passwordResetExpires: Date
+  passwordResetExpires: Date,
+  googleAccount: {
+    type: Boolean,
+    default: false
+  }
 });
 
 // This will run between getting the data from client and saving it to DB

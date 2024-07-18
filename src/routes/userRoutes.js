@@ -8,6 +8,8 @@ router.post('/emailReg', authController.emailReg);
 router.post('/emailVerify', authController.emailVerify);
 router.post('/signup', authController.signup);
 router.post('/login', authController.login);
+router.get('/logout', authController.logout);
+// router.post('/logout', authController.logout); //?use post
 
 router.post('/forgotPassword', authController.forgotPassword);
 router.patch('/resetPassword/:token', authController.resetPassword);

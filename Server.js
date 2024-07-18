@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+require('module-alias/register');
 
 dotenv.config({ path: './config.env' });
 

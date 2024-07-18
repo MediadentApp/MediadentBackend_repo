@@ -21,13 +21,17 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Please provide a password'],
+    required: function () {
+      return !this.googleAccount; // Password is required only if googleAccount is false
+    },
     minLength: 8,
     select: false
   },
   passwordConfirm: {
     type: String,
-    required: [true, 'Please confirm your password'],
+    required: function () {
+      return !this.googleAccount; // Password is required only if googleAccount is false
+    },
     validate: {
       // This will only work on CREATE & SAVE, and not on func like findOneAndUpdate, etc
       // Because mongoose doesn't keep the current obj in memory

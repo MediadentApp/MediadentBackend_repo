@@ -14,16 +14,20 @@ const signToken = id => (
     { id: id },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN }
-  ));
+  )
+);
 
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
 
   // Remove password from output
-  user.password = undefined;
+  if (user.password) {
+    user.password = undefined;
+  }
 
   res.status(statusCode).json({
     status: 'success',
+    code: statusCode,
     token,
     data: {
       user
@@ -90,7 +94,7 @@ exports.emailVerify = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Email is verified',
+    message: 'Email is verified, Redirect to Sign-in page',
     data: {
       email
     }
@@ -101,6 +105,9 @@ exports.signup = catchAsync(async (req, res, next) => {
   const {
     firstName, lastName, email, password, passwordConfirm, passwordChangedAt
   } = req.body;
+
+  const userExist = await User.findOne({ email });
+  if (userExist) return next(new AppError('User already Exist, Redirect to Login page', 406));
 
   const tempUser = await TempUser.findOne({ email });
   if (!tempUser || !tempUser.emailVerified) return next(new AppError('Register your email first', 401));
@@ -173,6 +180,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   // 1)Get user based on the POSTed email
   const user = await User.findOne({ email: req.body.email });
   if (!user) return next(new AppError('There is no user with that email address', 404));
+  if (user.googleAccount) return next(new AppError('Your account was registered as google account, No need for password', 400));
 
   // 2)Generate the random reset token
   const resetToken = user.createPasswordResetToken();
@@ -250,6 +258,36 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 
   // 4) Log the user in, send JWT
   createSendToken(user, 200, res);
+});
+
+exports.googleSignup = catchAsync(async (req, res, next) => {
+  // 1) Getting the token and checking if it's there
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  if (!token || token === null) return next(new AppError('Google Login Failed'), 406);
+
+  const decodedToken = jwt.decode(token, { json: true });
+  // console.log(decodedToken);
+
+  const { given_name: firstName, family_name: lastName, email, email_verified, picture: google_picture } = decodedToken;
+
+  if (!email_verified) return next(new AppError('Your email is not verified by Google', 401));
+
+  const userExists = await User.findOne({ email });
+  // if (userExists) return next(new AppError('User already Exist, Redirect to Login page', 406));
+  if (userExists) {
+    createSendToken(userExists, 200, res);
+  } else {
+    const newUser = await User.create({
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      googleAccount: true
+    });
+    createSendToken(newUser, 201, res);
+  }
 });
 
 exports.logout = (req, res, next) => {

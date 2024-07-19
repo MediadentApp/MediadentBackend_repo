@@ -8,32 +8,7 @@ const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
 const util = require('../utils/util');
 const config = require('../config/config');
-
-const signToken = id => (
-  jwt.sign(
-    { id: id },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN }
-  )
-);
-
-const createSendToken = (user, statusCode, res) => {
-  const token = signToken(user._id);
-
-  // Remove password from output
-  if (user.password) {
-    user.password = undefined;
-  }
-
-  res.status(statusCode).json({
-    status: 'success',
-    code: statusCode,
-    token,
-    data: {
-      user
-    }
-  });
-};
+const { createSendToken } = require('@src/utils/authUtils');
 
 exports.emailReg = catchAsync(async (req, res, next) => {
   const { email } = req.body;
@@ -258,36 +233,6 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 
   // 4) Log the user in, send JWT
   createSendToken(user, 200, res);
-});
-
-exports.googleSignup = catchAsync(async (req, res, next) => {
-  // 1) Getting the token and checking if it's there
-  let token;
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  }
-  if (!token || token === null) return next(new AppError('Google Login Failed'), 406);
-
-  const decodedToken = jwt.decode(token, { json: true });
-  // console.log(decodedToken);
-
-  const { given_name: firstName, family_name: lastName, email, email_verified, picture: google_picture } = decodedToken;
-
-  if (!email_verified) return next(new AppError('Your email is not verified by Google', 401));
-
-  const userExists = await User.findOne({ email });
-  // if (userExists) return next(new AppError('User already Exist, Redirect to Login page', 406));
-  if (userExists) {
-    createSendToken(userExists, 200, res);
-  } else {
-    const newUser = await User.create({
-      firstName: firstName,
-      lastName: lastName,
-      email: email,
-      googleAccount: true
-    });
-    createSendToken(newUser, 201, res);
-  }
 });
 
 exports.logout = (req, res, next) => {

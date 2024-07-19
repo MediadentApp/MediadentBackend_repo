@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: function () {
-      return !this.googleAccount; // Password is required only if googleAccount is false
+      return (!this.googleAccount && !this.githubAccount && !this.linkedinAccount); // Password is required only if googleAccount,etc is false
     },
     minLength: 8,
     select: false
@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
   passwordConfirm: {
     type: String,
     required: function () {
-      return !this.googleAccount; // Password is required only if googleAccount is false
+      return (!this.googleAccount && !this.githubAccount && !this.linkedinAccount); // Password is required only if googleAccount,etc is false
     },
     validate: {
       // This will only work on CREATE & SAVE, and not on func like findOneAndUpdate, etc
@@ -46,6 +46,14 @@ const userSchema = new mongoose.Schema({
   passwordResetToken: String,
   passwordResetExpires: Date,
   googleAccount: {
+    type: Boolean,
+    default: false
+  },
+  githubAccount: {
+    type: Boolean,
+    default: false
+  },
+  linkedinAccount: {
     type: Boolean,
     default: false
   }

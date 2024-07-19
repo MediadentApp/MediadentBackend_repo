@@ -10,6 +10,6 @@ router.get('/callback', googleAuthController.googleAuthCallback, (req, res) => {
   res.send('success');
 });
 
-router.post('/callback', authController.googleSignup,);
+router.post('/callback', googleAuthController.googleSignup,);
 
 module.exports = router;

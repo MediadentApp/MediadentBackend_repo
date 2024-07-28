@@ -53,6 +53,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  github_url: {
+    type: String,
+    required: function () {
+      return this.githubAccount;
+    }
+  },
   linkedinAccount: {
     type: Boolean,
     default: false

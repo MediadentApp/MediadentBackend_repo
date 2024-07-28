@@ -13,15 +13,15 @@ const { createSendToken } = require('@src/utils/authUtils');
 exports.emailReg = catchAsync(async (req, res, next) => {
   const { email } = req.body;
 
-  // Check if the email exits in TempUser
+  // Check if the email exists in TempUser
   const tempUserDb = await TempUser.findOne({ email: email });
   if (tempUserDb && tempUserDb.otpSendAt) {
     if (await tempUserDb.checkOtpTime()) {
       return next(new AppError(`If you have already sent an OTP, please wait for ${config.otp.sendOtpAfter} minutes before requesting another one.`));
     }
   }
-  // await TempUser.findOneAndDelete({ email: email });
-
+  await TempUser.findOneAndDelete({ email: email });
+  
   // Generate OTP and set expiration time
   const otp = util.generateOTP();
   const otpSendAt = new Date(Date.now());
@@ -51,7 +51,6 @@ exports.emailReg = catchAsync(async (req, res, next) => {
         email
       }
     });
-    // next();
   } catch (err) {
     return next(new AppError('There was an error sending the email', 500));
   }
@@ -60,9 +59,9 @@ exports.emailReg = catchAsync(async (req, res, next) => {
 exports.emailVerify = catchAsync(async (req, res, next) => {
   const { otp, email } = req.body;
   const tempUser = await TempUser.findOne({ email });
-  if (!tempUser) return next(new AppError('Register your email first', 401));
-  if (!tempUser.checkOtp(otp)) return next(new AppError('The otp does not match', 401));
-  if (tempUser.checkOtpExpiration()) return next(new AppError('The otp has expired', 401));
+  if (!tempUser) return next(new AppError('Register your email first', 400));
+  if (!tempUser.checkOtp(otp)) return next(new AppError('The otp does not match', 400));
+  if (tempUser.checkOtpExpiration()) return next(new AppError('The otp has expired', 400));
 
   tempUser.emailVerified = true;
   await tempUser.save({ validateBeforeSave: false });
@@ -114,6 +113,39 @@ exports.login = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
+exports.fetchUser = catchAsync(async (req, res, next) => {
+  // 1) Getting the token and checking if it's there
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  if (!token) return next(new AppError('You are not logged in'), 401);
+  console.log({ token });
+
+  // 2)Verifying token
+  // The jwt.verify uses callback,
+  // which is a async func that will run after the verification is done,
+  // Instead we promisify ts
+  let decoded;
+  try {
+    decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+    console.log({ decoded });
+  } catch (err) {
+    console.log({ err });
+    return next(new AppError('Token Invalid or Expired', 401));
+  }
+
+  // 3)Check if the user still exists
+  const user = await User.findById(decoded.id);
+  if (!user) return next(new AppError('The user belonging to this token no longer exists', 401));
+
+  // 4)Check if user changed password after the token was issued
+  if (user.changedPasswordAfter(decoded.iat)) return next(new AppError('User recently changed the password! Please log in again', 401));
+
+  // Sending user and Creating jwt token
+  createSendToken(user, 200, res);
+});
+
 exports.protect = catchAsync(async (req, res, next) => {
   // 1) Getting the token and checking if it's there
   let token;
@@ -124,7 +156,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // 2)Verifying token
   // The jwt.verify uses callback,
-  //  which is a async func that will run after the verification is done,
+  // which is a async func that will run after the verification is done,
   // Instead we promisify ts
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 

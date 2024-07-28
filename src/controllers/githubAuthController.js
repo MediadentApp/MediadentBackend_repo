@@ -28,10 +28,11 @@ exports.githubAuthCallback = catchAsync(async (req, res, next) => {
     });
 
     const { avatar_url: github_picture, url: github_url, name, email } = userResponse.data;
-
     const userExists = await User.findOne({ email });
+
     if (userExists) {
       userExists.githubAccount = true;
+      userExists.github_url = github_url;
       userExists.save();
       createSendToken(userExists, 200, res);
     } else {
@@ -47,14 +48,14 @@ exports.githubAuthCallback = catchAsync(async (req, res, next) => {
         firstName: firstName,
         lastName: lastName,
         email: email,
-        githubAccount: true
+        githubAccount: true,
+        github_url: github_url
       });
       createSendToken(newUser, 201, res);
     }
 
   } catch (error) {
     console.error(error);
-    // res.status(500).send('Authentication failed');
     return next(new AppError('Github authentication failed', 500));
   }
 

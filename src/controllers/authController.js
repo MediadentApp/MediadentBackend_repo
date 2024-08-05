@@ -13,15 +13,31 @@ const { createSendToken } = require('@src/utils/authUtils');
 exports.emailReg = catchAsync(async (req, res, next) => {
   const { email } = req.body;
 
+  // Check if a user already exist with that email
+  const userExists = await User.findOne({ email });
+  if (userExists && userExists.manualSignup) {
+    return res.status(409).json({
+      status: 'fail',
+      message: 'User already exists',
+    });
+  }
+
   // Check if the email exists in TempUser
-  const tempUserDb = await TempUser.findOne({ email: email });
+  const tempUserDb = await TempUser.findOne({ email });
+
+  // check if email is already verified
+  if (tempUserDb && tempUserDb.emailVerified) {
+    // 204 No Content: Do not send a body; use .end() instead of .json().
+    return res.status(204).end();
+  }
+
   if (tempUserDb && tempUserDb.otpSendAt) {
     if (await tempUserDb.checkOtpTime()) {
       return next(new AppError(`If you have already sent an OTP, please wait for ${config.otp.sendOtpAfter} minutes before requesting another one.`));
     }
   }
-  await TempUser.findOneAndDelete({ email: email });
-  
+  await TempUser.findOneAndDelete({ email });
+
   // Generate OTP and set expiration time
   const otp = util.generateOTP();
   const otpSendAt = new Date(Date.now());
@@ -31,7 +47,7 @@ exports.emailReg = catchAsync(async (req, res, next) => {
   const emailMessage = `Your OTP for email verification is: ${otp}, The otp will expire in ${config.otp.otpExpiration}`;
   try {
     await sendEmail({
-      email: email,
+      email,
       subject: 'Email Verification OTP',
       message: emailMessage
     });
@@ -58,6 +74,16 @@ exports.emailReg = catchAsync(async (req, res, next) => {
 
 exports.emailVerify = catchAsync(async (req, res, next) => {
   const { otp, email } = req.body;
+
+  // Check if a user already exist with that email
+  const userExists = await User.findOne({ email });
+  if (userExists && userExists.password) {
+    return res.status(409).json({
+      status: 'fail',
+      message: 'User already exists',
+    });
+  }
+
   const tempUser = await TempUser.findOne({ email });
   if (!tempUser) return next(new AppError('Register your email first', 400));
   if (!tempUser.checkOtp(otp)) return next(new AppError('The otp does not match', 400));
@@ -81,7 +107,7 @@ exports.signup = catchAsync(async (req, res, next) => {
   } = req.body;
 
   const userExist = await User.findOne({ email });
-  if (userExist) return next(new AppError('User already Exist, Redirect to Login page', 406));
+  if (userExist && manualSignup) return next(new AppError('User already Exist, Redirect to Login page', 409));
 
   const tempUser = await TempUser.findOne({ email });
   if (!tempUser || !tempUser.emailVerified) return next(new AppError('Register your email first', 401));
@@ -92,7 +118,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: tempUser.email,
     password: password,
     passwordConfirm: passwordConfirm,
-    passwordChangedAt: passwordChangedAt
+    passwordChangedAt: passwordChangedAt,
+    manualSignup: true
   });
 
   // Creating jwt token
@@ -106,6 +133,10 @@ exports.login = catchAsync(async (req, res, next) => {
 
   const user = await User.findOne({ email }).select('+password'); // + indicates that the password select is false(in model) so include password in return
 
+  if(user.googleAccount) return next(new AppError('Login with Google Account', 401))
+  if(user.githubAccount) return next(new AppError('Login with Github Account', 401))
+  if(user.linkedinAccount) return next(new AppError('Login with Google Account', 401))
+  
   // Checks if user's password is correct
   if (!user || !await user.correctPassword(password, user.password)) return next(new AppError('Incorrect email or password', 403));
 
@@ -187,7 +218,8 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   // 1)Get user based on the POSTed email
   const user = await User.findOne({ email: req.body.email });
   if (!user) return next(new AppError('There is no user with that email address', 404));
-  if (user.googleAccount) return next(new AppError('Your account was registered as google account, No need for password', 400));
+  if (user.googleAccount) return next(new AppError('Your account was registered as a Google account. No need for a password reset.', 400));
+  if (user.githubAccount) return next(new AppError('Your account was registered as a GitHub account. No need for a password reset.', 400));
 
   // 2)Generate the random reset token
   const resetToken = user.createPasswordResetToken();
@@ -197,12 +229,12 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   // 3)Send it to user's email
   const resetURL = `${req.protocol}://${req.get('host')}/api/v1/users/resetpassword/${resetToken}`;
 
-  const message = `Click the link below to reset your password\n${resetURL}`;
+  const message = `Click the link below to reset your password:\n${resetURL}\n\nIf you did not request a password reset, please ignore this email.`;
 
   try {
     await sendEmail({
       email: user.email,
-      subject: 'Your password reset Token, valid for 10min',
+      subject: 'Your password reset Token (valid for 10 minutes)',
       message
     });
 
@@ -215,7 +247,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     user.passwordResetExpires = undefined;
     await user.save({ validateBeforeSave: false });
 
-    return next(new AppError('There was an error sending the email', 500));
+    return next(new AppError('There was an error sending the email. Try again later!', 500));
   }
 });
 

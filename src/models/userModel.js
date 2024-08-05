@@ -44,7 +44,11 @@ const userSchema = new mongoose.Schema({
   },
   passwordChangedAt: Date,
   passwordResetToken: String,
-  passwordResetExpires: Date,
+  passwordResetExpires: Date,  
+  manualSignup: {
+    type: Boolean,
+    default: false
+  },
   googleAccount: {
     type: Boolean,
     default: false
@@ -62,6 +66,12 @@ const userSchema = new mongoose.Schema({
   linkedinAccount: {
     type: Boolean,
     default: false
+  },
+  education: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Education',
+    unique: true,
+    required:false
   }
 });
 

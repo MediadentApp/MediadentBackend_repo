@@ -3,7 +3,7 @@ const mainRoutes = require('./mainRoutes');
 const userRoutes = require('./userRoutes');
 const githubRoutes = require('./githubRoutes');
 const googleRoutes = require('./googleAuthRoutes.js');
-const collegeRoutes = require('./collegeRoutes');
+const collegeRoutes = require('./collegeUniversityApiRoutes');
 const academicProgramsRoutes = require('./academicProgramsRoutes');
 
 const router = express.Router();

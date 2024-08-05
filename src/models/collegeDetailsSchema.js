@@ -11,4 +11,3 @@ const collegeSchema = new mongoose.Schema({
 const College = mongoose.model('College', collegeSchema);
 
 module.exports = College;
-// S. No.,University Name,College Name,College Type,State Name,District Name

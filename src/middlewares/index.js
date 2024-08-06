@@ -23,7 +23,7 @@ if (process.env.NODE_ENV === 'development') {
 
 middleware.use(express.json());
 // middleware.use(express.urlencoded({ extended: true }));
-app.use(upload.none());
+middleware.use(upload.none());
 
 middleware.use((req, res, next) => {
   req.requestTime = new Date().toISOString();

@@ -15,7 +15,7 @@ exports.emailReg = catchAsync(async (req, res, next) => {
 
   // Check if a user already exist with that email
   const userExists = await User.findOne({ email });
-  if (userExists && userExists.manualSignup) {
+  if (userExists && userExists?.manualSignup) {
     return res.status(409).json({
       status: 'fail',
       message: 'User already exists',
@@ -26,12 +26,12 @@ exports.emailReg = catchAsync(async (req, res, next) => {
   const tempUserDb = await TempUser.findOne({ email });
 
   // check if email is already verified
-  if (tempUserDb && tempUserDb.emailVerified) {
+  if (tempUserDb && tempUserDb?.emailVerified) {
     // 204 No Content: Do not send a body; use .end() instead of .json().
     return res.status(204).end();
   }
 
-  if (tempUserDb && tempUserDb.otpSendAt) {
+  if (tempUserDb && tempUserDb?.otpSendAt) {
     if (await tempUserDb.checkOtpTime()) {
       return next(new AppError(`If you have already sent an OTP, please wait for ${config.otp.sendOtpAfter} minutes before requesting another one.`));
     }
@@ -77,7 +77,7 @@ exports.emailVerify = catchAsync(async (req, res, next) => {
 
   // Check if a user already exist with that email
   const userExists = await User.findOne({ email });
-  if (userExists && userExists.password) {
+  if (userExists && userExists?.password) {
     return res.status(409).json({
       status: 'fail',
       message: 'User already exists',
@@ -110,7 +110,7 @@ exports.signup = catchAsync(async (req, res, next) => {
   if (userExist && manualSignup) return next(new AppError('User already Exist, Redirect to Login page', 409));
 
   const tempUser = await TempUser.findOne({ email });
-  if (!tempUser || !tempUser.emailVerified) return next(new AppError('Register your email first', 401));
+  if (!tempUser || !tempUser?.emailVerified) return next(new AppError('Register your email first', 401));
 
   const newUser = await User.create({
     firstName: firstName,
@@ -133,10 +133,10 @@ exports.login = catchAsync(async (req, res, next) => {
 
   const user = await User.findOne({ email }).select('+password'); // + indicates that the password select is false(in model) so include password in return
 
-  if(user.googleAccount) return next(new AppError('Login with Google Account', 401))
-  if(user.githubAccount) return next(new AppError('Login with Github Account', 401))
-  if(user.linkedinAccount) return next(new AppError('Login with Google Account', 401))
-  
+  if (user?.googleAccount) return next(new AppError('Login with Google Account', 401));
+  if (user?.githubAccount) return next(new AppError('Login with Github Account', 401));
+  if (user?.linkedinAccount) return next(new AppError('Login with Google Account', 401));
+
   // Checks if user's password is correct
   if (!user || !await user.correctPassword(password, user.password)) return next(new AppError('Incorrect email or password', 403));
 
@@ -145,13 +145,13 @@ exports.login = catchAsync(async (req, res, next) => {
 });
 
 exports.fetchUser = catchAsync(async (req, res, next) => {
+  console.log('header token: ', req.headers );
   // 1) Getting the token and checking if it's there
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
   if (!token) return next(new AppError('You are not logged in'), 401);
-  console.log({ token });
 
   // 2)Verifying token
   // The jwt.verify uses callback,
@@ -167,7 +167,7 @@ exports.fetchUser = catchAsync(async (req, res, next) => {
   }
 
   // 3)Check if the user still exists
-  const user = await User.findById(decoded.id);
+  const user = await (await User.findById(decoded.id).populate('education'));
   if (!user) return next(new AppError('The user belonging to this token no longer exists', 401));
 
   // 4)Check if user changed password after the token was issued

@@ -1,5 +1,6 @@
 const express = require('express');
 const authController = require('../controllers/authController');
+const academicProgramsRoutes = require('./academicProgramsRoutes');
 
 const router = express.Router();
 
@@ -16,6 +17,7 @@ router.post('/forgotPassword', authController.forgotPassword);
 router.patch('/resetPassword/:token', authController.resetPassword);
 router.patch('/updatePassword', authController.protect, authController.updatePassword);
 
-router.post('/userDetails',)
+// User's academic/education details routes
+router.use('/academicprograms', academicProgramsRoutes);
 
 module.exports = router;

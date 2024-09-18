@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const UserFormat = require('./userFormat');
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -77,7 +78,23 @@ const userSchema = new mongoose.Schema({
     ref: 'Education',
     unique: true,
     required: false
-  }
+  },
+  userType: {
+    type: String,
+    required: true
+  },
+  gender: {
+    type: String,
+    required: true
+  },
+  organization: {
+    type: String,
+    required: true
+  },
+  currentCity: {
+    type: String,
+    required: true
+  },
 });
 
 // This will run between getting the data from client and saving it to DB
@@ -98,6 +115,27 @@ userSchema.pre('save', async function (next) {
     const emailPrefix = this.email.split('@')[0];
     const uniqueSuffix = Math.floor(Math.random() * 10000); // Generate a unique suffix
     this.username = `${emailPrefix}-${uniqueSuffix}`;
+  }
+
+  next();
+});
+
+// Pre-save middleware to validate userType and gender from the DB
+userSchema.pre('save', async function (next) {
+  const userFormat = await UserFormat.findOne(); // Fetch the format options from DB
+
+  if (!userFormat) {
+    return next(new Error('User format not defined in database.'));
+  }
+
+  // Validate userType
+  if (!userFormat.userType.includes(this.userType)) {
+    return next(new Error('Invalid userType.'));
+  }
+
+  // Validate gender
+  if (!userFormat.userGenders.includes(this.gender)) {
+    return next(new Error('Invalid gender.'));
   }
 
   next();

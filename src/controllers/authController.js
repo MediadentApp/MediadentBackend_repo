@@ -103,7 +103,7 @@ exports.emailVerify = catchAsync(async (req, res, next) => {
 
 exports.signup = catchAsync(async (req, res, next) => {
   const {
-    firstName, lastName, email, password, passwordConfirm, passwordChangedAt
+    firstName, lastName, email, password, passwordConfirm, passwordChangedAt, userType, gender, organization, currentCity
   } = req.body;
 
   const userExist = await User.findOne({ email });
@@ -119,6 +119,10 @@ exports.signup = catchAsync(async (req, res, next) => {
     password: password,
     passwordConfirm: passwordConfirm,
     passwordChangedAt: passwordChangedAt,
+    userType: userType,
+    gender: gender,
+    organization: organization,
+    currentCity: currentCity,
     manualSignup: true
   });
 

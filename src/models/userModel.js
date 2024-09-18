@@ -19,6 +19,11 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     validate: [validator.isEmail, 'Please provide a valid email'] // From the Validator Module
   },
+  username: {
+    type: String,
+    unique: true,
+    required: false
+  },
   password: {
     type: String,
     required: function () {
@@ -44,7 +49,7 @@ const userSchema = new mongoose.Schema({
   },
   passwordChangedAt: Date,
   passwordResetToken: String,
-  passwordResetExpires: Date,  
+  passwordResetExpires: Date,
   manualSignup: {
     type: Boolean,
     default: false
@@ -71,25 +76,29 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Education',
     unique: true,
-    required:false
+    required: false
   }
 });
 
 // This will run between getting the data from client and saving it to DB
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  // Hash password if modified
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+    this.passwordConfirm = undefined;
 
-  this.password = await bcrypt.hash(this.password, 10);
-  this.passwordConfirm = undefined;
-  next();
-});
+    // Set passwordChangedAt if password is changed
+    if (!this.isNew) {
+      this.passwordChangedAt = Date.now() - 1000; // Subtract 1 sec for DB save time
+    }
+  }
 
-// To check if password is changed, if yes set passwordChangedAt
-userSchema.pre('save', function (next) {
-  if (!this.isModified('password') || this.isNew) return next(); //isNew from mongoose
-
-  this.passwordChangedAt = Date.now() - 1000;
-  // Subtracting 1sec because sometimes saving to db takes longer than issuing token
+  // Generate username if not present
+  if (!this.username) {
+    const emailPrefix = this.email.split('@')[0];
+    const uniqueSuffix = Math.floor(Math.random() * 10000); // Generate a unique suffix
+    this.username = `${emailPrefix}-${uniqueSuffix}`;
+  }
 
   next();
 });

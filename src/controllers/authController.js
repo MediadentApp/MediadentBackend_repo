@@ -107,7 +107,7 @@ exports.signup = catchAsync(async (req, res, next) => {
   } = req.body;
 
   const userExist = await User.findOne({ email });
-  if (userExist && manualSignup) return next(new AppError('User already Exist, Redirect to Login page', 409));
+  if (userExist && userExist.manualSignup) return next(new AppError('User already Exist, Redirect to Login page', 409));
 
   const tempUser = await TempUser.findOne({ email });
   if (!tempUser || !tempUser?.emailVerified) return next(new AppError('Register your email first', 401));
@@ -145,7 +145,7 @@ exports.login = catchAsync(async (req, res, next) => {
 });
 
 exports.fetchUser = catchAsync(async (req, res, next) => {
-  console.log('header token: ', req.headers );
+  console.log('header token: ', req.headers);
   // 1) Getting the token and checking if it's there
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {

@@ -3,6 +3,11 @@ const userFormatController = require('@src/controllers/userFormatController.js')
 
 const router = express.Router();
 
+//? Form formats
+router.get('/usertypes', userFormatController.userTypes);
+router.get('/usergenders', userFormatController.userGenders);
+
+//? Academic Details
 router.get('/allboards', userFormatController.allBoards);
 router.get('/allstreams', userFormatController.allStreams);
 router.get('/allgraduationcourses', userFormatController.allGraduationCourses);

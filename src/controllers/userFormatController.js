@@ -3,6 +3,22 @@ const AppError = require("@src/utils/appError");
 const catchAsync = require("@src/utils/catchAsync");
 const { findKeyValues } = require("@src/utils/util");
 
+//? Form formats
+exports.userTypes = catchAsync(async (req, res, next) => {
+  const userTypes = await UserFormat.findOne({}, 'userType');
+  if (!userTypes?.userType) return next(new AppError(`Could not find User Type Options`, 404));
+
+  res.status(200).json({ data: userTypes?.userType });
+});
+
+exports.userGenders = catchAsync(async (req, res, next) => {
+  const userGenders = await UserFormat.findOne({}, 'userGender');
+  if (!userGenders?.userGender) return next(new AppError(`Could not find Gender Options`, 404));
+
+  res.status(200).json({ data: userGenders?.userGender });
+});
+
+//? Academic Details
 exports.allBoards = catchAsync(async (req, res, next) => {
   const result = await UserFormat.findOne({}, 'userAcademicDetails.boards');
   const boards = result?.userAcademicDetails?.boards;
@@ -46,7 +62,6 @@ exports.allProfessions = catchAsync(async (req, res, next) => {
 
   res.status(200).json({ data: professions });
 });
-
 
 //? College,State,University apis
 exports.total = catchAsync(async (req, res, next) => {
@@ -123,7 +138,7 @@ exports.getAllStates = catchAsync(async (req, res, next) => {
   res.status(200).json({ data: states[0].states });
 });
 
-exports.getAllCities= catchAsync(async (req, res, next) => {
+exports.getAllCities = catchAsync(async (req, res, next) => {
   const cities = await CityStates.aggregate([
     {
       $group: {

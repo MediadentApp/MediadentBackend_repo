@@ -1,4 +1,4 @@
-const UserFormat = require('@src/models/userFormat');
+const UserFormat = require('@src/models/userFormatModel');
 
 const initUserFormat = async () => {
   // Check if UserFormat data already exists

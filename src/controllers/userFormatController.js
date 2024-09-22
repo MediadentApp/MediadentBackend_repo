@@ -18,6 +18,13 @@ exports.userGenders = catchAsync(async (req, res, next) => {
   res.status(200).json({ data: userGenders?.userGender });
 });
 
+exports.userInterests = catchAsync(async (req,res,next)=>{
+  const userInterests = await UserFormat.findOne({},'userInterest')
+  if (!userInterests?.userInterest) return next(new AppError(`Could not find Interest Options`, 404));
+
+  res.status(200).json({ data: userInterests?.userInterest });
+})
+
 //? Academic Details
 exports.allBoards = catchAsync(async (req, res, next) => {
   const result = await UserFormat.findOne({}, 'userAcademicDetails.boards');

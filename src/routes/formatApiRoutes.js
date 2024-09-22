@@ -5,7 +5,8 @@ const router = express.Router();
 
 //? Form formats
 router.get('/usertypes', userFormatController.userTypes);
-router.get('/usergenders', userFormatController.userGenders);
+router.get('/usergenders', userFormatController.userGenders); 
+router.get('/userinterests', userFormatController.userInterests); 
 
 //? Academic Details
 router.get('/allboards', userFormatController.allBoards);

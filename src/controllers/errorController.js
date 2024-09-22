@@ -26,8 +26,9 @@ const handleJwtExpiredError = err => new AppError('Your Token has expired. pleas
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({
     status: err.status,
-    name:err?.name,
+    name: err?.name,
     message: err.message,
+    redirectUrl: err?.redirectUrl,
     stack: err.stack,
     error: err
   });
@@ -38,7 +39,8 @@ const sendErrorProd = (err, res) => {
   if (err.isOperational) {
     res.status(err.statusCode).json({
       status: err.status,
-      message: err.message
+      message: err.message,
+      redirectUrl: err?.redirectUrl,
     });
 
     // Programming or other unknown error: don't leak error details

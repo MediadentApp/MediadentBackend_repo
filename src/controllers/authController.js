@@ -9,6 +9,7 @@ const sendEmail = require('../utils/email');
 const util = require('../utils/util');
 const config = require('../config/config');
 const { createSendToken } = require('@src/utils/authUtils');
+const { UserFormat } = require('@src/models/userFormatModel');
 
 exports.emailReg = catchAsync(async (req, res, next) => {
   const { email } = req.body;
@@ -130,6 +131,66 @@ exports.signup = catchAsync(async (req, res, next) => {
   createSendToken(newUser, 201, res);
 });
 
+exports.signupDetails = catchAsync(async (req, res, next) => {
+  const { userType, gender, institute, currentCity } = req.body;
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  const { _id } = await User.protect(token);
+
+  const formats = await UserFormat.findOne({}, 'userType userGender');
+  // Check for required fields and validate userType and gender
+  if (
+    !formats ||
+    !formats.userType.includes(userType) ||
+    !formats.userGender.includes(gender) ||
+    !institute ||
+    !currentCity
+  ) {
+    return next(new AppError('Validation Fail', 400));
+  }
+
+  const additionalInfo = { userType, gender, institute, currentCity };
+
+  const updatedUser = await User.findByIdAndUpdate(_id, { additionalInfo }, { new: true });//? new:true to return updated user.
+
+  res.status(200).json({
+    status: 'success',
+    code: 200,
+    data: updatedUser
+  });
+});
+
+exports.signupInterests = catchAsync(async (req, res, next) => {
+  const { interests } = req.body;
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  const { _id } = await User.protect(token);
+
+  if (!Array.isArray(interests)) {
+    return next(new AppError('Interests must be an array', 400));
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    _id,
+    { interests: interests },
+    { new: true, runValidators: true }
+  );
+
+  res.status(200).json({
+    status: 'success',
+    code: 200,
+    data: updatedUser
+  });
+});
+
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -182,32 +243,29 @@ exports.fetchUser = catchAsync(async (req, res, next) => {
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
-  // 1) Getting the token and checking if it's there
   let token;
+
+  // 1) Extract token from the headers
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
-  if (!token) return next(new AppError('You are not logged in'), 401);
 
-  // 2)Verifying token
-  // The jwt.verify uses callback,
-  // which is a async func that will run after the verification is done,
-  // Instead we promisify ts
-  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  // 2) Use the schema method to protect the route
+  const freshUser = await User.protect(token); // Calls the static method on User model
 
-  // 3)Check if the user still exists
-  const freshUser = await User.findById(decoded.id);
-  if (!freshUser) return next(new AppError('The user belonging to this token no longer exists', 401));
+  // 5)Check if user has filled the additional info to move forward
+  const redirectUrl = freshUser.isAdditionalInfoFilled();
+  if (redirectUrl !== true) {
+    return next(new AppError('Additional Info is not filled', 400, redirectUrl));
+  }
 
-  // 4)Check if user changed password after the token was issued
-  if (freshUser.changedPasswordAfter(decoded.iat)) return next(new AppError('User recently changed the password! Please log in again', 401));
-
-  // Grant access to the protected Route
+  // 3) Grant access to the protected route
   req.user = freshUser;
   next();
 });
 
 // A restrict function for roles, it will run after protect middleware
+//? eg. .restrict('admin') will only let admin access the route.
 // authController.restrict('admin','mod')
 // A wrapper func that will return the middleware func
 exports.restrict = (...roles) => (req, res, next) => {

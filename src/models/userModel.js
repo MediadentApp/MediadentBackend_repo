@@ -3,6 +3,10 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const UserFormat = require('./userFormatModel');
+const AppError = require('@src/utils/appError');
+const config = require('@src/config/config');
+const { promisify } = require('util');
+const jwt = require('jsonwebtoken');
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -79,22 +83,29 @@ const userSchema = new mongoose.Schema({
     unique: true,
     required: false
   },
-  userType: {
-    type: String,
-    required: true
+  interests: {
+    type: [String],
+    required: false,
+    default: []
   },
-  gender: {
-    type: String,
-    required: true
-  },
-  organization: {
-    type: String,
-    required: true
-  },
-  currentCity: {
-    type: String,
-    required: true
-  },
+  additionalInfo: {
+    userType: {
+      type: String,
+      required: false,
+    },
+    gender: {
+      type: String,
+      required: false,
+    },
+    institute: {
+      type: String,
+      required: false,
+    },
+    currentCity: {
+      type: String,
+      required: false,
+    }
+  }
 });
 
 // This will run between getting the data from client and saving it to DB
@@ -120,26 +131,38 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Pre-save middleware to validate userType and gender from the DB
-userSchema.pre('save', async function (next) {
-  const userFormat = await UserFormat.findOne(); // Fetch the format options from DB
+userSchema.methods.isAdditionalInfoFilled = function () {
+  const { userType, gender, institute, currentCity } = this.additionalInfo || {};
 
-  if (!userFormat) {
-    return next(new Error('User format not defined in database.'));
+  if (!userType || !gender || !institute || !currentCity) {
+    return config.urls.signupAdditionalDetailsUrl;
   }
 
-  // Validate userType
-  if (!userFormat.userType.includes(this.userType)) {
-    return next(new Error('Invalid userType.'));
+  return this.interests.length === 0 ? config.urls.signupInterestUrl : true;
+};
+
+userSchema.statics.protect = async function (token) {
+  // 1) Check if token is provided
+  if (!token) {
+    throw new AppError('You are not logged in', 401);
   }
 
-  // Validate gender
-  if (!userFormat.userGenders.includes(this.gender)) {
-    return next(new Error('Invalid gender.'));
+  // 2) Verify the token
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+  // 3) Check if the user still exists
+  const freshUser = await this.findById(decoded.id);
+  if (!freshUser) {
+    throw new AppError('The user belonging to this token no longer exists', 401);
   }
 
-  next();
-});
+  // 4) Check if the user changed password after the token was issued
+  if (freshUser.changedPasswordAfter(decoded.iat)) {
+    throw new AppError('User recently changed the password! Please log in again', 401);
+  }
+
+  return freshUser; // Return the user if everything is valid
+};
 
 // This is Instance Method
 // This method will be available on all document in the collection

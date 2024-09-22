@@ -9,4 +9,8 @@ module.exports = {
     dbName: 'myapp'
   },
   apiKey: 'your-api-key',
+  urls: {
+    signupAdditionalDetailsUrl: '/additionalInfo',
+    signupInterestUrl: '/interest'
+  }
 };

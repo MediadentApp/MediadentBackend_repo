@@ -2,7 +2,9 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 require('module-alias/register');
 
-dotenv.config({ path: './config.env' });
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config({ path: './config.env' });
+}
 
 const app = require('./src/app');
 const initUserFormat = require('@src/seeders/userFormatSeeds');
@@ -11,7 +13,7 @@ const DB = process.env.DATABASE.replace('<PASSWORD>', process.env.DATABASE_PASSW
 mongoose.connect(DB).then(() => console.log('DB connected'));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
   // initUserFormat();
 });

@@ -8,8 +8,21 @@ require('@src/config/passport.js');
 const middleware = express();
 const upload = multer();
 
+const allowedOrigins = [
+  'http://localhost:3000',  // Local development
+  'http://your-production-api.com',  // Production API address
+  // Add more specific origins if needed
+];
+
+// CORS Options
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{1,5}$/.test(origin)) {
+      callback(null, true);  // Allow localhost, production, and local network IPs like 192.168.x.x
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   optionsSuccessStatus: 200,
 };
 

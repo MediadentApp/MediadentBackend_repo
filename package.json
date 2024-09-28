@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "nodemon server.js",
-    "start:prod": "cross-env NODE_ENV=production nodemon server.js",
+    "start:prod": "cross-env NODE_ENV=production node server.js",
     "debug": "ndb server.js"
   },
   "repository": {
@@ -40,11 +40,11 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "querystringify": "^2.2.0",
+    "cross-env": "^7.0.3",
     "validator": "^13.11.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
-    "cross-env": "^7.0.3",
     "eslint": "^8.57.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-prettier": "^9.1.0",

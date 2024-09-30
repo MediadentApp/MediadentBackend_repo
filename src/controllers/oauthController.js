@@ -3,7 +3,7 @@ const AppError = require("@src/utils/appError");
 const { createSendToken } = require("@src/utils/authUtils");
 const catchAsync = require("@src/utils/catchAsync");
 const axios = require('axios');
-
+const querystring = require('querystring');
 
 exports.googleAuth = (req, res, next) => {
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.GOOGLE_REDIRECT_URI)}&scope=openid%20profile%20email`;

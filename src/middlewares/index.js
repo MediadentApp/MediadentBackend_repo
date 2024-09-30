@@ -10,7 +10,7 @@ const upload = multer();
 
 const allowedOrigins = [
   'http://localhost:3000',  // Local development
-  'http://your-production-api.com',  // Production API address
+  'https://studenthub-mauve.vercel.app/login',  // Production API address
   // Add more specific origins if needed
 ];
 

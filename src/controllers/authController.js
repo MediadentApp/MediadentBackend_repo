@@ -16,11 +16,18 @@ exports.emailReg = catchAsync(async (req, res, next) => {
 
   // Check if a user already exist with that email
   const userExists = await User.findOne({ email });
-  if (userExists && userExists?.manualSignup) {
-    return res.status(409).json({
-      status: 'fail',
-      message: 'User already exists',
-    });
+  if (userExists) {
+    if (userExists.manualSignup) {
+      return res.status(409).json({
+        status: 'fail',
+        message: 'User already exists. Please log in using your email and password.',
+      });
+    } else {
+      return res.status(409).json({
+        status: 'success',
+        message: 'User email is already verified, redirect to signup.',
+      });
+    }
   }
 
   // Check if the email exists in TempUser
@@ -86,9 +93,10 @@ exports.emailVerify = catchAsync(async (req, res, next) => {
   }
 
   const tempUser = await TempUser.findOne({ email });
-  if (!tempUser) return next(new AppError('Register your email first', 400));
-  if (!tempUser.checkOtp(otp)) return next(new AppError('The otp does not match', 400));
-  if (tempUser.checkOtpExpiration()) return next(new AppError('The otp has expired', 400));
+  if (!tempUser) return next(new AppError('Please register your email before proceeding.', 400));
+  if (tempUser?.emailVerified) return next(new AppError('Email is already verified', 400));
+  if (!tempUser.checkOtp(otp)) return next(new AppError('The OTP provided is incorrect.', 400));
+  if (tempUser.checkOtpExpiration()) return next(new AppError('The OTP has expired, please request a new one.', 400));
 
   tempUser.emailVerified = true;
   await tempUser.save({ validateBeforeSave: false });
@@ -104,14 +112,25 @@ exports.emailVerify = catchAsync(async (req, res, next) => {
 
 exports.signup = catchAsync(async (req, res, next) => {
   const {
-    firstName, lastName, email, password, passwordConfirm, passwordChangedAt, userType, gender, organization, currentCity
+    firstName, lastName, email, password, passwordConfirm, passwordChangedAt
   } = req.body;
 
   const userExist = await User.findOne({ email });
-  if (userExist && userExist.manualSignup) return next(new AppError('User already Exist, Redirect to Login page', 409));
+  if (userExist) {
+    if (userExist.manualSignup) {
+      return next(new AppError('User already Exist, Redirect to Login page', 409));
+    } else {
+      userExist.manualSignup = true;
+      userExist.password = password;
+      userExist.passwordConfirm = passwordConfirm;
+      userExist.passwordChangedAt = passwordChangedAt;
+      await userExist.save({ validateBeforeSave: true });
+      return createSendToken(userExist, 201, res);
+    }
+  }
 
   const tempUser = await TempUser.findOne({ email });
-  if (!tempUser || !tempUser?.emailVerified) return next(new AppError('Register your email first', 401));
+  if (!tempUser || !tempUser?.emailVerified) return next(new AppError('Please verify your email before registering.', 401));
 
   const newUser = await User.create({
     firstName: firstName,
@@ -120,10 +139,6 @@ exports.signup = catchAsync(async (req, res, next) => {
     password: password,
     passwordConfirm: passwordConfirm,
     passwordChangedAt: passwordChangedAt,
-    userType: userType,
-    gender: gender,
-    organization: organization,
-    currentCity: currentCity,
     manualSignup: true
   });
 
@@ -210,7 +225,6 @@ exports.login = catchAsync(async (req, res, next) => {
 });
 
 exports.fetchUser = catchAsync(async (req, res, next) => {
-  console.log('header token: ', req.headers);
   // 1) Getting the token and checking if it's there
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -225,9 +239,7 @@ exports.fetchUser = catchAsync(async (req, res, next) => {
   let decoded;
   try {
     decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-    console.log({ decoded });
   } catch (err) {
-    console.log({ err });
     return next(new AppError('Token Invalid or Expired', 401));
   }
 
@@ -352,7 +364,6 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   if (!await user.correctPassword(currentPassword, user.password)) return next(new AppError('The Provided Password is incorrect', 401));
 
   // 3) If so, update the password
-  console.log('thisran');
   user.password = updatedPassword;
   user.passwordConfirm = updatedPasswordConfirm;
   await user.save();

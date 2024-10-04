@@ -10,7 +10,7 @@ module.exports = {
   },
   apiKey: 'your-api-key',
   urls: {
-    signupAdditionalDetailsUrl: '/additionalInfo',
+    signupAdditionalDetailsUrl: '/additionalinfo',
     signupInterestUrl: '/interest'
   }
 };

@@ -244,7 +244,7 @@ exports.fetchUser = catchAsync(async (req, res, next) => {
   }
 
   // 3)Check if the user still exists
-  const user = await (await User.findById(decoded.id).populate('education'));
+  const user = await User.findById(decoded.id).select('-passwordChangedAt').populate('education');
   if (!user) return next(new AppError('The user belonging to this token no longer exists', 401));
 
   // 4)Check if user changed password after the token was issued
@@ -268,7 +268,14 @@ exports.protect = catchAsync(async (req, res, next) => {
   // 5)Check if user has filled the additional info to move forward
   const redirectUrl = freshUser.isAdditionalInfoFilled();
   if (redirectUrl !== true) {
-    return next(new AppError('Additional Info is not filled', 400, redirectUrl));
+    return res.status(206).json({
+      status: 'partial',
+      message: 'Additional Info is not filled, action required',
+      code: 206,
+      redirectUrl, // URL to fill the required info
+      data: { user: freshUser },
+      authenticated: true
+    });
   }
 
   // 3) Grant access to the protected route

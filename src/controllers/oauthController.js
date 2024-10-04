@@ -23,7 +23,7 @@ exports.googleAuthCallback = catchAsync(async (req, res, next) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
-    if (!tokenResponse) return next(new AppError('There was an error access token from google', 500));;
+    if (!tokenResponse) return next(new AppError('There was an error accessing the token from Google', 500));;
 
     const accessToken = tokenResponse.data.access_token;
     const userResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -36,8 +36,10 @@ exports.googleAuthCallback = catchAsync(async (req, res, next) => {
 
     const userExists = await User.findOne({ email });
     if (userExists) {
-      userExists.googleAccount = true;
-      userExists.save();
+      if (!userExists.googleAccount) {
+        userExists.googleAccount = true;
+        await userExists.save();
+      }
       createSendToken(userExists, 200, res);
     } else {
       const newUser = await User.create({

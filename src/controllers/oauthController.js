@@ -6,8 +6,8 @@ const axios = require('axios');
 const querystring = require('querystring');
 
 const GOOGLE_REDIRECT_URI = process.env.NODE_ENV === 'development' ? process.env.GOOGLE_REDIRECT_URI_DEV : process.env.GOOGLE_REDIRECT_URI_PROD;
-const GITHUB_CLIENT_ID = process.env.NODE_ENV === ' development' ? process.env.GITHUB_CLIENT_ID_DEV : process.env.GITHUB_CLIENT_ID_PROD;
-const GITHUB_CLIENT_SECRET = process.env.NODE_ENV === ' development' ? process.env.GITHUB_CLIENT_SECRET_DEV : process.env.GITHUB_CLIENT_SECRET_PROD;
+const GITHUB_CLIENT_ID = process.env.NODE_ENV === 'development' ? process.env.GITHUB_CLIENT_ID_DEV : process.env.GITHUB_CLIENT_ID_PROD;
+const GITHUB_CLIENT_SECRET = process.env.NODE_ENV === 'development' ? process.env.GITHUB_CLIENT_SECRET_DEV : process.env.GITHUB_CLIENT_SECRET_PROD;
 
 exports.googleAuth = (req, res, next) => {
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}&scope=openid%20profile%20email`;

@@ -5,8 +5,12 @@ const catchAsync = require("@src/utils/catchAsync");
 const axios = require('axios');
 const querystring = require('querystring');
 
+const GOOGLE_REDIRECT_URI = process.env.NODE_ENV === 'development' ? process.env.GOOGLE_REDIRECT_URI_DEV : process.env.GOOGLE_REDIRECT_URI_PROD;
+const GITHUB_CLIENT_ID = process.env.NODE_ENV === ' development' ? process.env.GITHUB_CLIENT_ID_DEV : process.env.GITHUB_CLIENT_ID_PROD;
+const GITHUB_CLIENT_SECRET = process.env.NODE_ENV === ' development' ? process.env.GITHUB_CLIENT_SECRET_DEV : process.env.GITHUB_CLIENT_SECRET_PROD;
+
 exports.googleAuth = (req, res, next) => {
-  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.GOOGLE_REDIRECT_URI)}&scope=openid%20profile%20email`;
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}&scope=openid%20profile%20email`;
   res.redirect(googleAuthUrl);
 };
 
@@ -17,7 +21,7 @@ exports.googleAuthCallback = catchAsync(async (req, res, next) => {
       code,
       client_id: process.env.GOOGLE_CLIENT_ID,
       client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+      redirect_uri: GOOGLE_REDIRECT_URI,
       grant_type: 'authorization_code',
     }), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -58,7 +62,7 @@ exports.googleAuthCallback = catchAsync(async (req, res, next) => {
 });
 
 exports.githubAuth = (req, res, next) => {
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&scope=user`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=user`;
   res.redirect(githubAuthUrl);
 };
 
@@ -66,8 +70,8 @@ exports.githubAuthCallback = catchAsync(async (req, res, next) => {
   const code = req.query.code;
   try {
     const tokenResponse = await axios.post('https://github.com/login/oauth/access_token', {
-      client_id: process.env.GITHUB_CLIENT_ID,
-      client_secret: process.env.GITHUB_CLIENT_SECRET,
+      client_id: GITHUB_CLIENT_ID,
+      client_secret: GITHUB_CLIENT_SECRET,
       code: code,
     }, {
       headers: { 'Accept': 'application/json' },

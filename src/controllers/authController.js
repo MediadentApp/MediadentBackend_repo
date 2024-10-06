@@ -230,7 +230,10 @@ exports.fetchUser = catchAsync(async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
-  if (!token) return next(new AppError('You are not logged in'), 401);
+  
+  if (!token || !req.headers.authorization) {
+    return next(new AppError('You are not logged in', 401));
+  }
 
   // 2)Verifying token
   // The jwt.verify uses callback,

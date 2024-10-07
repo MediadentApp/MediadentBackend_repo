@@ -38,11 +38,11 @@ const sendErrorProd = (err, res) => {
   // Operational, trusted error: send message to client
   if (err.isOperational) {
     res.status(err.statusCode).json({
-      ...err,
+      // ...err,
       status: err.status,
-      name: err?.name,
+      // name: err?.name,
       message: err.message,
-      redirectUrl: err?.redirectUrl,
+      ...(err.redirectUrl && { redirectUrl: err.redirectUrl }),
     });
 
     // Programming or other unknown error: don't leak error details

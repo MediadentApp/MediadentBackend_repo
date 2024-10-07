@@ -10,20 +10,21 @@ const upload = multer();
 
 const allowedOrigins = [
   'http://localhost:3000',  // Local development
-  'https://studenthub-mauve.vercel.app/login',  // Production API address
+  'https://studenthub-mauve.vercel.app',  // Production API address
   // Add more specific origins if needed
 ];
 
 // CORS Options
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1 || /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{1,5}$/.test(origin)) {
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    if (!origin || allowedOrigins.includes(origin) || /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{1,5}$/.test(origin)) {
       callback(null, true);  // Allow localhost, production, and local network IPs like 192.168.x.x
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  optionsSuccessStatus: 200,
+  optionsSuccessStatus: 200,  // For legacy browser support
 };
 
 middleware.use(cors(corsOptions));

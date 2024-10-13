@@ -5,8 +5,8 @@ const router = express.Router();
 
 //? Form formats
 router.get('/usertypes', userFormatController.userTypes);
-router.get('/usergenders', userFormatController.userGenders); 
-router.get('/userinterests', userFormatController.userInterests); 
+router.get('/usergenders', userFormatController.userGenders);
+router.get('/userinterests', userFormatController.userInterests);
 
 //? Academic Details
 router.get('/allboards', userFormatController.allBoards);
@@ -21,6 +21,7 @@ router.get('/universities', userFormatController.getAllUniversities);
 router.get('/searchcollege', userFormatController.searchCollege);
 router.get('/allstates', userFormatController.getAllStates);
 router.get('/allcities', userFormatController.getAllCities);
+router.get('/getcitystate', userFormatController.getCityStates);
 router.get('/state', userFormatController.getByState);
 router.get('/districts', userFormatController.getDistrictsByState);
 router.get('/district', userFormatController.getByDistrict);

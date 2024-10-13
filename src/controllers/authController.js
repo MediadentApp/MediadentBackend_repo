@@ -156,12 +156,14 @@ exports.signupDetails = catchAsync(async (req, res, next) => {
 
   const { _id } = await User.protect(token);
 
-  const formats = await UserFormat.findOne({}, 'userType userGender');
+  // const formats = await UserFormat.findOne({}, 'userType userGender');
   // Check for required fields and validate userType and gender
   if (
-    !formats ||
-    !formats.userType.includes(userType) ||
-    !formats.userGender.includes(gender) ||
+    // !formats ||
+    // !formats.userType.includes(userType) ||
+    // !formats.userGender.includes(gender) ||
+    !userType ||
+    !gender ||
     !institute ||
     !currentCity
   ) {
@@ -171,6 +173,18 @@ exports.signupDetails = catchAsync(async (req, res, next) => {
   const additionalInfo = { userType, gender, institute, currentCity };
 
   const updatedUser = await User.findByIdAndUpdate(_id, { additionalInfo }, { new: true });//? new:true to return updated user.
+
+  const redirectUrl = updatedUser.isAdditionalInfoFilled();
+  if (redirectUrl !== false) {
+    return res.status(206).json({
+      status: 'partial',
+      message: 'Additional Info is not filled, action required',
+      code: 206,
+      redirectUrl, // URL to fill the required info
+      data: { user: updatedUser },
+      authenticated: true
+    });
+  }
 
   res.status(200).json({
     status: 'success',
@@ -230,7 +244,7 @@ exports.fetchUser = catchAsync(async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
-  
+
   if (!token || !req.headers.authorization) {
     return next(new AppError('You are not logged in', 401));
   }
@@ -270,7 +284,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // 5)Check if user has filled the additional info to move forward
   const redirectUrl = freshUser.isAdditionalInfoFilled();
-  if (redirectUrl !== true) {
+  if (redirectUrl !== false) {
     return res.status(206).json({
       status: 'partial',
       message: 'Additional Info is not filled, action required',

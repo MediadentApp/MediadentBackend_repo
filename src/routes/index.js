@@ -3,6 +3,7 @@ const mainRoutes = require('./mainRoutes');
 const userRoutes = require('./userRoutes');
 const oauthRoutes = require('./oauthRoutes');
 const userFormatApi = require('./formatApiRoutes');
+const { protect } = require('@src/controllers/authController');
 
 const router = express.Router();
 

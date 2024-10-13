@@ -18,7 +18,7 @@ const allowedOrigins = [
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, Postman, etc.)
-    if (!origin || allowedOrigins.includes(origin) || /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{1,5}$/.test(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || ((process.env.NODE_ENV === 'development') && /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{1,5}$/.test(origin))) {
       callback(null, true);  // Allow localhost, production, and local network IPs like 192.168.x.x
     } else {
       callback(new Error('Not allowed by CORS'));

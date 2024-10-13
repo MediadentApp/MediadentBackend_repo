@@ -1,6 +1,6 @@
 const express = require('express');
-const authController = require('../controllers/authController');
-const academicProgramsRoutes = require('./academicProgramsRoutes');
+const authController = require('@src/controllers/authController.js');
+const { saveAcademicDetails, updateAcademicDetails, getAcademicDetails } = require('@src/controllers/userController');
 
 const router = express.Router();
 
@@ -19,6 +19,11 @@ router.patch('/resetPassword/:token', authController.resetPassword);
 router.patch('/updatePassword', authController.protect, authController.updatePassword);
 
 //? User's academic/education details routes
-router.use('/academicprograms', academicProgramsRoutes);
+router.post('/usersignupadditional',);
+router.post('/usersingupinterest',);
+
+router.post('/useracademicdetails', authController.protect, saveAcademicDetails);
+router.put('/useracademicdetails', updateAcademicDetails);
+router.get('/useracademicdetails', getAcademicDetails);
 
 module.exports = router;

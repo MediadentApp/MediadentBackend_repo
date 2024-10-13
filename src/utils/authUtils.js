@@ -9,7 +9,7 @@ const signToken = id => (
   )
 );
 
-const createSendToken = (user, statusCode, res) => {
+const createSendToken = (user, statusCode, res, { redirectUrl = null }) => {
   const token = signToken(user._id);
 
   // Remove password from output
@@ -17,10 +17,12 @@ const createSendToken = (user, statusCode, res) => {
     user.password = undefined;
   }
 
+  console.log('this ran', redirectUrl);
   res.status(statusCode).json({
     status: 'success',
     code: statusCode,
     token,
+    ...(redirectUrl && { redirectUrl }),
     data: {
       user
     }

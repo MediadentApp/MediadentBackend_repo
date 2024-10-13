@@ -44,7 +44,8 @@ exports.googleAuthCallback = catchAsync(async (req, res, next) => {
         userExists.googleAccount = true;
         await userExists.save();
       }
-      createSendToken(userExists, 200, res);
+      const redirectUrl = userExists.isAdditionalInfoFilled();
+      createSendToken(userExists, 200, res, { ...(redirectUrl !== false && { redirectUrl }) });
     } else {
       const newUser = await User.create({
         firstName: firstName,
@@ -52,7 +53,8 @@ exports.googleAuthCallback = catchAsync(async (req, res, next) => {
         email: email,
         googleAccount: true
       });
-      createSendToken(newUser, 201, res);
+      const redirectUrl = newUser.isAdditionalInfoFilled();
+      createSendToken(newUser, 201, res, { ...(redirectUrl !== false && { redirectUrl }) });
     }
 
   } catch (error) {

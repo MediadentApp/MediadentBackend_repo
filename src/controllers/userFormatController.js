@@ -18,12 +18,12 @@ exports.userGenders = catchAsync(async (req, res, next) => {
   res.status(200).json({ data: userGenders?.userGender });
 });
 
-exports.userInterests = catchAsync(async (req,res,next)=>{
-  const userInterests = await UserFormat.findOne({},'userInterest')
+exports.userInterests = catchAsync(async (req, res, next) => {
+  const userInterests = await UserFormat.findOne({}, 'userInterest');
   if (!userInterests?.userInterest) return next(new AppError(`Could not find Interest Options`, 404));
 
   res.status(200).json({ data: userInterests?.userInterest });
-})
+});
 
 //? Academic Details
 exports.allBoards = catchAsync(async (req, res, next) => {
@@ -172,6 +172,87 @@ exports.getAllCities = catchAsync(async (req, res, next) => {
   }
 
   res.status(200).json({ data: cities[0].cities });
+});
+
+exports.getCityStates = catchAsync(async (req, res, next) => {
+  const { query = '', page = 1, limit = 10 } = req.query;
+
+  const skip = (page - 1) * limit;
+
+  let pipeline = [
+    {
+      $project: {
+        _id: 0,
+        cityState: { $concat: ["$city", ", ", "$state"] }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        citiesStatesArray: { $push: "$cityState" }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        citiesStatesArray: 1
+      }
+    },
+    // Unwind the array to be able to paginate
+    {
+      $unwind: "$citiesStatesArray"
+    },
+    // Skip and limit for pagination
+    {
+      $skip: skip
+    },
+    {
+      $limit: parseInt(limit)
+    },
+    // Group it back into an array after pagination
+    {
+      $group: {
+        _id: null,
+        paginatedCitiesStatesArray: { $push: "$citiesStatesArray" }
+      }
+    }
+  ];
+
+  // If a search query is provided, add a match stage
+  if (query.length > 0) {
+    pipeline.unshift({
+      $match: {
+        $or: [
+          { city: { $regex: query, $options: 'i' } },
+          { state: { $regex: query, $options: 'i' } }
+        ]
+      }
+    });
+  }
+
+  const citiesStatesData = await CityStates.aggregate(pipeline);
+
+  if (!citiesStatesData || citiesStatesData.length === 0) {
+    return next(new AppError('No city/state combinations found', 404));
+  }
+
+  const paginatedCitiesStatesArray = citiesStatesData[0]?.paginatedCitiesStatesArray || [];
+
+  // Get the total count of documents for pagination info
+  const totalResults = await CityStates.countDocuments(query ? {
+    $or: [
+      { city: { $regex: query, $options: 'i' } },
+      { state: { $regex: query, $options: 'i' } }
+    ]
+  } : {});
+
+  res.status(200).json({
+    status: 'success',
+    data: paginatedCitiesStatesArray,
+    page: parseInt(page),
+    limit: parseInt(limit),
+    totalResults
+  });
 });
 
 // !Not updated

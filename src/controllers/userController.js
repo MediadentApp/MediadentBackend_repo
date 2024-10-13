@@ -1,12 +1,9 @@
 const Education = require("@src/models/userEducationDetailModel");
-const {UserFormat} = require("@src/models/userFormatModel");
+const { UserFormat } = require("@src/models/userFormatModel");
 const User = require("@src/models/userModel");
 const AppError = require("@src/utils/appError");
 const catchAsync = require("@src/utils/catchAsync");
-const { findKeyValues } = require("@src/utils/util");
 const { default: mongoose } = require("mongoose");
-
-
 
 exports.saveAcademicDetails = catchAsync(async (req, res, next) => {
   const userId = req.user._id;

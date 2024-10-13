@@ -176,10 +176,10 @@ exports.signupDetails = catchAsync(async (req, res, next) => {
 
   const redirectUrl = updatedUser.isAdditionalInfoFilled();
   if (redirectUrl !== false) {
-    return res.status(206).json({
-      status: 'partial',
+    return res.status(200).json({
+      status: 'success',
       message: 'Additional Info is not filled, action required',
-      code: 206,
+      code: 200,
       redirectUrl, // URL to fill the required info
       data: { user: updatedUser },
       authenticated: true

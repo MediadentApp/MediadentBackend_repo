@@ -1,3 +1,4 @@
+const config = require("@src/config/config");
 const { UserFormat, College, University, CityStates } = require("@src/models/userFormatModel");
 const AppError = require("@src/utils/appError");
 const catchAsync = require("@src/utils/catchAsync");
@@ -22,7 +23,7 @@ exports.userInterests = catchAsync(async (req, res, next) => {
   const userInterests = await UserFormat.findOne({}, 'userInterest');
   if (!userInterests?.userInterest) return next(new AppError(`Could not find Interest Options`, 404));
 
-  res.status(200).json({ data: userInterests?.userInterest });
+  res.status(200).json({ data: { interests: userInterests?.userInterest, required: config.app.numOfSignupInterests } });
 });
 
 //? Academic Details

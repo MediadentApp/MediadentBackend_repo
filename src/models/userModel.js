@@ -138,7 +138,7 @@ userSchema.methods.isAdditionalInfoFilled = function () {
     return config.urls.signupAdditionalDetailsUrl;
   }
 
-  return this.interests.length === 0 ? config.urls.signupInterestUrl : false;
+  return ((this.interests && (this.interests.length < config.app.numOfSignupInterests)) ? config.urls.signupInterestUrl : null);
 };
 
 userSchema.statics.protect = async function (token) {

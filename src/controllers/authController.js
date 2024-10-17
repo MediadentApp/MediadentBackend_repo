@@ -207,6 +207,8 @@ exports.signupInterests = catchAsync(async (req, res, next) => {
     return next(new AppError('Interests must be an array', 400));
   }
 
+  if (interests.length < config.app.numOfSignupInterests) return next(new AppError(`Choose at least ${config.app.numOfSignupInterests} interest`), 406);
+
   const updatedUser = await User.findByIdAndUpdate(
     _id,
     { interests: interests },
@@ -284,7 +286,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // 5)Check if user has filled the additional info to move forward
   const redirectUrl = freshUser.isAdditionalInfoFilled();
-  if (redirectUrl !== false) {
+  if (redirectUrl && redirectUrl !== false) {
     return res.status(206).json({
       status: 'partial',
       message: 'Additional Info is not filled, action required',

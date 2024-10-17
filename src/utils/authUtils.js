@@ -1,4 +1,3 @@
-// authUtils.js
 const jwt = require('jsonwebtoken'); // Ensure you have jsonwebtoken package installed
 
 const signToken = id => (
@@ -9,24 +8,27 @@ const signToken = id => (
   )
 );
 
-const createSendToken = (user, statusCode, res, { redirectUrl = null }) => {
+const createSendToken = (user, statusCode, res, { redirectUrl = null } = {}) => {
   const token = signToken(user._id);
 
-  // Remove password from output
-  if (user.password) {
-    user.password = undefined;
-  }
+  // Remove password from output by directly setting it to undefined
+  user.password = undefined;
 
-  console.log('this ran', redirectUrl);
-  res.status(statusCode).json({
+  // Build the response object
+  const response = {
     status: 'success',
     code: statusCode,
     token,
-    ...(redirectUrl && { redirectUrl }),
-    data: {
-      user
-    }
-  });
+    data: { user }
+  };
+
+  // Conditionally add redirectUrl if it exists
+  if (redirectUrl) {
+    response.redirectUrl = redirectUrl;
+  }
+
+  // Send the response
+  res.status(statusCode).json(response);
 };
 
 module.exports = { signToken, createSendToken };

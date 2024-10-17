@@ -12,5 +12,8 @@ module.exports = {
   urls: {
     signupAdditionalDetailsUrl: '/additionalinfo',
     signupInterestUrl: '/interest'
+  },
+  app: {
+    numOfSignupInterests: 5
   }
 };

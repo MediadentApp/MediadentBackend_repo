@@ -2,8 +2,6 @@ const morgan = require('morgan');
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
-const passport = require('passport');
-require('@src/config/passport.js');
 
 const middleware = express();
 const upload = multer();
@@ -28,8 +26,6 @@ const corsOptions = {
 };
 
 middleware.use(cors(corsOptions));
-
-middleware.use(passport.initialize());
 
 if (process.env.NODE_ENV === 'development') {
   middleware.use(morgan('dev'));

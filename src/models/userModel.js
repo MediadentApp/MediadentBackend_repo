@@ -22,12 +22,17 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide your email'],
     unique: true,
     lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valid email'] // From the Validator Module
+    validate: [validator.isEmail, 'Please provide a valid email'], // From the Validator Module
+    index: true
   },
   username: {
     type: String,
     unique: true,
-    required: false
+    required: false,
+    index: true
+  },
+  profilePicture: {
+    type: String
   },
   password: {
     type: String,
@@ -105,7 +110,83 @@ const userSchema = new mongoose.Schema({
       type: String,
       required: false,
     }
-  }
+  },
+  bio: {
+    type: String,
+    default: '',  // Short user bio/description
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false,  // Indicate if user is an admin in group chats
+  },
+  blockedUsers: {
+    type: [String],  // Array of user IDs blocked by this user
+    default: [],
+    select: false,  // Hide from standard queries
+  },
+  settings: {
+    notifications: {
+      type: Boolean,
+      default: true,  // Controls message notifications
+    },
+    theme: {
+      type: String,
+      enum: ['light', 'dark'],
+      default: 'light',  // User preference for light or dark theme
+    },
+  },
+  accountStatus: {
+    type: String,
+    enum: ['active', 'suspended', 'deactivated'],
+    default: 'active',  // To manage user account status
+  },
+  role: {
+    type: String,
+    enum: ['user', 'moderator', 'admin'],
+    default: 'user',
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  onlineStatus: {
+    type: Boolean,
+    default: false,
+  },
+  lastSeen: {
+    type: Date,
+    select: false
+  },
+  socketId: {
+    type: String,
+    select: false
+  },
+  // Array of userName representing the user’s contact/messageInbox list.
+  contacts: {
+    type: [String],
+    select: false
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  followingCommunities: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Community', // Reference to the Community model
+    default: []
+  }],
+  followingUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: []
+  }],
+  followers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: []
+  }]
+}, {
+  timestamps: true,  // Automatically manages createdAt fields
 });
 
 // This will run between getting the data from client and saving it to DB

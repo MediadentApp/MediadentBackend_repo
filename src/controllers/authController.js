@@ -17,17 +17,8 @@ exports.emailReg = catchAsync(async (req, res, next) => {
   // Check if a user already exist with that email
   const userExists = await User.findOne({ email });
   if (userExists) {
-    if (userExists.manualSignup) {
-      return res.status(409).json({
-        status: 'fail',
-        message: 'User already exists. Please log in using your email and password.',
-      });
-    } else {
-      return res.status(409).json({
-        status: 'success',
-        message: 'User email is already verified, redirect to signup.',
-      });
-    }
+    if (userExists.manualSignup) next(new AppError(`User already exists. Please log in using your email and password.`, 409));
+    else next(new AppError(`User email is already verified, redirect to signup.`, 409));
   }
 
   // Check if the email exists in TempUser

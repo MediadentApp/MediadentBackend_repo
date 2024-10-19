@@ -1,13 +1,22 @@
-// const Message = require('@src/models/userMessages');
+const AppError = require("@src/utils/appError");
 
-exports.handleSendMessage = async (io, socket, messageData) => {
-  console.log('messageData', messageData);
-  // const newMessage = new Message(messageData);
-  // await newMessage.save();
+exports.handleSendMessage = (io, socket, messageData) => {
+  const { chatId, content } = messageData;
 
-  io.emit('receiveMessage', { text: messageData, sender: 'User123' }); // Send to all connected clients
+  if (!chatId || !content) {
+    throw new AppError('Chat ID and message content are required', 400);
+  }
+
+  // Emit the message to the relevant chat room
+  io.to(chatId).emit('receiveMessage', {
+    senderID: socket.user._id,
+    sendUsername: socket.user.username,
+    content,
+    timestamp: new Date(),
+  });
 };
 
 exports.handleDisconnect = (socket) => {
-  console.log('User disconnected:', socket.id);
+  // Add custom logic for handling user disconnection
+  console.log(`User ${socket.user.username} disconnected`);
 };

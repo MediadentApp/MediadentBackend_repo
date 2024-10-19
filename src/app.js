@@ -12,6 +12,7 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:3000',  // Local development
+  'http://192.168.0.155:3000',  // Local development
   'https://studenthub-mauve.vercel.app',  // Production API address
   // Add more specific origins if needed
 ];
@@ -51,7 +52,10 @@ const server = createServer(app);
 // cors for socket.io/websocket communication
 const io = new Server(server, {
   cors: {
-    corsOptions
+    origin: allowedOrigins,  // List of allowed origins for Socket.IO
+    methods: ['GET', 'POST'],  // HTTP methods allowed in WebSocket requests
+    allowedHeaders: ["my-custom-header"],
+    credentials: true
   }
 });
 

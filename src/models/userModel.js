@@ -85,8 +85,8 @@ const userSchema = new mongoose.Schema({
   education: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Education',
-    unique: true,
-    required: false
+    required: false,
+    default: null
   },
   interests: {
     type: [String],

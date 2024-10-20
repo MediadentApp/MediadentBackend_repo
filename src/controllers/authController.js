@@ -163,7 +163,7 @@ exports.signupDetails = catchAsync(async (req, res, next) => {
 
   const additionalInfo = { userType, gender, institute, currentCity };
 
-  const updatedUser = await User.findByIdAndUpdate(_id, { additionalInfo }, { new: true });//? new:true to return updated user.
+  const updatedUser = await User.findByIdAndUpdate(_id, { additionalInfo }, { new: true });// ?new:true to return updated user.
 
   const redirectUrl = updatedUser.isAdditionalInfoFilled();
   if (redirectUrl !== false) {
@@ -294,7 +294,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 });
 
 // A restrict function for roles, it will run after protect middleware
-//? eg. .restrict('admin') will only let admin access the route.
+// ?eg. .restrict('admin') will only let admin access the route.
 // authController.restrict('admin','mod')
 // A wrapper func that will return the middleware func
 exports.restrict = (...roles) => (req, res, next) => {

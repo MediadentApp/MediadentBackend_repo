@@ -7,6 +7,7 @@ const { default: mongoose } = require("mongoose");
 
 exports.saveAcademicDetails = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
+  // !no need to fetch from database as it is already being fetched from protect
   const userDetails = await User.findById(userId);
 
   if (userDetails.education && mongoose.Types.ObjectId.isValid(userDetails.education)) {

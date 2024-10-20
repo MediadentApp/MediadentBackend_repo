@@ -1,27 +1,30 @@
 const mongoose = require('mongoose');
 
 const messageSchema = new mongoose.Schema({
-  chatId: { type: String, required: true, index: true },
+  chatId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Chat',
+    required: [function () {
+      return !this.groupChatId;
+    }, 'ChatIds is required'],
+    index: true
+  },
+  groupChatId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'GroupChat',
+    required: [function () {
+      return !this.chatId;
+    }, 'groupChatIds is required'],
+    index: true
+  },
   senderId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  receiverId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [function () {
-      return !this.groupId;
-    }, 'Receiver ID not provided'],
-    default: null
-  },
-  groupId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'GroupMessage',
-    default: null,
-    required: [function () {
-      return !this.receiverId;
-    }, 'Group ID not provided'],
+  senderUsername: {
+    type: String,
+    required: true
   },
   content: { type: String, required: true },
   media: {
@@ -31,7 +34,6 @@ const messageSchema = new mongoose.Schema({
       size: Number
     }
   },
-  timestamp: { type: Date, default: Date.now },
   status: {
     sent: { type: Boolean, default: false },
     delivered: { type: Boolean, default: false },
@@ -64,7 +66,14 @@ const chatSchema = new mongoose.Schema({
   participants: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: 'User',
-    required: true
+    required: true,
+    validate: {
+      validator: function (arr) {
+        return arr.length === 2;
+      },
+      message: 'Participants array must have exactly 2 elements.'
+    },
+    index: true
   },
   lastMessage: {
     type: {
@@ -81,7 +90,7 @@ const chatSchema = new mongoose.Schema({
         default: Date.now,
       },
     },
-    default: null // Store last message details
+    default: null
   },
   unreadCount: [{
     userId: {
@@ -149,7 +158,8 @@ const messageNotificationSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
   },
   type: {
     type: String,

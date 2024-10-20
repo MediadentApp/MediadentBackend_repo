@@ -18,7 +18,7 @@ router.post('/forgotPassword', authController.forgotPassword);
 router.patch('/resetPassword/:token', authController.resetPassword);
 router.patch('/updatePassword', authController.protect, authController.updatePassword);
 
-//? User's academic/education details routes
+// ?User's academic/education details routes
 router.post('/usersignupadditional',);
 router.post('/usersingupinterest',);
 

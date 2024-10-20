@@ -166,6 +166,18 @@ const userSchema = new mongoose.Schema({
     type: [String],
     select: false
   },
+  chats: {
+    chatIds: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'Chat',
+      default: []
+    },
+    groupChatIds: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'GroupChat',
+      default: []
+    }
+  },
   updatedAt: {
     type: Date,
     default: Date.now,

@@ -1,10 +1,9 @@
-const { handleSendMessage, handleDisconnect } = require("@src/controllers/socketController");
+const { handleSendMessage, handleDisconnect } = require("@src/controllers/socketMessageController");
 const User = require("@src/models/userModel");
 const AppError = require("@src/utils/appError");
 
+// *Add catchAsync to all
 module.exports = (io) => {
-
-  // Socket.IO authentication middleware
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token;
@@ -21,9 +20,8 @@ module.exports = (io) => {
   });
 
   io.on('connection', (socket) => {
-    console.log('A user connected:', socket.user.username, socket.id);
+    console.log('A user connected:', socket.user.username, '(', socket.id, ')');
 
-    // Join a specific chat room
     socket.on('joinChat', (chatId) => {
       if (!chatId) {
         socket.emit('error', { message: 'Chat ID is required', statusCode: 400 });
@@ -34,19 +32,12 @@ module.exports = (io) => {
       console.log(`User ${socket.user.username} (${socket.id}) joined chat ${chatId}`);
     });
 
-    // Handle sending a message
     socket.on('sendMessage', (messageData) => {
-      try {
-        handleSendMessage(io, socket, messageData);
-      } catch (err) {
-        socket.emit('error', { message: err.message || 'Failed to send message', statusCode: 500 });
-      }
+      handleSendMessage(io, socket, messageData);
     });
 
-    // Handle user disconnect
     socket.on('disconnect', () => {
       handleDisconnect(socket);
-      console.log(`User ${socket.user.username} (${socket.id}) disconnected`);
     });
   });
 };

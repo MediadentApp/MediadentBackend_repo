@@ -7,6 +7,7 @@ const AppError = require('@src/utils/appError');
 const config = require('@src/config/config');
 const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
+const { Chat } = require('./userMessages');
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -115,10 +116,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '',  // Short user bio/description
   },
-  isAdmin: {
-    type: Boolean,
-    default: false,  // Indicate if user is an admin in group chats
-  },
   blockedUsers: {
     type: [String],  // Array of user IDs blocked by this user
     default: [],
@@ -220,6 +217,19 @@ userSchema.pre('save', async function (next) {
     const uniqueSuffix = Math.floor(Math.random() * 10000); // Generate a unique suffix
     this.username = `${emailPrefix}-${uniqueSuffix}`;
   }
+
+  next();
+});
+
+userSchema.pre('save', async function (next) {
+  const admins = await User.find({ role: 'admin' });
+
+  const newChats = admins.map(admin => ({ participants: [this._id, admin._id] }));
+
+  const chatArr = await Chat.insertMany(newChats);
+  const chatIds = chatArr.map(chat => chat._id);
+
+  this.chats.chatIds = [...new Set([...this.chats.chatIds, ...chatIds])];
 
   next();
 });

@@ -167,13 +167,15 @@ const userSchema = new mongoose.Schema({
     chatIds: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: 'Chat',
+      select: false,
       default: []
     },
     groupChatIds: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: 'GroupChat',
+      select: false,
       default: []
-    }
+    },
   },
   updatedAt: {
     type: Date,
@@ -222,6 +224,10 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.pre('save', async function (next) {
+  if(this.email === process.env.OWNER_EMAIL ){
+    this.role = 'admin'
+  }
+  
   const admins = await User.find({ role: 'admin' });
 
   const newChats = admins.map(admin => ({ participants: [this._id, admin._id] }));
@@ -244,7 +250,7 @@ userSchema.methods.isAdditionalInfoFilled = function () {
   return ((this.interests && (this.interests.length < config.app.numOfSignupInterests)) ? config.urls.signupInterestUrl : null);
 };
 
-userSchema.statics.protect = async function (token) {
+userSchema.statics.protectApi = async function (token, selectFields, populateFields) {
   // 1) Check if token is provided
   if (!token) {
     throw new AppError('You are not logged in', 401);
@@ -253,8 +259,19 @@ userSchema.statics.protect = async function (token) {
   // 2) Verify the token
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  // 3) Check if the user still exists
-  const freshUser = await this.findById(decoded.id);
+  // 3) Check if the user still exists with select and populate
+  const query = this.findById(decoded.id);
+  
+  if (selectFields) {
+    query.select(selectFields);
+  }
+  
+  if (populateFields) {
+    query.populate(populateFields);
+  }
+  
+  const freshUser = await query;
+
   if (!freshUser) {
     throw new AppError('The user belonging to this token no longer exists', 401);
   }

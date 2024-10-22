@@ -145,7 +145,7 @@ exports.signupDetails = catchAsync(async (req, res, next) => {
     token = req.headers.authorization.split(' ')[1];
   }
 
-  const { _id } = await User.protect(token);
+  const { _id } = await User.protectApi(token);
 
   // const formats = await UserFormat.findOne({}, 'userType userGender');
   // Check for required fields and validate userType and gender
@@ -192,7 +192,7 @@ exports.signupInterests = catchAsync(async (req, res, next) => {
     token = req.headers.authorization.split(' ')[1];
   }
 
-  const { _id } = await User.protect(token);
+  const { _id } = await User.protectApi(token);
 
   if (!Array.isArray(interests)) {
     return next(new AppError('Interests must be an array', 400));
@@ -242,24 +242,9 @@ exports.fetchUser = catchAsync(async (req, res, next) => {
     return next(new AppError('You are not logged in', 401));
   }
 
-  // 2)Verifying token
-  // The jwt.verify uses callback,
-  // which is a async func that will run after the verification is done,
-  // Instead we promisify ts
-  let decoded;
-  try {
-    decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-  } catch (err) {
-    return next(new AppError('Token Invalid or Expired', 401));
-  }
-
-  // 3)Check if the user still exists
-  const user = await User.findById(decoded.id).select('-passwordChangedAt').populate('education');
-  if (!user) return next(new AppError('The user belonging to this token no longer exists', 401));
-
-  // 4)Check if user changed password after the token was issued
-  if (user.changedPasswordAfter(decoded.iat)) return next(new AppError('User recently changed the password! Please log in again', 401));
-
+  // 2) Use protectApi to verify token and fetch user
+  let user;
+  user = await User.protectApi(token, '-passwordChangedAt +chats.chatIds +chats.groupChatIds', 'education');
   // Sending user and Creating jwt token
   createSendToken(user, 200, res);
 });
@@ -273,7 +258,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   }
 
   // 2) Use the schema method to protect the route
-  const freshUser = await User.protect(token); // Calls the static method on User model
+  const freshUser = await User.protectApi(token); // Calls the static method on User model
 
   // 5)Check if user has filled the additional info to move forward
   const redirectUrl = freshUser.isAdditionalInfoFilled();

@@ -224,10 +224,10 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.pre('save', async function (next) {
-  if(this.email === process.env.OWNER_EMAIL ){
-    this.role = 'admin'
+  if (this.email === process.env.OWNER_EMAIL) {
+    this.role = 'admin';
   }
-  
+
   const admins = await User.find({ role: 'admin' });
 
   const newChats = admins.map(admin => ({ participants: [this._id, admin._id] }));
@@ -260,16 +260,16 @@ userSchema.statics.protectApi = async function (token, selectFields, populateFie
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
   // 3) Check if the user still exists with select and populate
-  const query = this.findById(decoded.id);
-  
+  const query = this.findById(decoded.id).select('-passwordChangedAt +chats.chatIds +chats.groupChatIds').populate('education');
+
   if (selectFields) {
     query.select(selectFields);
   }
-  
+
   if (populateFields) {
     query.populate(populateFields);
   }
-  
+
   const freshUser = await query;
 
   if (!freshUser) {

@@ -177,29 +177,56 @@ const messageNotificationSchema = new mongoose.Schema({
   },
   messageId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message',
-    required: true // Ensure each notification is linked to a message
+    ref: 'Message'
   },
   content: {
     type: String,
-    required: true // Brief description of the notification
+    required: true
   },
-  read: {
+  isRead: {
     type: Boolean,
-    default: false // Indicates if the notification has been read
+    default: false
   },
-  timestamp: {
-    type: Date,
-    default: Date.now // Timestamp for when the notification was created
+  isPushSent: {
+    type: Boolean,
+    default: false  // Indicates if the notification has been sent as a web push notification
   }
 }, {
   timestamps: true
 });
 const MessageNotification = mongoose.model('MessageNotification', messageNotificationSchema);
 
+const webPushSubscriptionSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  subscription: {
+    endpoint: {
+      type: String,
+      required: true,
+    },
+    keys: {
+      p256dh: {
+        type: String,
+        required: true,
+      },
+      auth: {
+        type: String,
+        required: true,
+      },
+    },
+  },
+}, {
+  timestamps: true
+});
+const WebPushSubscription = mongoose.model('WebPushSubscription', webPushSubscriptionSchema);
+
 module.exports = {
   Message,
   Chat,
   GroupChat,
-  MessageNotification
+  MessageNotification,
+  WebPushSubscription
 };

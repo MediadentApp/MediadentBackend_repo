@@ -14,6 +14,13 @@ router.post('/chatid', socketController.chatID);
 router.post('/messages', socketController.getMessagesByChatId);
 router.post('/groupid');
 
+router.post("/subscribe", socketController.subscribe);
+router.post("/send-notification", async (req, res) => {
+  const { userId, message } = req.body;
+  await sendNotification(userId, message);
+  res.status(200).json({ message: "Notification sent" });
+});
+
 router.route('/')
   .get(authController.protect, (req, res) => {
     res.send('hello world');

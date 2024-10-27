@@ -1,8 +1,16 @@
-const { Chat, GroupChat, Message } = require("@src/models/userMessages");
+const { Chat, GroupChat, Message, MessageNotification, WebPushSubscription } = require("@src/models/userMessages");
 const User = require("@src/models/userModel");
 const AppError = require("@src/utils/appError");
 const catchAsync = require("@src/utils/catchAsync");
 const catchSocket = require("@src/utils/catchSocket");
+const webPush = require("web-push");
+
+// const vapidKeys = webPush.generateVAPIDKeys();
+webPush.setVapidDetails(
+  "mailto:v3p51435@gmail.com",
+  process.env.WEBPUSH_PUBLIC_KEY,
+  process.env.WEBPUSH_PRIVATE_KEY
+);
 
 exports.chatID = catchAsync(async (req, res, next) => {
   const { _id: userAId } = req.user;
@@ -190,9 +198,9 @@ exports.getMessagesByChatId = catchAsync(async (req, res, next) => {
 });
 
 exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
-  const { chatId, content } = messageData;
+  const { chatId, content, recipientId } = messageData;
 
-  if (!chatId || !content) {
+  if (!chatId || !content || !recipientId) {
     return socket.emit('error', {
       message: 'Chat ID and message content are required',
       statusCode: 400
@@ -220,8 +228,149 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
     timestamp: new Date(),
     status: message.status // Send message status as well
   });
+
+  // Store notification details in a local state until the user disconnects
+  const notification = {
+    userId: recipientId,
+    type: 'message',
+    relatedChatId: chatId,
+    content: `${socket.user.username} sent you a message.`,
+    isRead: false
+  };
+
+  // Check if the recipient is connected
+  const recipientSocket = findSocketByUserId(recipientId); // Implement this function to find the socket by user ID
+
+  if (recipientSocket) {
+    // If the recipient is online, send them the notification
+    recipientSocket.emit('newMessageNotification', {
+      notificationId: null, // Or handle this if you generate an ID before saving
+      content: notification.message,
+      senderId: socket.user._id,
+      timestamp: new Date(),
+    });
+
+    //     // Add notification to a local array
+    // socket.notifications = socket.notifications || [];
+    // socket.notifications.push(notification);
+  } else {
+    // If the recipient is offline, save the notification to the database
+    await MessageNotification.create(notification);
+    console.log(`Saved notification for ${recipientId}: ${notification.message}`);
+  }
 });
 
-exports.handleDisconnect = (socket) => {
+exports.handleDisconnect = catchSocket(async (io, socket) => {
+  // Check if notifications have been viewed
+  /* if (socket.notifications && socket.notifications.length > 0) {
+    for (const notification of socket.notifications) {
+      if (!notification.isRead) {
+        // Save the notification to the database
+        await Notification.create(notification);
+        console.log(`Saved notification for ${notification.userId}: ${notification.message}`);
+      }
+    }
+  } */
   console.log(`User ${socket.user.username} (${socket.id}) disconnected`);
+});
+
+// Function to send push notifications
+const sendPushNotification = async (subscription, payload) => {
+  try {
+    await webpush.sendNotification(subscription, JSON.stringify(payload));
+    console.log(`Notification sent to ${subscription.endpoint}`);
+  } catch (error) {
+    console.error("Error sending notification", error);
+  }
 };
+
+// Controller to create and send a notification
+exports.createAndSendNotification = async ({ userId, type, content, relatedChatId, relatedGroupId }) => {
+  try {
+    // Create notification in database
+    const notification = await MessageNotification.create({
+      userId,
+      type,
+      content,
+      relatedChatId,
+      relatedGroupId,
+      isRead: false,
+      isPushSent: false
+    });
+
+    // Check for user's push subscription
+    const subscription = await WebPushSubscription.findOne({ userId });
+    if (subscription && !notification.isPushSent) {
+      // Prepare the payload for the push notification
+      const payload = {
+        title: "New Notification",
+        message: content,
+        type: type
+      };
+
+      // Send push notification
+      await sendPushNotification(subscription.subscription, payload);
+
+      // Update notification as push-sent in the database
+      notification.isPushSent = true;
+      await notification.save();
+    }
+  } catch (error) {
+    console.error("Error creating or sending notification:", error);
+  }
+};
+
+// Controller to handle marking a notification as read
+exports.markNotificationAsRead = async (req, res) => {
+  const { notificationId } = req.params;
+  try {
+    // Find and update notification to mark it as read
+    const notification = await MessageNotification.findById(notificationId);
+    if (!notification) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
+    notification.isRead = true;
+    await notification.save();
+    res.status(200).json({ message: "Notification marked as read" });
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+    res.status(500).json({ message: "Failed to mark notification as read" });
+  }
+};
+
+// Controller to get unread notifications for a user
+exports.getUnreadNotifications = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    // Find unread notifications for the user
+    const notifications = await MessageNotification.find({ userId, isRead: false });
+    res.status(200).json(notifications);
+  } catch (error) {
+    console.error("Error fetching unread notifications:", error);
+    res.status(500).json({ message: "Failed to fetch unread notifications" });
+  }
+};
+
+// Controller to handle user subscription to push notifications
+exports.subscribe = async (req, res) => {
+  const subscription = req.body;
+  try {
+    // Save or update user subscription in the database
+    const existingSubscription = await WebPushSubscription.findOneAndUpdate(
+      { userId: req.user._id },
+      { subscription },
+      { upsert: true, new: true }
+    );
+    res.status(200).json({ message: "Subscription saved successfully" });
+  } catch (error) {
+    console.error("Error saving subscription:", error);
+    res.status(500).json({ message: "Failed to save subscription" });
+  }
+};
+
+// Helper Function (to be implemented)
+function findSocketByUserId(userId) {
+  // You can maintain a map of userId to socket IDs in your server
+  // and find the active socket connection by user ID
+  return [...io.sockets.sockets.values()].find(socket => socket.user && socket.user._id.toString() === userId);
+}

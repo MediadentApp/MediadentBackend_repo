@@ -2,7 +2,6 @@ const { handleSendMessage, handleDisconnect } = require("@src/controllers/socket
 const User = require("@src/models/userModel");
 const AppError = require("@src/utils/appError");
 
-// *Add catchAsync to all
 module.exports = (io) => {
   io.use(async (socket, next) => {
     try {
@@ -37,7 +36,7 @@ module.exports = (io) => {
     });
 
     socket.on('disconnect', () => {
-      handleDisconnect(socket);
+      handleDisconnect(io, socket);
     });
   });
 };

@@ -133,8 +133,9 @@ exports.signup = catchAsync(async (req, res, next) => {
     manualSignup: true
   });
 
+  const redirectUrl = newUser.isAdditionalInfoFilled();
   // Creating jwt token
-  createSendToken(newUser, 201, res);
+  createSendToken(newUser, 201, res, { ...(redirectUrl !== false && { redirectUrl }) });
 });
 
 exports.signupDetails = catchAsync(async (req, res, next) => {
@@ -227,24 +228,16 @@ exports.login = catchAsync(async (req, res, next) => {
   // Checks if user's password is correct
   if (!user || !await user.correctPassword(password, user.password)) return next(new AppError('Incorrect email or password', 403));
 
+  const redirectUrl = user.isAdditionalInfoFilled();
   // Creating jwt token
-  createSendToken(user, 200, res);
+  createSendToken(user, 201, res, { ...(redirectUrl !== false && { redirectUrl }) });
 });
 
 exports.fetchUser = catchAsync(async (req, res, next) => {
-  // 1) Getting the token and checking if it's there
-  let token;
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  }
+  // From protect middleware
+  const user = req.user;
+  // user = await User.protectApi(token, '-passwordChangedAt +chats.chatIds +chats.groupChatIds', 'education');
 
-  if (!token || !req.headers.authorization) {
-    return next(new AppError('You are not logged in', 401));
-  }
-
-  // 2) Use protectApi to verify token and fetch user
-  let user;
-  user = await User.protectApi(token, '-passwordChangedAt +chats.chatIds +chats.groupChatIds', 'education');
   // Sending user and Creating jwt token
   createSendToken(user, 200, res);
 });

@@ -3,6 +3,7 @@ const User = require("@src/models/userModel");
 const AppError = require("@src/utils/appError");
 const catchAsync = require("@src/utils/catchAsync");
 const catchSocket = require("@src/utils/catchSocket");
+const { stringToObjectID } = require("@src/utils/util");
 const webPush = require("web-push");
 
 // const vapidKeys = webPush.generateVAPIDKeys();
@@ -12,7 +13,96 @@ webPush.setVapidDetails(
   process.env.WEBPUSH_PRIVATE_KEY
 );
 
-exports.chatID = catchAsync(async (req, res, next) => {
+
+exports.chats = catchAsync(async (req, res, next) => {
+  const { chatsIdArr } = req.body;
+  if (!chatsIdArr) return next(new AppError('Chat IDs are required', 400));
+
+  const chatIdArr = await Chat.find({ _id: { $in: chatsIdArr } });
+
+  res.status(201).json({
+    status: 'success',
+    data: chatIdArr
+  });
+});
+
+exports.getSecondParticipants = catchAsync(async (req, res, next) => {
+  const { _id: userId } = req.user;
+  const { chatIds } = req.body;
+
+  // Validate input
+  if (!chatIds || !Array.isArray(chatIds) || chatIds.length === 0) {
+    return next(new AppError('Chat IDs must be provided as a non-empty array', 400));
+  }
+  if (!userId) {
+    return next(new AppError('User ID must be provided', 400));
+  }
+
+  const chatIdsObjectID = stringToObjectID(chatIds);
+  const userIdObjectID = stringToObjectID(userId);
+  // Use aggregation to find chats and exclude the current user from participants
+  const chats = await Chat.aggregate([
+    {
+      $match: {
+        _id: { $in: chatIdsObjectID },
+        participants: userIdObjectID, // Ensure the user is part of the chat
+      },
+    },
+    {
+      $lookup: {
+        from: 'users', // Name of the participants collection
+        localField: 'participants',
+        foreignField: '_id',
+        as: 'participantsDetails',
+      },
+    },
+    {
+      $unwind: {
+        path: '$participantsDetails',
+        preserveNullAndEmptyArrays: true, // Keep chats with no participants
+      },
+    },
+    {
+      $match: {
+        'participantsDetails._id': { $ne: userIdObjectID }, // Exclude the current user
+      },
+    },
+    {
+      $group: {
+        _id: '$_id', // Group by chat ID
+        secondParticipant: { $first: '$participantsDetails' }, // Get the first participant (not the current user)
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        secondParticipant: {
+          _id: '$secondParticipant._id',
+          firstName: '$secondParticipant.firstName',
+          lastName: '$secondParticipant.lastName',
+          email: '$secondParticipant.email',
+        },
+      },
+    },
+  ]);
+
+  if (chats.length === 0) {
+    return next(new AppError('No valid second participants found for the provided chat IDs', 404));
+  }
+
+  // Prepare the result
+  const result = chats.map(chat => ({
+    chatId: chat._id,
+    secondParticipant: chat.secondParticipant,
+  }));
+
+  res.status(200).json({
+    status: 'success',
+    data: result,
+  });
+});
+
+exports.getChatID = catchAsync(async (req, res, next) => {
   const { _id: userAId } = req.user;
   const { userBId } = req.body;
 

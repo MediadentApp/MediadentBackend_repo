@@ -224,20 +224,35 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.pre('save', async function (next) {
-  if (this.email === process.env.OWNER_EMAIL) {
-    this.role = 'admin';
+  try {
+    if (this.email === process.env.OWNER_EMAIL) {
+      this.role = 'admin';
+    }
+
+    const admins = await User.find({ role: 'admin' });
+
+    // Create new chat objects for each admin
+    const newChats = admins.map(admin => ({
+      participants: [this._id, admin._id]
+    }));
+
+    // Insert new chats into the Chat collection
+    const chatArr = await Chat.insertMany(newChats);
+    const chatIds = chatArr.map(chat => chat._id);
+
+    // Update the current user's chat IDs
+    this.chats.chatIds = [...new Set([...this.chats.chatIds, ...chatIds])];
+
+    // Update all admins' chat IDs using updateMany
+    await User.updateMany(
+      { role: 'admin' },
+      { $addToSet: { 'chats.chatIds': { $each: chatIds } } }
+    );
+
+    next();
+  } catch (error) {
+    next(error);
   }
-
-  const admins = await User.find({ role: 'admin' });
-
-  const newChats = admins.map(admin => ({ participants: [this._id, admin._id] }));
-
-  const chatArr = await Chat.insertMany(newChats);
-  const chatIds = chatArr.map(chat => chat._id);
-
-  this.chats.chatIds = [...new Set([...this.chats.chatIds, ...chatIds])];
-
-  next();
 });
 
 userSchema.methods.isAdditionalInfoFilled = function () {

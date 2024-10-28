@@ -1,3 +1,5 @@
+const { default: mongoose } = require("mongoose");
+
 exports.generateOTP = () => {
   // Generate a random 5-digit number
   const otp = Math.floor(10000 + Math.random() * 90000);
@@ -50,4 +52,18 @@ exports.sanitizeUpdate = (update, restrictedFields) => {
     }
   });
   return update;
+};
+
+exports.stringToObjectID = (data) => {
+  try {
+    let converted;
+    if (Array.isArray(data)) {
+      converted = data.map(id => new mongoose.Types.ObjectId(id));
+    } else {
+      converted = new mongoose.Types.ObjectId(data);
+    }
+    return converted;
+  } catch (error) {
+    throw new Error('Invalid Object ID format');
+  }
 };

@@ -1,8 +1,51 @@
 const config = require("@src/config/config");
 const { UserFormat, College, University, CityStates } = require("@src/models/userFormatModel");
+const User = require("@src/models/userModel");
 const AppError = require("@src/utils/appError");
 const catchAsync = require("@src/utils/catchAsync");
-const { findKeyValues } = require("@src/utils/util");
+const { findKeyValues, stringToObjectID } = require("@src/utils/util");
+
+// ?User
+exports.searchUsers = catchAsync(async (req, res, next) => {
+  const { searchValue = ' ', userId = '' } = req.query;
+
+  if (!searchValue) {
+    return next(new AppError('Please provide a search term', 400));
+  }
+
+  // Use aggregation to search users
+  const users = await User.aggregate([
+    {
+      $match: {
+        $or: [
+          { firstName: { $regex: searchValue, $options: 'i' } },
+          { lastName: { $regex: searchValue, $options: 'i' } },
+          { email: { $regex: searchValue, $options: 'i' } },
+          { username: { $regex: searchValue, $options: 'i' } },
+        ],
+        _id: { $ne: stringToObjectID(userId) }
+      },
+    },
+    {
+      $project: {
+        firstName: 1,
+        lastName: 1,
+        email: 1,
+        username: 1,
+        'chats.chatIds': 1,
+        'chats.groupChatIds': 1
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    results: users.length,
+    data: {
+      users,
+    },
+  });
+});
 
 // ?Form formats
 exports.userTypes = catchAsync(async (req, res, next) => {

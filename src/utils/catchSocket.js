@@ -3,7 +3,8 @@ module.exports = catchSocket = (handler) => {
     try {
       await handler(io, socket, ...args);
     } catch (err) {
-      socket.emit('error', {
+      console.log('Error in socket: ', err.message);
+      socket.emit('socketError', {
         message: err.message || 'An internal server error occurred',
         statusCode: 500
       });

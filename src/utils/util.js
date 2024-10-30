@@ -56,13 +56,11 @@ exports.sanitizeUpdate = (update, restrictedFields) => {
 
 exports.stringToObjectID = (data) => {
   try {
-    let converted;
     if (Array.isArray(data)) {
-      converted = data.map(id => new mongoose.Types.ObjectId(id));
+      return data.map(id => mongoose.isValidObjectId(id) ? new mongoose.Types.ObjectId(id) : id);
     } else {
-      converted = new mongoose.Types.ObjectId(data);
+      return mongoose.isValidObjectId(data) ? new mongoose.Types.ObjectId(data) : data;
     }
-    return converted;
   } catch (error) {
     throw new Error('Invalid Object ID format');
   }

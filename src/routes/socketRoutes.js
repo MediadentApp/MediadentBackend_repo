@@ -1,3 +1,4 @@
+const userSockets = require("@src/helper/socketMap");
 const { handleSendMessage, handleDisconnect } = require("@src/controllers/socketMessageController");
 const User = require("@src/models/userModel");
 const AppError = require("@src/utils/appError");
@@ -7,21 +8,25 @@ module.exports = (io) => {
     try {
       const token = socket.handshake.auth.token;
       if (!token) throw new AppError('Token not provided', 401);
-
-      const user = await User.protectApi(token);
+      const user = await User.protectApi(token, '_id firstName lastName email username');
       socket.user = user;
       next();
     } catch (err) {
       console.log('Authentication error===>');
       err.data = { content: "Please retry later" };
-      next(err);  // Pass the error to the centralized error handler
+      next(err);
     }
   });
 
   io.on('connection', (socket) => {
     console.log('A user connected:', socket.user.username, '(', socket.id, ')');
+    userSockets.set(socket.user._id.toString(), {
+      socketId: socket.id,
+      rooms: new Set([...socket.rooms]), // Store rooms as a Set for efficient lookup
+    });
 
     socket.on('joinChat', (chatId) => {
+      console.log('inside Join Chat: ', chatId);
       if (!chatId) {
         socket.emit('error', { message: 'Chat ID is required', statusCode: 400 });
         return;

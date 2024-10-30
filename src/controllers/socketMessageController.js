@@ -1,9 +1,11 @@
+const userSockets = require("@src/helper/socketMap");
 const { Chat, GroupChat, Message, MessageNotification, WebPushSubscription } = require("@src/models/userMessages");
 const User = require("@src/models/userModel");
 const AppError = require("@src/utils/appError");
 const catchAsync = require("@src/utils/catchAsync");
 const catchSocket = require("@src/utils/catchSocket");
 const { stringToObjectID } = require("@src/utils/util");
+const { default: mongoose } = require("mongoose");
 const webPush = require("web-push");
 
 // const vapidKeys = webPush.generateVAPIDKeys();
@@ -13,6 +15,54 @@ webPush.setVapidDetails(
   process.env.WEBPUSH_PRIVATE_KEY
 );
 
+const findSocketByUserId = (userId) => {
+  const userIdString = userId.toString();
+  return userSockets.get(userIdString);
+};
+
+exports.getChatID = catchAsync(async (req, res, next) => {
+  const { _id: userAId } = req.user;
+  const { userBId } = req.body;
+
+  if (!userBId) {
+    return next(new AppError('User ID is required', 400));
+  }
+
+  const userB = await User.findById(userBId);
+  if (!userB) {
+    return next(new AppError('User not found', 400));
+  }
+
+  // Check if the chat exists between userA and userB
+  let chat = await Chat.findOne({
+    participants: { $all: [userAId, userBId] },
+    'participants.2': { $exists: false } // Ensure it's only a two-participant chat
+  });
+
+  if (!chat) {
+    // Create a new chat if one doesn't exist
+    chat = await Chat.create({ participants: [userAId, userBId] });
+
+    // Update userA and userB's chat IDs only if a new chat is created
+    await User.findByIdAndUpdate(userAId, {
+      $addToSet: { 'chats.chatIds': chat._id }
+    }, { new: true, runValidators: false });
+
+    userB.chats.chatIds.push(chat._id);
+    userB.chats.chatIds = [...new Set(userB.chats.chatIds)];  // Ensure uniqueness
+    await userB.save();
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'ChatID fetched successfully',
+    data: {
+      chatId: chat._id,
+      userA: req.user,
+      userB
+    }
+  });
+});
 
 exports.chats = catchAsync(async (req, res, next) => {
   const { chatsIdArr } = req.body;
@@ -99,50 +149,6 @@ exports.getSecondParticipants = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: result,
-  });
-});
-
-exports.getChatID = catchAsync(async (req, res, next) => {
-  const { _id: userAId } = req.user;
-  const { userBId } = req.body;
-
-  if (!userBId) {
-    return next(new AppError('User ID is required', 400));
-  }
-
-  const userB = await User.findById(userBId);
-  if (!userB) {
-    return next(new AppError('User not found', 400));
-  }
-
-  // Check if the chat exists between userA and userB
-  let chat = await Chat.findOne({
-    participants: { $all: [userAId, userBId] },
-    'participants.2': { $exists: false } // Ensure it's only a two-participant chat
-  });
-
-  if (!chat) {
-    // Create a new chat if one doesn't exist
-    chat = await Chat.create({ participants: [userAId, userBId] });
-
-    // Update userA and userB's chat IDs only if a new chat is created
-    await User.findByIdAndUpdate(userAId, {
-      $addToSet: { 'chats.chatIds': chat._id }
-    }, { new: true, runValidators: false });
-
-    userB.chats.chatIds.push(chat._id);
-    userB.chats.chatIds = [...new Set(userB.chats.chatIds)];  // Ensure uniqueness
-    await userB.save();
-  }
-
-  res.status(200).json({
-    status: 'success',
-    message: 'ChatID fetched successfully',
-    data: {
-      chatId: chat._id,
-      userA: req.user,
-      userB
-    }
   });
 });
 
@@ -305,48 +311,61 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
     content,
     status: {
       sent: true,
-      delivered: false, // Can be updated based on actual delivery
+      delivered: false,
       read: false
     }
   });
 
-  // Emit the message to the relevant chat room after saving
-  io.to(chatId).emit('receiveMessage', {
-    senderId: socket.user._id,
-    senderUsername: socket.user.username,
-    content,
-    timestamp: new Date(),
-    status: message.status // Send message status as well
-  });
+  try {
+    // Emit the message to the relevant chat room after saving
+    io.to(chatId).emit('receiveMessage', {
+      senderId: socket.user._id,
+      senderUsername: socket.user.username,
+      content,
+      timestamp: new Date(),
+      status: message.status
+    });
+    console.log("Message emitted to chat room:", chatId);
+  } catch (error) {
+    console.error("Error emitting receiveMessage:", error);
+    return; // Stop further execution if there's an error
+  }
 
-  // Store notification details in a local state until the user disconnects
+  // Prepare the notification details
   const notification = {
     userId: recipientId,
     type: 'message',
     relatedChatId: chatId,
-    content: `${socket.user.username} sent you a message.`,
+    content,
     isRead: false
   };
 
-  // Check if the recipient is connected
-  const recipientSocket = findSocketByUserId(recipientId); // Implement this function to find the socket by user ID
+  console.log('recipientId: ', recipientId);
+  // Find the recipient's socket
+  const recipientData = findSocketByUserId(recipientId);
+  console.log('Recipient socket: ', recipientData);
 
-  if (recipientSocket) {
-    // If the recipient is online, send them the notification
-    recipientSocket.emit('newMessageNotification', {
-      notificationId: null, // Or handle this if you generate an ID before saving
-      content: notification.message,
-      senderId: socket.user._id,
-      timestamp: new Date(),
-    });
+  if (recipientData) {
+    // Check if the recipient is in the chat room
+    const isInChatRoom = recipientData.rooms.has(chatId); // Check if recipient is in chat room
 
-    //     // Add notification to a local array
-    // socket.notifications = socket.notifications || [];
-    // socket.notifications.push(notification);
+    if (isInChatRoom) {
+      // User is in the chat room, message has already been emitted
+      console.log(`Recipient ${recipientId} is in chat room ${chatId}, message emitted.`);
+    } else {
+      console.log('Sending new message notification to recipient');
+      // User is connected but not in the chat room, send a direct notification
+      io.to(recipientData.socketId).emit('newMessageNotification', {
+        notificationId: null,
+        content: notification.content,
+        senderId: socket.user._id,
+        timestamp: new Date(),
+      });
+    }
   } else {
-    // If the recipient is offline, save the notification to the database
+    // User is offline, save the notification to the database
     await MessageNotification.create(notification);
-    console.log(`Saved notification for ${recipientId}: ${notification.message}`);
+    console.log(`Saved notification for ${recipientId}: ${notification.content}`);
   }
 });
 
@@ -361,6 +380,7 @@ exports.handleDisconnect = catchSocket(async (io, socket) => {
       }
     }
   } */
+  userSockets.delete(socket.user._id);
   console.log(`User ${socket.user.username} (${socket.id}) disconnected`);
 });
 
@@ -458,9 +478,3 @@ exports.subscribe = async (req, res) => {
   }
 };
 
-// Helper Function (to be implemented)
-function findSocketByUserId(userId) {
-  // You can maintain a map of userId to socket IDs in your server
-  // and find the active socket connection by user ID
-  return [...io.sockets.sockets.values()].find(socket => socket.user && socket.user._id.toString() === userId);
-}

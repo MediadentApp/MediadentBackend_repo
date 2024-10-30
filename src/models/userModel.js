@@ -154,10 +154,6 @@ const userSchema = new mongoose.Schema({
     type: Date,
     select: false
   },
-  socketId: {
-    type: String,
-    select: false
-  },
   // Array of userName representing the user’s contact/messageInbox list.
   contacts: {
     type: [String],

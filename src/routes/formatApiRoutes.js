@@ -3,6 +3,9 @@ const userFormatController = require('@src/controllers/userFormatController.js')
 
 const router = express.Router();
 
+// ?User
+router.get('/search', userFormatController.searchUsers);
+
 // ?Form formats
 router.get('/usertypes', userFormatController.userTypes);
 router.get('/usergenders', userFormatController.userGenders);

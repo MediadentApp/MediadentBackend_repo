@@ -7,7 +7,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const { app, server } = require('./src/app');
-const initUserFormat = require('@src/seeders/userFormatSeeds');
 
 const DB = process.env.DATABASE.replace('<PASSWORD>', process.env.DATABASE_PASSWORD);
 mongoose.connect(DB).then(() => console.log('DB connected'));
@@ -16,5 +15,4 @@ const PORT = process.env.PORT || 4000;
 // Start server for both http and websocket communication
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
-  // initUserFormat();
 });

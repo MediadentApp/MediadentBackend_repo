@@ -39,10 +39,11 @@ exports.googleAuthCallback = catchAsync(async (req, res, next) => {
     if (!verified_email) return next(new AppError('Your email is not verified by Google', 401));
 
     const userExists = await User.findOne({ email });
+
     if (userExists) {
       if (!userExists.googleAccount) {
         userExists.googleAccount = true;
-        await userExists.save();
+        await userExists.save({ validateBeforeSave: false });
       }
       const redirectUrl = userExists.isAdditionalInfoFilled();
       createSendToken(userExists, 200, res, { ...(redirectUrl !== false && { redirectUrl }) });
@@ -92,8 +93,9 @@ exports.githubAuthCallback = catchAsync(async (req, res, next) => {
     if (userExists) {
       userExists.githubAccount = true;
       userExists.github_url = github_url;
-      userExists.save();
-      createSendToken(userExists, 200, res);
+      await userExists.save();
+      const redirectUrl = userExists.isAdditionalInfoFilled();
+      createSendToken(userExists, 200, res, { ...(redirectUrl !== false && { redirectUrl }) });
     } else {
       let firstName, lastName;
 
@@ -110,7 +112,8 @@ exports.githubAuthCallback = catchAsync(async (req, res, next) => {
         githubAccount: true,
         github_url: github_url
       });
-      createSendToken(newUser, 201, res);
+      const redirectUrl = newUser.isAdditionalInfoFilled();
+      createSendToken(newUser, 201, res, { ...(redirectUrl !== false && { redirectUrl }) });
     }
 
   } catch (error) {

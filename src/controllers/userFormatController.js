@@ -32,8 +32,9 @@ exports.searchUsers = catchAsync(async (req, res, next) => {
         lastName: 1,
         email: 1,
         username: 1,
-        'chats.chatIds': 1,
-        'chats.groupChatIds': 1
+        // profilePicture:1,
+        // 'chats.chatIds': 1,
+        // 'chats.groupChatIds': 1
       },
     },
   ]);

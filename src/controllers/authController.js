@@ -236,7 +236,7 @@ exports.login = catchAsync(async (req, res, next) => {
 exports.fetchUser = catchAsync(async (req, res, next) => {
   // From protect middleware
   const user = req.user;
-  // user = await User.protectApi(token, '-passwordChangedAt +chats.chatIds +chats.groupChatIds', 'education');
+  const notifications = await Notification.find({ userId: user._id });
 
   // Sending user and Creating jwt token
   createSendToken(user, 200, res);

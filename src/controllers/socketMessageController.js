@@ -1,6 +1,7 @@
 const userSockets = require("@src/helper/socketMap");
-const { Chat, GroupChat, Message, MessageNotification, WebPushSubscription } = require("@src/models/userMessages");
+const { Chat, GroupChat, Message, WebPushSubscription } = require("@src/models/userMessages");
 const User = require("@src/models/userModel");
+const Notification = require("@src/models/userNotificationModel");
 const AppError = require("@src/utils/appError");
 const catchAsync = require("@src/utils/catchAsync");
 const catchSocket = require("@src/utils/catchSocket");
@@ -21,47 +22,95 @@ const findSocketByUserId = (userId) => {
 };
 
 exports.getChatID = catchAsync(async (req, res, next) => {
-  const { _id: userAId } = req.user;
-  const { userBId } = req.body;
+  const { _id: userAId, firstName } = req.user;
+  const { userBId, chatId = null } = req.body;
+  const io = req.app.get('io');
 
   if (!userBId) {
     return next(new AppError('User ID is required', 400));
   }
 
-  const userB = await User.findById(userBId);
-  if (!userB) {
+  // Find chat either by `chatId` or by `participants`
+  const chat = chatId
+    ? await Chat.findOne({
+      _id: chatId,
+      participants: { $all: [userAId, userBId], $size: 2 },
+    })
+    : await Chat.findOne({
+      participants: { $all: [userAId, userBId] },
+      'participants.2': { $exists: false }, // Ensure it's a two-participant chat
+    });
+
+  // If chat is found, return immediately
+  if (chat) {
+    return res.status(200).json({
+      status: 'success',
+      message: 'ChatID fetched successfully',
+      data: { chatId: chat._id, userBId },
+    });
+  }
+
+  // Ensure userB exists before creating a new chat
+  const userBExists = await User.exists({ _id: userBId });
+  if (!userBExists) {
     return next(new AppError('User not found', 400));
   }
 
-  // Check if the chat exists between userA and userB
-  let chat = await Chat.findOne({
-    participants: { $all: [userAId, userBId] },
-    'participants.2': { $exists: false } // Ensure it's only a two-participant chat
-  });
+  // Use transaction to ensure atomicity for chat creation and user updates
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  if (!chat) {
-    // Create a new chat if one doesn't exist
-    chat = await Chat.create({ participants: [userAId, userBId] });
+  try {
+    // Create a new chat with participants
+    const newChat = await Chat.create([{ participants: [userAId, userBId] }], { session });
 
-    // Update userA and userB's chat IDs only if a new chat is created
-    await User.findByIdAndUpdate(userAId, {
-      $addToSet: { 'chats.chatIds': chat._id }
-    }, { new: true, runValidators: false });
+    // Update chat lists for both users
+    await User.updateMany(
+      { _id: { $in: [userAId, userBId] } },
+      { $addToSet: { 'chats.chatIds': newChat[0]._id } },
+      { session }
+    );
 
-    userB.chats.chatIds.push(chat._id);
-    userB.chats.chatIds = [...new Set(userB.chats.chatIds)];  // Ensure uniqueness
-    await userB.save();
-  }
+    await session.commitTransaction();
+    session.endSession();
 
-  res.status(200).json({
-    status: 'success',
-    message: 'ChatID fetched successfully',
-    data: {
-      chatId: chat._id,
-      userA: req.user,
-      userB
+    try {
+      // Send notification to Recipient of new Chat
+      const notification = await Notification.create({
+        userId: userBId,
+        type: 'newChat',
+        content: `${firstName} sent you a message.`,
+        isRead: false,
+        isPushSent: false
+      });
+
+      const recipientData = findSocketByUserId(userBId);
+      if (recipientData?.socketId) {
+        io.to(recipientData.socketId).emit('newChatNotification', {
+          type: 'newChat',
+          chatId: newChat[0]._id,
+          notificationId: notification._id,
+          senderId: userAId,
+          timestamp: new Date(),
+        });
+      }
+
+    } catch (error) {
+      console.log(error);
     }
-  });
+
+    const updatedUserA = await User.findById(userAId).select('+chats.chatIds +chats.groupChatIds');
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'ChatID created successfully',
+      data: { chatId: newChat[0]._id, userBId, updatedUser: updatedUserA },
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(new AppError('Could not create chat', 500));
+  }
 });
 
 exports.chats = catchAsync(async (req, res, next) => {
@@ -90,6 +139,7 @@ exports.getSecondParticipants = catchAsync(async (req, res, next) => {
 
   const chatIdsObjectID = stringToObjectID(chatIds);
   const userIdObjectID = stringToObjectID(userId);
+
   // Use aggregation to find chats and exclude the current user from participants
   const chats = await Chat.aggregate([
     {
@@ -136,15 +186,25 @@ exports.getSecondParticipants = catchAsync(async (req, res, next) => {
     },
   ]);
 
-  if (chats.length === 0) {
-    return next(new AppError('No valid second participants found for the provided chat IDs', 404));
-  }
-
   // Prepare the result
   const result = chats.map(chat => ({
-    chatId: chat._id,
-    secondParticipant: chat.secondParticipant,
+    chatId: chat?._id,
+    secondParticipant: chat?.secondParticipant,
   }));
+
+  // Get the found chat IDs
+  const foundChatIds = chats.map(chat => chat._id.toString());
+
+  // Determine missing chat IDs
+  const missingChatIds = chatIds.filter(chatId => !foundChatIds.includes(chatId));
+
+  // If there are missing chat IDs, update the user's chat list in one go using updateMany
+  if (missingChatIds.length > 0) {
+    await User.updateOne(
+      { _id: userId },
+      { $pull: { 'chats.chatIds': { $in: missingChatIds.map(stringToObjectID) } } } // Remove missing chat IDs
+    );
+  }
 
   res.status(200).json({
     status: 'success',
@@ -293,11 +353,14 @@ exports.getMessagesByChatId = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.readNotification = catchSocket(async (io, socket) => { });
+
 exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
   const { chatId, content, recipientId } = messageData;
 
   if (!chatId || !content || !recipientId) {
-    return socket.emit('error', {
+    console.log('error ran');
+    return socket.emit('socketError', {
       message: 'Chat ID and message content are required',
       statusCode: 400
     });
@@ -364,7 +427,7 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
     }
   } else {
     // User is offline, save the notification to the database
-    await MessageNotification.create(notification);
+    await Notification.create(notification);
     console.log(`Saved notification for ${recipientId}: ${notification.content}`);
   }
 });
@@ -398,7 +461,7 @@ const sendPushNotification = async (subscription, payload) => {
 exports.createAndSendNotification = async ({ userId, type, content, relatedChatId, relatedGroupId }) => {
   try {
     // Create notification in database
-    const notification = await MessageNotification.create({
+    const notification = await Notification.create({
       userId,
       type,
       content,
@@ -435,7 +498,7 @@ exports.markNotificationAsRead = async (req, res) => {
   const { notificationId } = req.params;
   try {
     // Find and update notification to mark it as read
-    const notification = await MessageNotification.findById(notificationId);
+    const notification = await Notification.findById(notificationId);
     if (!notification) {
       return res.status(404).json({ message: "Notification not found" });
     }
@@ -453,7 +516,7 @@ exports.getUnreadNotifications = async (req, res) => {
   const userId = req.user.id;
   try {
     // Find unread notifications for the user
-    const notifications = await MessageNotification.find({ userId, isRead: false });
+    const notifications = await Notification.find({ userId, isRead: false });
     res.status(200).json(notifications);
   } catch (error) {
     console.error("Error fetching unread notifications:", error);

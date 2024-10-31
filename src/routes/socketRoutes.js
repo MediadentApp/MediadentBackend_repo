@@ -28,7 +28,7 @@ module.exports = (io) => {
     socket.on('joinChat', (chatId) => {
       console.log('inside Join Chat: ', chatId);
       if (!chatId) {
-        socket.emit('error', { message: 'Chat ID is required', statusCode: 400 });
+        socket.emit('socketError', { message: 'Chat ID is required', statusCode: 400 });
         return;
       }
 

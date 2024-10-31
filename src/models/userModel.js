@@ -199,7 +199,7 @@ const userSchema = new mongoose.Schema({
 // This will run between getting the data from client and saving it to DB
 userSchema.pre('save', async function (next) {
   // Hash password if modified
-  if (this.isModified('password')) {
+  if (this.password && this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 10);
     this.passwordConfirm = undefined;
 
@@ -225,25 +225,23 @@ userSchema.pre('save', async function (next) {
       this.role = 'admin';
     }
 
-    const admins = await User.find({ role: 'admin' });
+    const admins = await User.find({ role: 'admin', _id: { $ne: this._id } });
 
-    // Create new chat objects for each admin
-    const newChats = admins.map(admin => ({
-      participants: [this._id, admin._id]
-    }));
+    if (admins.length > 0) {
+      const newChats = admins.map(admin => ({
+        participants: [this._id, admin._id]
+      }));
 
-    // Insert new chats into the Chat collection
-    const chatArr = await Chat.insertMany(newChats);
-    const chatIds = chatArr.map(chat => chat._id);
+      const chatArr = await Chat.insertMany(newChats);
+      const chatIds = chatArr.map(chat => chat._id);
 
-    // Update the current user's chat IDs
-    this.chats.chatIds = [...new Set([...this.chats.chatIds, ...chatIds])];
+      this.chats.chatIds = [...new Set([...this.chats?.chatIds, ...chatIds])];
 
-    // Update all admins' chat IDs using updateMany
-    await User.updateMany(
-      { role: 'admin' },
-      { $addToSet: { 'chats.chatIds': { $each: chatIds } } }
-    );
+      await User.updateMany(
+        { role: 'admin' },
+        { $addToSet: { 'chats.chatIds': { $each: chatIds } } }
+      );
+    }
 
     next();
   } catch (error) {
@@ -271,10 +269,13 @@ userSchema.statics.protectApi = async function (token, selectFields, populateFie
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
   // 3) Check if the user still exists with select and populate
-  const query = this.findById(decoded.id).select('-passwordChangedAt +chats.chatIds +chats.groupChatIds').populate('education');
+  const query = this.findById(decoded.id);
 
   if (selectFields) {
     query.select(selectFields);
+  } else {
+    // Default
+    query.select('-passwordChangedAt +chats.chatIds +chats.groupChatIds');
   }
 
   if (populateFields) {

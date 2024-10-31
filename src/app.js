@@ -11,27 +11,28 @@ const socketRoutes = require('./routes/socketRoutes');
 const app = express();
 
 const allowedOrigins = [
-  'http://localhost:3000',  // Local development
-  'http://192.168.0.155:3000',  // Local development
-  'https://studenthub-mauve.vercel.app',  // Production API address
-  // Add more specific origins if needed
+  'http://localhost:3000',
+  'http://192.168.0.155:3000',
+  'https://studenthub-mauve.vercel.app',
 ];
 
-// CORS Options
+// CORS Options for Express HTTP requests
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, etc.)
-    if (!origin || allowedOrigins.includes(origin) || ((process.env.NODE_ENV === 'development') && /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{1,5}$/.test(origin))) {
-      callback(null, true);  // Allow localhost, production, and local network IPs like 192.168.x.x
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      (process.env.NODE_ENV === 'development' && /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{1,5}$/.test(origin))
+    ) {
+      callback(null, true);  // Allow valid origins
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS'));  // Block other origins
     }
   },
-  optionsSuccessStatus: 200,  // For legacy browser support
+  optionsSuccessStatus: 200,  // Support legacy browsers
 };
 
-// cors for express/HTTP requests
-app.use(cors(corsOptions));
+app.use(cors(corsOptions));  // Apply CORS for HTTP
 
 // Middleware
 app.use(middlewares);
@@ -42,25 +43,26 @@ app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
+// Global error handler
 app.use(globalErrorHandler);
 
-// HTTP server, Which is consumed by socket.io for websocket communication
-// Same server as the one that will handle http request but this will handle websocket connection
+// HTTP server setup for both HTTP and WebSocket communication
 const server = createServer(app);
 
-// Create a Socket.IO server and attach it to the HTTP server
-// cors for socket.io/websocket communication
+// Socket.IO initialization with CORS for WebSocket
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,  // List of allowed origins for Socket.IO
-    methods: ['GET', 'POST'],  // HTTP methods allowed in WebSocket requests
+    origin: allowedOrigins,  // Same allowed origins for WebSocket
+    methods: ['GET', 'POST'],
     allowedHeaders: ["my-custom-header"],
     credentials: true
   }
 });
 
-// Socket.IO connection handling
-// Use the socket routes
-socketRoutes(io); // Pass the io instance to the socket routes
+// Attach io to the app so it can be accessed in other parts of the app
+app.set('io', io);
 
-module.exports = { app, server };
+// Socket.IO routes handling
+socketRoutes(io);  // Pass io instance to socket routes for handling events
+
+module.exports = { app, server };  // Exports app (for HTTP) and server (for HTTP + WebSocket)

@@ -1,5 +1,5 @@
 const userSockets = require("@src/helper/socketMap");
-const { handleSendMessage, handleDisconnect } = require("@src/controllers/socketMessageController");
+const { handleSendMessage, handleDisconnect, readNotification, deleteNotification } = require("@src/controllers/socketMessageController");
 const User = require("@src/models/userModel");
 const AppError = require("@src/utils/appError");
 
@@ -38,6 +38,14 @@ module.exports = (io) => {
 
     socket.on('sendMessage', (messageData) => {
       handleSendMessage(io, socket, messageData);
+    });
+
+    socket.on('readNotification', (notificationId) => {
+      readNotification(notificationId);
+    });
+
+    socket.on('deleteNotification', (notificationId) => {
+      deleteNotification(notificationId);
     });
 
     socket.on('disconnect', () => {

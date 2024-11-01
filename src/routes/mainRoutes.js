@@ -6,6 +6,7 @@ const userController = require('@src/controllers/userController');
 const router = express.Router();
 
 router.post('/usersbyid', userController.userById);
+router.get('/notifications', userController.userNotifications);
 
 // ?Communication System apis
 router.post('/getSecondParticipants', socketController.getSecondParticipants);

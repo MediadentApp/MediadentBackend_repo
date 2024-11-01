@@ -1,6 +1,4 @@
 const crypto = require('crypto');
-const { promisify } = require('util');
-const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const TempUser = require('../models/tempUserModel');
 const catchAsync = require('../utils/catchAsync');
@@ -9,7 +7,6 @@ const sendEmail = require('../services/email');
 const util = require('../utils/util');
 const config = require('../config/config');
 const { createSendToken } = require('@src/utils/authUtils');
-const { UserFormat } = require('@src/models/userFormatModel');
 
 exports.emailReg = catchAsync(async (req, res, next) => {
   const { email } = req.body;
@@ -236,7 +233,6 @@ exports.login = catchAsync(async (req, res, next) => {
 exports.fetchUser = catchAsync(async (req, res, next) => {
   // From protect middleware
   const user = req.user;
-  const notifications = await Notification.find({ userId: user._id });
 
   // Sending user and Creating jwt token
   createSendToken(user, 200, res);

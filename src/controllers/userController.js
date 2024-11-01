@@ -1,5 +1,6 @@
 const Education = require("@src/models/userEducationDetailModel");
 const User = require("@src/models/userModel");
+const Notification = require("@src/models/userNotificationModel");
 const AppError = require("@src/utils/appError");
 const catchAsync = require("@src/utils/catchAsync");
 const { default: mongoose } = require("mongoose");
@@ -15,6 +16,17 @@ exports.userById = catchAsync(async (req, res, next) => {
   res.status(201).json({
     status: 'success',
     data: users
+  });
+});
+
+exports.userNotifications = catchAsync(async (req, res, next) => {
+  const { _id } = req.user;
+
+  const notifications = await Notification.find({ userId: _id });
+
+  res.status(200).json({
+    status: 'success',
+    data: notifications
   });
 });
 

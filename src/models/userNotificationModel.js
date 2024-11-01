@@ -7,6 +7,13 @@ const NotificationSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  senderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  senderName: {
+    type: String,
+  },
   type: {
     type: String,
     required: true,

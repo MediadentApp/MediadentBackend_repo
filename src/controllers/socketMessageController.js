@@ -9,6 +9,18 @@ const { stringToObjectID } = require("@src/utils/util");
 const { default: mongoose } = require("mongoose");
 const webPush = require("web-push");
 
+// !Shift all to config files
+// Notification configs
+const NOTIFICATION_TIMEOUT_DELAY = 800; // Timeout for batch update,delete
+// Read Notifications configs
+const readNotificationsToUpdate = [];
+const READ_NOTIFICATION_BATCH_THRESHOLD = 5; // Threshold for immediate update
+let readNotificationTimeoutId;
+// Delete Notification configs
+const notificationsToDelete = [];
+const DELETE_NOTIFICATION_BATCH_THRESHOLD = 5; // Threshold for immediate delete
+let deleteNotificationTimeoutId;
+
 // const vapidKeys = webPush.generateVAPIDKeys();
 webPush.setVapidDetails(
   "mailto:v3p51435@gmail.com",
@@ -78,6 +90,7 @@ exports.getChatID = catchAsync(async (req, res, next) => {
       // Send notification to Recipient of new Chat
       const notification = await Notification.create({
         userId: userBId,
+        senderId: userAId,
         type: 'newChat',
         content: `${firstName} sent you a message.`,
         isRead: false,
@@ -86,7 +99,7 @@ exports.getChatID = catchAsync(async (req, res, next) => {
 
       const recipientData = findSocketByUserId(userBId);
       if (recipientData?.socketId) {
-        io.to(recipientData.socketId).emit('newChatNotification', {
+        io.to(recipientData.socketId).emit('newNotification', {
           type: 'newChat',
           chatId: newChat[0]._id,
           notificationId: notification._id,
@@ -353,7 +366,63 @@ exports.getMessagesByChatId = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.readNotification = catchSocket(async (io, socket) => { });
+exports.deleteNotification = catchSocket(async (notificationId) => {
+  if (!notificationsToDelete.includes(notificationId)) {
+    notificationsToDelete.push(notificationId);
+  }
+
+  // If the delete size exceeds the threshold, immediately delete
+  if (notificationsToDelete.length >= DELETE_NOTIFICATION_BATCH_THRESHOLD) {
+    clearTimeout(deleteNotificationTimeoutId); // Clear the existing timeout
+    const deletedCount = await Notification.deleteMany({
+      _id: { $in: notificationsToDelete },
+    });
+    notificationsToDelete.length = 0; // Clear the batch
+    console.log('Deleted notifications:', deletedCount);
+  } else {
+    // Set or reset the timeout for batch delete
+    clearTimeout(deleteNotificationTimeoutId);
+    deleteNotificationTimeoutId = setTimeout(async () => {
+      if (notificationsToDelete.length > 0) {
+        const deletedCount = await Notification.deleteMany({
+          _id: { $in: notificationsToDelete },
+        });
+        notificationsToDelete.length = 0; // Clear the batch
+        console.log('Deleted notifications:', deletedCount);
+      }
+    }, NOTIFICATION_TIMEOUT_DELAY);
+  }
+});
+
+exports.readNotification = catchSocket(async (notificationId) => {
+  if (!readNotificationsToUpdate.includes(notificationId)) {
+    readNotificationsToUpdate.push(notificationId);
+  }
+
+  // If the batch size exceeds the threshold, immediately update
+  if (readNotificationsToUpdate.length >= READ_NOTIFICATION_BATCH_THRESHOLD) {
+    clearTimeout(readNotificationTimeoutId); // Clear the existing timeout
+    await Notification.updateMany(
+      { _id: { $in: readNotificationsToUpdate } },
+      { $set: { isRead: true } }
+    );
+    readNotificationsToUpdate.length = 0; // Clear the batch
+    console.log('Read notifications');
+  } else {
+    // Set or reset the timeout
+    clearTimeout(readNotificationTimeoutId);
+    readNotificationTimeoutId = setTimeout(async () => {
+      if (readNotificationsToUpdate.length > 0) {
+        await Notification.updateMany(
+          { _id: { $in: readNotificationsToUpdate } },
+          { $set: { read: true } }
+        );
+        readNotificationsToUpdate.length = 0; // Clear the batch
+        console.log('Read notifications');
+      }
+    }, NOTIFICATION_TIMEOUT_DELAY);
+  }
+});
 
 exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
   const { chatId, content, recipientId } = messageData;
@@ -391,7 +460,7 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
     console.log("Message emitted to chat room:", chatId);
   } catch (error) {
     console.error("Error emitting receiveMessage:", error);
-    return; // Stop further execution if there's an error
+    return;
   }
 
   // Prepare the notification details
@@ -403,10 +472,8 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
     isRead: false
   };
 
-  console.log('recipientId: ', recipientId);
   // Find the recipient's socket
   const recipientData = findSocketByUserId(recipientId);
-  console.log('Recipient socket: ', recipientData);
 
   if (recipientData) {
     // Check if the recipient is in the chat room
@@ -418,18 +485,18 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
     } else {
       console.log('Sending new message notification to recipient');
       // User is connected but not in the chat room, send a direct notification
-      io.to(recipientData.socketId).emit('newMessageNotification', {
+      io.to(recipientData.socketId).emit('newNotification', {
         notificationId: null,
         content: notification.content,
         senderId: socket.user._id,
         timestamp: new Date(),
       });
     }
-  } else {
-    // User is offline, save the notification to the database
-    await Notification.create(notification);
-    console.log(`Saved notification for ${recipientId}: ${notification.content}`);
   }
+
+  // Save the notification to the database
+  await Notification.create(notification);
+  console.log(`Saved notification for ${recipientId}: ${notification.content}`);
 });
 
 exports.handleDisconnect = catchSocket(async (io, socket) => {

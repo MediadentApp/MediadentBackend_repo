@@ -4,6 +4,7 @@ const routes = require('./routes');
 const globalErrorHandler = require('./controllers/errorController');
 const AppError = require('./utils/appError');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const { createServer } = require('node:http');
 const { Server } = require('socket.io');
 const socketRoutes = require('./routes/socketRoutes');
@@ -31,8 +32,16 @@ const corsOptions = {
   },
   optionsSuccessStatus: 200,  // Support legacy browsers
 };
-
 app.use(cors(corsOptions));  // Apply CORS for HTTP
+
+// Configure rate limiter for general routes
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later.",
+  headers: true, // Add rate limit info in headers
+});
+app.use(generalLimiter);
 
 // Middleware
 app.use(middlewares);

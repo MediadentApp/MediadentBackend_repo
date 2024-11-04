@@ -39,7 +39,14 @@ const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: "Too many requests from this IP, please try again later.",
-  headers: true, // Add rate limit info in headers
+  headers: true,
+  skip: (req) =>
+    !req.headers.origin ||
+    allowedOrigins.includes(req.headers.origin) ||
+    req.ip === '127.0.0.1' ||
+    req.ip === '::1' ||
+    (process.env.NODE_ENV === 'development' &&
+      /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{1,5}$/.test(req.headers.origin)),
 });
 app.use(generalLimiter);
 

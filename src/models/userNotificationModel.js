@@ -11,13 +11,16 @@ const NotificationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
+  senderUsername: {
+    type: String
+  },
   senderName: {
     type: String,
   },
   type: {
     type: String,
     required: true,
-    enum: ['message', 'newChat', 'group_invite', 'group_message', 'mention', 'other']
+    enum: ['newMessage', 'newChat', 'group_invite', 'group_message', 'mention', 'other']
   },
   relatedChatId: {
     type: mongoose.Schema.Types.ObjectId,

@@ -5,7 +5,7 @@ const Notification = require("@src/models/userNotificationModel");
 const AppError = require("@src/utils/appError");
 const catchAsync = require("@src/utils/catchAsync");
 const catchSocket = require("@src/utils/catchSocket");
-const { stringToObjectID } = require("@src/utils/util");
+const { stringToObjectID, objectIdToString } = require("@src/utils/util");
 const { default: mongoose } = require("mongoose");
 const webPush = require("web-push");
 
@@ -143,8 +143,8 @@ exports.getSecondParticipants = catchAsync(async (req, res, next) => {
   const { chatIds } = req.body;
 
   // Validate input
-  if (!chatIds || !Array.isArray(chatIds) || chatIds.length === 0) {
-    return next(new AppError('Chat IDs must be provided as a non-empty array', 400));
+  if (!chatIds || !Array.isArray(chatIds)) {
+    return next(new AppError('Chat IDs must be provided as an array', 400));
   }
   if (!userId) {
     return next(new AppError('User ID must be provided', 400));
@@ -366,6 +366,18 @@ exports.getMessagesByChatId = catchAsync(async (req, res, next) => {
   });
 });
 
+// Controller to handle user subscription to push notifications
+exports.subscribe = catchAsync(async (req, res) => {
+  const subscription = req.body;
+  // Save or update user subscription in the database
+  await WebPushSubscription.findOneAndUpdate(
+    { userId: req.user._id },
+    { subscription },
+    { upsert: true, new: true }
+  );
+  res.status(200).json({ message: "Subscription saved successfully" });
+});
+
 exports.deleteNotification = catchSocket(async (notificationId) => {
   if (!notificationsToDelete.includes(notificationId)) {
     notificationsToDelete.push(notificationId);
@@ -428,7 +440,6 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
   const { chatId, content, recipientId } = messageData;
 
   if (!chatId || !content || !recipientId) {
-    console.log('error ran');
     return socket.emit('socketError', {
       message: 'Chat ID and message content are required',
       statusCode: 400
@@ -448,25 +459,22 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
     }
   });
 
-  try {
-    // Emit the message to the relevant chat room after saving
-    io.to(chatId).emit('receiveMessage', {
-      senderId: socket.user._id,
-      senderUsername: socket.user.username,
-      content,
-      timestamp: new Date(),
-      status: message.status
-    });
-    console.log("Message emitted to chat room:", chatId);
-  } catch (error) {
-    console.error("Error emitting receiveMessage:", error);
-    return;
-  }
+  // Emit the message to the relevant chat room after saving
+  io.to(chatId).emit('receiveMessage', {
+    senderId: socket.user._id,
+    senderUsername: socket.user.username,
+    content,
+    timestamp: new Date(),
+    status: message.status
+  });
 
   // Prepare the notification details
   const notification = {
     userId: recipientId,
-    type: 'message',
+    senderId: socket.user._id,
+    senderName: socket.user.firstName + ' ' + socket.user.lastName,
+    senderUsername: socket.user.username,
+    type: 'newMessage',
     relatedChatId: chatId,
     content,
     isRead: false
@@ -477,14 +485,10 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
 
   if (recipientData) {
     // Check if the recipient is in the chat room
-    const isInChatRoom = recipientData.rooms.has(chatId); // Check if recipient is in chat room
-
-    if (isInChatRoom) {
-      // User is in the chat room, message has already been emitted
+    if (recipientData.rooms.has(chatId)) {
       console.log(`Recipient ${recipientId} is in chat room ${chatId}, message emitted.`);
     } else {
       console.log('Sending new message notification to recipient');
-      // User is connected but not in the chat room, send a direct notification
       io.to(recipientData.socketId).emit('newNotification', {
         notificationId: null,
         content: notification.content,
@@ -492,35 +496,29 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
         timestamp: new Date(),
       });
     }
+  } else {
+    sendPushNotification(recipientId, notification);
   }
 
   // Save the notification to the database
   await Notification.create(notification);
-  console.log(`Saved notification for ${recipientId}: ${notification.content}`);
-});
+});;
 
 exports.handleDisconnect = catchSocket(async (io, socket) => {
-  // Check if notifications have been viewed
-  /* if (socket.notifications && socket.notifications.length > 0) {
-    for (const notification of socket.notifications) {
-      if (!notification.isRead) {
-        // Save the notification to the database
-        await Notification.create(notification);
-        console.log(`Saved notification for ${notification.userId}: ${notification.message}`);
-      }
-    }
-  } */
-  userSockets.delete(socket.user._id);
+  userSockets.delete(objectIdToString(socket.user._id));
   console.log(`User ${socket.user.username} (${socket.id}) disconnected`);
 });
 
 // Function to send push notifications
-const sendPushNotification = async (subscription, payload) => {
+const sendPushNotification = async (userId, notificationPayload) => {
   try {
-    await webpush.sendNotification(subscription, JSON.stringify(payload));
-    console.log(`Notification sent to ${subscription.endpoint}`);
-  } catch (error) {
-    console.error("Error sending notification", error);
+    const userSubscriptions = await WebPushSubscription.find({ userId });
+
+    for (const { subscription } of userSubscriptions) {
+      await webPush.sendNotification(subscription, JSON.stringify(notificationPayload));
+    }
+  } catch (err) {
+    console.error('Failed to send push notification:', err);
   }
 };
 
@@ -591,20 +589,4 @@ exports.getUnreadNotifications = async (req, res) => {
   }
 };
 
-// Controller to handle user subscription to push notifications
-exports.subscribe = async (req, res) => {
-  const subscription = req.body;
-  try {
-    // Save or update user subscription in the database
-    const existingSubscription = await WebPushSubscription.findOneAndUpdate(
-      { userId: req.user._id },
-      { subscription },
-      { upsert: true, new: true }
-    );
-    res.status(200).json({ message: "Subscription saved successfully" });
-  } catch (error) {
-    console.error("Error saving subscription:", error);
-    res.status(500).json({ message: "Failed to save subscription" });
-  }
-};
-
+exports = { sendPushNotification };

@@ -259,41 +259,22 @@ userSchema.methods.isAdditionalInfoFilled = function () {
   return ((this.interests && (this.interests.length < config.app.numOfSignupInterests)) ? config.urls.signupInterestUrl : null);
 };
 
-userSchema.statics.protectApi = async function (token, selectFields, populateFields) {
-  // 1) Check if token is provided
-  if (!token) {
-    throw new AppError('You are not logged in', 401);
-  }
+userSchema.statics.protectApi = async function (token, selectFields = '-passwordChangedAt +chats.chatIds +chats.groupChatIds', populateFields) {
+  if (!token) throw new AppError('You are not logged in', 401);
 
-  // 2) Verify the token
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  // 3) Check if the user still exists with select and populate
-  const query = this.findById(decoded.id);
+  const query = this.findById(decoded.id).select(selectFields);
+  if (populateFields) query.populate(populateFields);
 
-  if (selectFields) {
-    query.select(selectFields);
-  } else {
-    // Default
-    query.select('-passwordChangedAt +chats.chatIds +chats.groupChatIds');
-  }
+  const freshUser = await query.exec();
+  if (!freshUser) throw new AppError('The user belonging to this token no longer exists', 401);
 
-  if (populateFields) {
-    query.populate(populateFields);
-  }
-
-  const freshUser = await query;
-
-  if (!freshUser) {
-    throw new AppError('The user belonging to this token no longer exists', 401);
-  }
-
-  // 4) Check if the user changed password after the token was issued
   if (freshUser.changedPasswordAfter(decoded.iat)) {
     throw new AppError('User recently changed the password! Please log in again', 401);
   }
 
-  return freshUser; // Return the user if everything is valid
+  return freshUser;
 };
 
 // This is Instance Method

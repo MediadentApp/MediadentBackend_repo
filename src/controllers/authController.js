@@ -117,7 +117,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     }
   }
 
-  const tempUser = await TempUser.findOne({ email });
+  const tempUser = await TempUser.findOne({ email }).select('+chats.chatIds +chats.groupChatIds');
   if (!tempUser || !tempUser?.emailVerified) return next(new AppError('Please verify your email before registering.', 401));
 
   const newUser = await User.create({
@@ -216,7 +216,7 @@ exports.login = catchAsync(async (req, res, next) => {
 
   if (!email || !password) return next(new AppError('Please Provide email and password', 400));
 
-  const user = await User.findOne({ email }).select('+password'); // + indicates that the password select is false(in model) so include password in return
+  const user = await User.findOne({ email }).select('+password +chats.chatIds +chats.groupChatIds'); // + indicates that the password select is false(in model) so include password in return
 
   if (user?.googleAccount) return next(new AppError('Login with Google Account', 401));
   if (user?.githubAccount) return next(new AppError('Login with Github Account', 401));

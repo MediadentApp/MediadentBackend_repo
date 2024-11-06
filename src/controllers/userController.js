@@ -22,7 +22,7 @@ exports.userById = catchAsync(async (req, res, next) => {
 exports.userNotifications = catchAsync(async (req, res, next) => {
   const { _id } = req.user;
 
-  const notifications = await Notification.find({ userId: _id });
+  const notifications = await Notification.find({ userId: _id }).sort({ createdAt: -1 });
 
   res.status(200).json({
     status: 'success',

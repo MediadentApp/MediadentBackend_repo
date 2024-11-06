@@ -19,33 +19,45 @@ module.exports = (io) => {
   });
 
   io.on('connection', (socket) => {
-    console.log('A user connected:', socket.user.username, '(', socket.id, ')');
-    userSockets.set(socket.user._id.toString(), {
+    const { _id: userId, username } = socket.user;
+    console.log('A user connected:', username, '(', socket.id, ')');
+
+    userSockets.set(userId.toString(), {
       socketId: socket.id,
-      rooms: new Set([...socket.rooms]), // Store rooms as a Set for efficient lookup
+      rooms: new Set([...socket.rooms]),
     });
 
     socket.on('joinChat', (chatId) => {
-      console.log('inside Join Chat: ', chatId);
-      if (!chatId) {
-        socket.emit('socketError', { message: 'Chat ID is required', statusCode: 400 });
-        return;
+      if (!chatId) return socket.emit('socketError', { message: 'Chat ID is required', statusCode: 400 });
+
+      // Leave previous chat room if joined
+      if (socket.currentChatRoom) {
+        socket.leave(socket.currentChatRoom);
+        console.log(`User ${username} (${socket.id}) left chat ${socket.currentChatRoom}`);
       }
 
+      // Join the new chat room
       socket.join(chatId);
-      console.log(`User ${socket.user.username} (${socket.id}) joined chat ${chatId}`);
+      socket.currentChatRoom = chatId;
+      console.log(`User ${username} (${socket.id}) joined chat ${chatId}`);
+
+      // Update userSockets with the updated rooms set
+      userSockets.set(userId.toString(), {
+        socketId: socket.id,
+        rooms: new Set([...socket.rooms]), // Refresh the rooms set after join
+      });
     });
 
     socket.on('sendMessage', (messageData) => {
       handleSendMessage(io, socket, messageData);
     });
 
-    socket.on('readNotification', (notificationId) => {
-      readNotification(notificationId);
+    socket.on('readNotification', (notification) => {
+      readNotification(io, socket, notification, userId);
     });
 
     socket.on('deleteNotification', (notificationId) => {
-      deleteNotification(notificationId);
+      deleteNotification(io, socket, notificationId);
     });
 
     socket.on('disconnect', () => {

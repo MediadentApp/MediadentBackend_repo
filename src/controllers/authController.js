@@ -103,21 +103,21 @@ exports.signup = catchAsync(async (req, res, next) => {
     firstName, lastName, email, password, passwordConfirm, passwordChangedAt
   } = req.body;
 
-  const userExist = await User.findOne({ email });
-  if (userExist) {
-    if (userExist.manualSignup) {
+  const userExists = await User.findFullUser({ email });
+  if (userExists) {
+    if (userExists.manualSignup) {
       return next(new AppError('User already Exist, Redirect to Login page', 409));
     } else {
-      userExist.manualSignup = true;
-      userExist.password = password;
-      userExist.passwordConfirm = passwordConfirm;
-      userExist.passwordChangedAt = passwordChangedAt;
-      await userExist.save({ validateBeforeSave: true });
-      return createSendToken(userExist, 201, res);
+      userExists.manualSignup = true;
+      userExists.password = password;
+      userExists.passwordConfirm = passwordConfirm;
+      userExists.passwordChangedAt = passwordChangedAt;
+      await userExists.save({ validateBeforeSave: true });
+      return createSendToken(userExists, 201, res);
     }
   }
 
-  const tempUser = await TempUser.findOne({ email }).select('+chats.chatIds +chats.groupChatIds');
+  const tempUser = await TempUser.findOne({ email });
   if (!tempUser || !tempUser?.emailVerified) return next(new AppError('Please verify your email before registering.', 401));
 
   const newUser = await User.create({
@@ -216,7 +216,7 @@ exports.login = catchAsync(async (req, res, next) => {
 
   if (!email || !password) return next(new AppError('Please Provide email and password', 400));
 
-  const user = await User.findOne({ email }).select('+password +chats.chatIds +chats.groupChatIds'); // + indicates that the password select is false(in model) so include password in return
+  const user = await User.findFullUser({ email }, '+password');
 
   if (user?.googleAccount) return next(new AppError('Login with Google Account', 401));
   if (user?.githubAccount) return next(new AppError('Login with Github Account', 401));

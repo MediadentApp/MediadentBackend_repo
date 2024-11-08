@@ -8,7 +8,7 @@ module.exports = (io) => {
     try {
       const token = socket.handshake.auth.token;
       if (!token) throw new AppError('Token not provided', 401);
-      const user = await User.protectApi(token, '_id firstName lastName email username');
+      const user = await User.protectApi(token, '_id firstName lastName fullName email username');
       socket.user = user;
       next();
     } catch (err) {

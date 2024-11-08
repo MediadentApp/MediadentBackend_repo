@@ -2,7 +2,6 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
-const UserFormat = require('./userFormatModel');
 const AppError = require('@src/utils/appError');
 const config = require('@src/config/config');
 const { promisify } = require('util');
@@ -12,11 +11,24 @@ const { Chat } = require('./userMessages');
 const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
-    required: [true, 'Please tell us your First Name!']
+    required: [true, 'Please tell us your First Name!'],
+    trim: true,
+    validate: {
+      validator: (value) => /^[a-zA-Z\s]*$/.test(value),
+      message: 'First name can only contain letters and spaces'
+    }
   },
   lastName: {
     type: String,
-    required: [true, 'Please tell us your Last Name!']
+    required: [true, 'Please tell us your Last Name!'],
+    trim: true,
+    validate: {
+      validator: (value) => /^[a-zA-Z\s]*$/.test(value),
+      message: 'Last name can only contain letters and spaces'
+    }
+  },
+  fullName: {
+    type: String
   },
   email: {
     type: String,
@@ -33,7 +45,18 @@ const userSchema = new mongoose.Schema({
     index: true
   },
   profilePicture: {
-    type: String
+    type: String,
+    validate: {
+      validator: function (value) {
+        return validator.isURL(value, {
+          protocols: ['http', 'https'],
+          require_protocol: true
+        });
+      },
+      message: 'Invalid URL format for profile picture'
+    },
+    default: null,
+    required: false
   },
   password: {
     type: String,
@@ -75,8 +98,10 @@ const userSchema = new mongoose.Schema({
   },
   github_url: {
     type: String,
-    required: function () {
-      return this.githubAccount;
+    required: function () { return this.githubAccount; },
+    validate: {
+      validator: validator.isURL,
+      message: 'Please provide a valid URL for GitHub'
     }
   },
   linkedinAccount: {
@@ -114,12 +139,15 @@ const userSchema = new mongoose.Schema({
   },
   bio: {
     type: String,
-    default: '',  // Short user bio/description
+    default: '',
+    trim: true,
+    maxlength: 250
   },
   blockedUsers: {
-    type: [String],  // Array of user IDs blocked by this user
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'User',
     default: [],
-    select: false,  // Hide from standard queries
+    select: false,
   },
   settings: {
     notifications: {
@@ -157,7 +185,11 @@ const userSchema = new mongoose.Schema({
   // Array of userName representing the user’s contact/messageInbox list.
   contacts: {
     type: [String],
-    select: false
+    select: false,
+    validate: {
+      validator: (contacts) => contacts.every(validator.isAlphanumeric),
+      message: 'Contact list can only contain alphanumeric usernames'
+    }
   },
   chats: {
     chatIds: {
@@ -207,6 +239,15 @@ userSchema.pre('save', async function (next) {
     if (!this.isNew) {
       this.passwordChangedAt = Date.now() - 1000; // Subtract 1 sec for DB save time
     }
+  }
+
+  this.email = validator.normalizeEmail(this.email, {
+    all_lowercase: true,
+    gmail_remove_dots: true,
+  });
+
+  if (!this?.fullName) {
+    this.fullName = `${this.firstName} ${this.lastName}`;
   }
 
   // Generate username if not present
@@ -275,6 +316,12 @@ userSchema.statics.protectApi = async function (token, selectFields = '-password
   }
 
   return freshUser;
+};
+
+userSchema.statics.findFullUser = function (query, additionalSelects = '') {
+  const selectFields = '-passwordChangedAt +chats.chatIds +chats.groupChatIds ' + additionalSelects;
+
+  return this.findOne(query).select(selectFields);
 };
 
 // This is Instance Method

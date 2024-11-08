@@ -76,7 +76,7 @@ const findSocketByUserId = (userId) => {
 };
 
 exports.getChatID = catchAsync(async (req, res, next) => {
-  const { _id: userAId, firstName } = req.user;
+  const { _id: userAId, fullName: userAFullName, username: userAUsername } = req.user;
   const { userBId, chatId = null } = req.body;
   const io = req.app.get('io');
 
@@ -89,11 +89,13 @@ exports.getChatID = catchAsync(async (req, res, next) => {
     ? await Chat.findOne({
       _id: chatId,
       participants: { $all: [userAId, userBId], $size: 2 },
-    })
+      active: true
+    }).lean()
     : await Chat.findOne({
       participants: { $all: [userAId, userBId] },
       'participants.2': { $exists: false }, // Ensure it's a two-participant chat
-    });
+      active: true
+    }).lean();
 
   // If chat is found, return immediately
   if (chat) {
@@ -105,8 +107,8 @@ exports.getChatID = catchAsync(async (req, res, next) => {
   }
 
   // Ensure userB exists before creating a new chat
-  const userBExists = await User.exists({ _id: userBId });
-  if (!userBExists) {
+  const userB = await User.findById(userBId).select('_id firstName').lean();
+  if (!userB) {
     return next(new AppError('User not found', 400));
   }
 
@@ -114,53 +116,65 @@ exports.getChatID = catchAsync(async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
+  let newChatId;
   try {
+    console.log(
+      'Creating a new chat with participants:',
+      userAId,
+      userB._id
+    );
+
     // Create a new chat with participants
-    const newChat = await Chat.create([{ participants: [userAId, userBId] }], { session });
+    const newChat = await Chat.create([{ participants: [userAId, userB._id], active: true }], { session });
+    newChatId = newChat[0]._id;
 
     // Update chat lists for both users
     await User.updateMany(
-      { _id: { $in: [userAId, userBId] } },
-      { $addToSet: { 'chats.chatIds': newChat[0]._id } },
+      { _id: { $in: [userAId, userB._id] } },
+      { $addToSet: { 'chats.chatIds': newChatId } },
       { session }
     );
 
     await session.commitTransaction();
     session.endSession();
 
-    try {
-      // Send notification to Recipient of new Chat
-      const notification = await Notification.create({
-        userId: userBId,
-        senderId: userAId,
-        type: 'newChat',
-        content: `${firstName} sent you a message.`,
-        isRead: false,
-        isPushSent: false
-      });
-
-      const recipientData = findSocketByUserId(userBId);
-      if (recipientData?.socketId) {
-        console.log('inside getchatsid');
-        io.to(recipientData.socketId).emit('newNotification', notification);
-      }
-
-    } catch (error) {
-      console.log(error);
-    }
-
-    const updatedUserA = await User.findById(userAId).select('+chats.chatIds +chats.groupChatIds');
-
-    return res.status(200).json({
-      status: 'success',
-      message: 'ChatID created successfully',
-      data: { chatId: newChat[0]._id, userBId, updatedUser: updatedUserA },
-    });
+    console.log('New chat created:', newChatId);
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
     return next(new AppError('Could not create chat', 500));
   }
+
+  // Send notification to Recipient of new Chat
+  const notification = await Notification.create({
+    userId: userB._id,
+    senderId: userAId,
+    senderName: userAFullName,
+    senderUsername: userAUsername,
+    type: 'newChat',
+    relatedChatId: newChatId,
+    content: `${userB.firstName} sent you a message.`,
+    isRead: false,
+  });
+
+  console.log('Notification created:', notification._id);
+
+  const recipientData = findSocketByUserId(userB._id);
+  if (recipientData) {
+    if (!recipientData.rooms.has(chatId)) {
+      io.to(recipientData.socketId).emit('newNotification', notification);
+    }
+  } else {
+    sendPushNotification(userB._id, notification);
+  }
+
+  const updatedUserA = await User.findFullUser({ _id: userAId }).lean();
+
+  return res.status(200).json({
+    status: 'success',
+    message: 'ChatID created successfully',
+    data: { chatId: newChatId, userBId: userB._id, updatedUser: updatedUserA },
+  });
 });
 
 exports.chats = catchAsync(async (req, res, next) => {
@@ -209,7 +223,7 @@ exports.getSecondParticipants = catchAsync(async (req, res, next) => {
     {
       $unwind: {
         path: '$participantsDetails',
-        preserveNullAndEmptyArrays: true, // Keep chats with no participants
+        preserveNullAndEmptyArrays: true, // Keep chats even if no participants are found
       },
     },
     {
@@ -225,34 +239,51 @@ exports.getSecondParticipants = catchAsync(async (req, res, next) => {
     },
     {
       $project: {
-        _id: 1,
+        chatId: '$_id', // Rename _id to chatId
         secondParticipant: {
           _id: '$secondParticipant._id',
+          profilePicture: '$secondParticipant.profilePicture',
           firstName: '$secondParticipant.firstName',
           lastName: '$secondParticipant.lastName',
+          fullName: '$secondParticipant.fullName',
+          username: '$secondParticipant.username',
           email: '$secondParticipant.email',
         },
       },
     },
+    {
+      $group: {
+        _id: null,
+        result: { $push: '$$ROOT' }, // Collect all result entries
+      },
+    },
+    {
+      $addFields: {
+        missingChatIds: {
+          $filter: {
+            input: chatIdsObjectID,
+            as: 'id',
+            cond: { $not: { $in: ['$$id', '$result.chatId'] } }, // Identify missing chat IDs
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        result: 1,
+        missingChatIds: 1,
+      },
+    },
   ]);
 
-  // Prepare the result
-  const result = chats.map(chat => ({
-    chatId: chat?._id,
-    secondParticipant: chat?.secondParticipant,
-  }));
+  const { result, missingChatIds } = chats[0] || { result: [], missingChatIds: [] };
 
-  // Get the found chat IDs
-  const foundChatIds = chats.map(chat => chat._id.toString());
-
-  // Determine missing chat IDs
-  const missingChatIds = chatIds.filter(chatId => !foundChatIds.includes(chatId));
-
-  // If there are missing chat IDs, update the user's chat list in one go using updateMany
   if (missingChatIds.length > 0) {
     await User.updateOne(
       { _id: userId },
-      { $pull: { 'chats.chatIds': { $in: missingChatIds.map(stringToObjectID) } } } // Remove missing chat IDs
+      { $pullAll: { 'chats.chatIds': missingChatIds } } // Remove missing chat IDs
+      // { $pull: { 'chats.chatIds': { $in: missingChatIds } } } // Remove missing chat IDs
     );
   }
 
@@ -384,20 +415,35 @@ exports.leaveGroupChat = catchAsync(async (req, res, next) => {
 });
 
 exports.getMessagesByChatId = catchAsync(async (req, res, next) => {
-  const { chatId } = req.body; // Assuming chatId is passed in the URL
+  const { chatId, page = 1, count = 25 } = req.body;
 
   if (!chatId) {
     return next(new AppError('Chat ID is required', 400));
   }
 
+  const pageNum = parseInt(page, 10);
+  const limit = parseInt(count, 10);
+
+  if (isNaN(pageNum) || pageNum < 1) {
+    return next(new AppError('Invalid page number', 400));
+  }
+
+  if (isNaN(limit) || limit < 1) {
+    return next(new AppError('Invalid count value', 400));
+  }
+
+  const skip = (pageNum - 1) * limit;
+
   const messages = await Message.find({ chatId })
-    // .populate('senderId') 
-    .sort({ timestamp: 1 }); // Sort messages by timestamp in ascending order
+    .sort({ timestamp: 1 });
+  // .skip(skip)
+  // .limit(limit);
 
   res.status(200).json({
     status: 'success',
     results: messages.length,
     data: {
+      chatId,
       messages
     }
   });
@@ -406,7 +452,7 @@ exports.getMessagesByChatId = catchAsync(async (req, res, next) => {
 // Controller to handle user subscription to push notifications
 exports.subscribe = catchAsync(async (req, res) => {
   const subscription = req.body;
-  // Save or update user subscription in the database
+
   await WebPushSubscription.findOneAndUpdate(
     { userId: req.user._id },
     { subscription },
@@ -493,7 +539,7 @@ exports.handleSendMessage = catchSocket(async (io, socket, messageData) => {
   const notification = await Notification.create({
     userId: recipientId,
     senderId: socket.user._id,
-    senderName: socket.user.firstName + ' ' + socket.user.lastName,
+    senderName: socket.user.fullName,
     senderUsername: socket.user.username,
     type: 'newMessage',
     relatedChatId: chatId,
@@ -518,16 +564,23 @@ exports.handleDisconnect = catchSocket(async (io, socket) => {
   console.log(`User ${socket.user.username} (${socket.id}) disconnected`);
 });
 
-// Function to send push notifications
-const sendPushNotification = async (userId, notificationPayload) => {
+const sendPushNotification = async (userId, notificationData) => {
   try {
-    const userSubscriptions = await WebPushSubscription.find({ userId });
+    const subscriptions = await WebPushSubscription.find({ userId });
 
-    for (const { subscription } of userSubscriptions) {
-      await webPush.sendNotification(subscription, JSON.stringify(notificationPayload));
+    for (const { subscription } of subscriptions) {
+      try {
+        await webPush.sendNotification(subscription, JSON.stringify(notificationData));
+      } catch (error) {
+        if (error.statusCode === 410) {
+          await WebPushSubscription.deleteOne({ userId });
+        } else {
+          console.error('Error sending notification:', error);
+        }
+      }
     }
-  } catch (err) {
-    console.error('Failed to send push notification:', err);
+  } catch (error) {
+    console.error('Failed to send push notification:', error);
   }
 };
 

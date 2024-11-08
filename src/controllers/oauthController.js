@@ -38,7 +38,7 @@ exports.googleAuthCallback = catchAsync(async (req, res, next) => {
 
     if (!verified_email) return next(new AppError('Your email is not verified by Google', 401));
 
-    const userExists = await User.findOne({ email }).select('+chats.chatIds +chats.groupChatIds');
+    const userExists = await User.findFullUser({ email });
 
     if (userExists) {
       if (!userExists.googleAccount) {
@@ -88,7 +88,7 @@ exports.githubAuthCallback = catchAsync(async (req, res, next) => {
     });
 
     const { avatar_url: github_picture, url: github_url, name, email } = userResponse.data;
-    const userExists = await User.findOne({ email }).select('+chats.chatIds +chats.groupChatIds');
+    const userExists = await User.findFullUser({ email });
 
     if (userExists) {
       userExists.githubAccount = true;

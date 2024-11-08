@@ -75,6 +75,10 @@ const chatSchema = new mongoose.Schema({
     },
     index: true
   },
+  active: {
+    type: Boolean,
+    default: true
+  },
   lastMessage: {
     type: {
       senderId: {
@@ -87,7 +91,6 @@ const chatSchema = new mongoose.Schema({
       },
       timestamp: {
         type: Date,
-        default: Date.now,
       },
     },
     default: null
@@ -159,6 +162,7 @@ const webPushSubscriptionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
+    index: true
   },
   subscription: {
     endpoint: {

@@ -1,6 +1,7 @@
 const morgan = require('morgan');
 const express = require('express');
 const multer = require('multer');
+const { sanitizeBody } = require('./sanitizeBody');
 
 const middleware = express();
 const upload = multer();
@@ -17,5 +18,7 @@ middleware.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
   next();
 });
+
+middleware.use(sanitizeBody);
 
 module.exports = middleware;

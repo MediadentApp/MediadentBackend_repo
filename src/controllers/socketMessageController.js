@@ -8,6 +8,7 @@ const catchSocket = require("@src/utils/catchSocket");
 const { stringToObjectID, objectIdToString } = require("@src/utils/util");
 const { default: mongoose } = require("mongoose");
 const webPush = require("web-push");
+const config = require('@src/config/config.js');
 
 // !Shift all to config files
 // Notification configs
@@ -118,12 +119,6 @@ exports.getChatID = catchAsync(async (req, res, next) => {
 
   let newChatId;
   try {
-    console.log(
-      'Creating a new chat with participants:',
-      userAId,
-      userB._id
-    );
-
     // Create a new chat with participants
     const newChat = await Chat.create([{ participants: [userAId, userB._id], active: true }], { session });
     newChatId = newChat[0]._id;
@@ -159,13 +154,17 @@ exports.getChatID = catchAsync(async (req, res, next) => {
 
   console.log('Notification created:', notification._id);
 
-  const recipientData = findSocketByUserId(userB._id);
-  if (recipientData) {
-    if (!recipientData.rooms.has(chatId)) {
-      io.to(recipientData.socketId).emit('newNotification', notification);
-    }
+  const userBSocket = findSocketByUserId(userB._id);
+  const userASocket = findSocketByUserId(userAId);
+  if (userBSocket) {
+    io.to(userBSocket.socketId).emit('newNotification', notification);
   } else {
     sendPushNotification(userB._id, notification);
+  }
+  if (userASocket) {
+    io.to(userASocket.socketId).emit('newNotification', notification);
+  } else {
+    sendPushNotification(userAId, notification);
   }
 
   const updatedUserA = await User.findFullUser({ _id: userAId }).lean();
@@ -278,12 +277,10 @@ exports.getSecondParticipants = catchAsync(async (req, res, next) => {
   ]);
 
   const { result, missingChatIds } = chats[0] || { result: [], missingChatIds: [] };
-
   if (missingChatIds.length > 0) {
     await User.updateOne(
       { _id: userId },
       { $pullAll: { 'chats.chatIds': missingChatIds } } // Remove missing chat IDs
-      // { $pull: { 'chats.chatIds': { $in: missingChatIds } } } // Remove missing chat IDs
     );
   }
 
@@ -415,36 +412,39 @@ exports.leaveGroupChat = catchAsync(async (req, res, next) => {
 });
 
 exports.getMessagesByChatId = catchAsync(async (req, res, next) => {
-  const { chatId, page = 1, count = 25 } = req.body;
+  const { chatId, oldestMessageDate } = req.body;
+  const limit = parseInt(config.chat.DEFAULT_MESSAGES_PER_PAGE, 10);
 
-  if (!chatId) {
-    return next(new AppError('Chat ID is required', 400));
+  const query = { chatId };
+  if (oldestMessageDate) query.createdAt = { $lt: new Date(oldestMessageDate) };
+
+  const messages = await Message.find(query)
+    .sort('-createdAt')
+    .limit(limit)
+    .lean();
+
+  if (messages.length === 0) {
+    return res.status(200).json({
+      status: 'success',
+      message: 'No more messages found',
+      results: 0,
+      data: {
+        chatId,
+        messages: [],
+        oldestMessageDate: null
+      }
+    });
   }
 
-  const pageNum = parseInt(page, 10);
-  const limit = parseInt(count, 10);
-
-  if (isNaN(pageNum) || pageNum < 1) {
-    return next(new AppError('Invalid page number', 400));
-  }
-
-  if (isNaN(limit) || limit < 1) {
-    return next(new AppError('Invalid count value', 400));
-  }
-
-  const skip = (pageNum - 1) * limit;
-
-  const messages = await Message.find({ chatId })
-    .sort({ timestamp: 1 });
-  // .skip(skip)
-  // .limit(limit);
+  const newOldestMessageDate = messages[messages.length - 1].createdAt;
 
   res.status(200).json({
     status: 'success',
     results: messages.length,
     data: {
       chatId,
-      messages
+      messages,
+      oldestMessageDate: newOldestMessageDate
     }
   });
 });

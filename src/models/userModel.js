@@ -48,9 +48,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     validate: {
       validator: function (value) {
-        return validator.isURL(value, {
+        return !value || validator.isURL(value, {
           protocols: ['http', 'https'],
-          require_protocol: true
+          require_protocol: false
         });
       },
       message: 'Invalid URL format for profile picture'

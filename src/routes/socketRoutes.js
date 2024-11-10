@@ -30,22 +30,22 @@ module.exports = (io) => {
     socket.on('joinChat', (chatId) => {
       if (!chatId) return socket.emit('socketError', { message: 'Chat ID is required', statusCode: 400 });
 
-      // Leave previous chat room if joined
-      if (socket.currentChatRoom) {
-        socket.leave(socket.currentChatRoom);
-        console.log(`User ${username} (${socket.id}) left chat ${socket.currentChatRoom}`);
-      }
-
       // Join the new chat room
       socket.join(chatId);
       socket.currentChatRoom = chatId;
       console.log(`User ${username} (${socket.id}) joined chat ${chatId}`);
 
       // Update userSockets with the updated rooms set
-      userSockets.set(userId.toString(), {
-        socketId: socket.id,
-        rooms: new Set([...socket.rooms]), // Refresh the rooms set after join
-      });
+      userSockets.get(userId.toString()).rooms.add(chatId);
+    });
+
+    socket.on('leaveChat', (chatId) => {
+      if (!chatId) return socket.emit('socketError', { message: 'Chat ID is required', statusCode: 400 });
+      socket.leave(chatId);
+      socket.currentChatRoom = null;
+      console.log(`User ${username} (${socket.id}) left chat: ${chatId}`);
+
+      userSockets.get(userId.toString()).rooms.delete(chatId);
     });
 
     socket.on('sendMessage', (messageData) => {

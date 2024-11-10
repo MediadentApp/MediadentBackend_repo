@@ -15,5 +15,8 @@ module.exports = {
   },
   app: {
     numOfSignupInterests: 5
+  },
+  chat: {
+    DEFAULT_MESSAGES_PER_PAGE: 25
   }
 };

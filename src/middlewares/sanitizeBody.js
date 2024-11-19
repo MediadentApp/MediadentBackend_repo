@@ -19,18 +19,19 @@ exports.sanitizeBody = (req, res, next) => {
       }
     });
 
+    // For OTP
     if (req.body.otp) {
-      req.body.otp = validator.trim(req.body.otp);
-      if (!validator.isNumeric(req.body.otp)) {
-        return res.status(400).json({ message: 'OTP should contain only numeric characters' });
+      if (isNaN(req.body.otp) || typeof req.body.otp !== 'number') {
+        return next(new AppError('OTP should contain only numeric characters', 400));
       }
     }
 
+    // For password
     if (req.body.password) {
       req.body.password = validator.trim(req.body.password);
 
       if (validator.contains(req.body.password, /[^\da-zA-Z]/)) {
-        return res.status(400).json({ message: 'Password should only contain alphanumeric characters' });
+        return next(new AppError('Password should only contain alphanumeric characters', 400));
       }
     }
 

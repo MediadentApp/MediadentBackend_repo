@@ -15,55 +15,61 @@ exports.emailReg = catchAsync(async (req, res, next) => {
   const userExists = await User.findOne({ email });
   if (userExists) {
     if (userExists.manualSignup) next(new AppError(`User already exists. Please log in using your email and password.`, 409));
-    else next(new AppError(`User email is already verified, redirect to signup.`, 409));
+    else next(new AppError(`User email is already verified, redirect to signup.`, 409, '/signup'));
   }
 
-  // Check if the email exists in TempUser
-  const tempUserDb = await TempUser.findOne({ email });
-
-  // check if email is already verified
-  if (tempUserDb && tempUserDb?.emailVerified) {
-    // 204 No Content: Do not send a body; use .end() instead of .json().
-    return res.status(204).end();
-  }
-
-  if (tempUserDb && tempUserDb?.otpSendAt) {
-    if (await tempUserDb.checkOtpTime()) {
-      return next(new AppError(`If you have already sent an OTP, please wait for ${config.otp.sendOtpAfter} minutes before requesting another one.`));
+  // Fetch TempUser data
+  const tempUserDb = await TempUser.findOne({ email }, 'emailVerified otpSendAt');
+  if (tempUserDb) {
+    if (tempUserDb.emailVerified) {
+      return res.status(204).end(); // No Content
     }
+    if (tempUserDb.otpSendAt && await tempUserDb.checkOtpTime()) {
+      return next(new AppError(
+        `Please wait ${config.otp.sendOtpAfter} minutes before requesting a new OTP if one has already been sent.`,
+        400
+      ));
+    }
+    // Cleanup existing temp user data
+    await TempUser.deleteOne({ email });
   }
-  await TempUser.findOneAndDelete({ email });
 
-  // Generate OTP and set expiration time
+  // Generate OTP and prepare email
   const otp = util.generateOTP();
-  const otpSendAt = new Date(Date.now());
+  const otpSendAt = new Date();
   const otpExpiration = new Date(Date.now() + config.otp.otpExpiration * 60 * 1000);
 
-  // Send OTP to user's email
-  const emailMessage = `Your OTP for email verification is: ${otp}, The otp will expire in ${config.otp.otpExpiration}`;
-  try {
-    await sendEmail({
-      email,
-      subject: 'Email Verification OTP',
-      message: emailMessage
-    });
+  const emailMessage = `
+     Hello,
+ 
+     Your OTP for email verification is: **${otp}**
+ 
+     This OTP is valid for ${config.otp.otpExpiration} minutes.
+ 
+     If you did not request this, please ignore this email.
+ 
+     Regards,
+     The Mediadent Team
+   `;
 
-    const tempUser = await TempUser.create({
-      email,
-      otp,
-      otpSendAt,
-      otpExpiration
-    });
-    await tempUser.save();
+  try {
+    // Send email and save TempUser concurrently
+    await Promise.all([
+      sendEmail({
+        email,
+        subject: 'Email Verification OTP',
+        message: emailMessage
+      }),
+      TempUser.create({ email, otp, otpSendAt, otpExpiration })
+    ]);
 
     res.status(200).json({
       status: 'success',
       message: 'OTP sent to your email for verification',
-      data: {
-        email
-      }
+      data: { email }
     });
   } catch (err) {
+    console.error('Error during email registration:', err);
     return next(new AppError('There was an error sending the email', 500));
   }
 });
@@ -278,41 +284,70 @@ exports.restrict = (...roles) => (req, res, next) => {
 };
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
-  if (!req.body.email) return next(new AppError('Please provide your email address to receive Password reset mail', 400));
+  const { email } = req.body;
 
-  // 1)Get user based on the POSTed email
-  const user = await User.findOne({ email: req.body.email });
-  if (!user) return next(new AppError('There is no user with that email address', 404));
-  if (user.googleAccount) return next(new AppError('Your account was registered as a Google account. No need for a password reset.', 400));
-  if (user.githubAccount) return next(new AppError('Your account was registered as a GitHub account. No need for a password reset.', 400));
+  // Validate email input
+  if (!email) return next(new AppError('Please provide your email address to receive the password reset email.', 400));
 
-  // 2)Generate the random reset token
+  // 1) Find user by email
+  const user = await User.findOne({ email });
+  if (!user) return next(new AppError('There is no user with that email address.', 404));
+  if (user.googleAccount) return next(new AppError('Your account is registered with Google. No password reset is needed.', 400));
+  if (user.githubAccount) return next(new AppError('Your account is registered with GitHub. No password reset is needed.', 400));
+
+  // 2) Generate reset token and save it to the user document
   const resetToken = user.createPasswordResetToken();
-  await user.save({ validateBeforeSave: false });
-  //To save encrypted passwordResetToken and ExpirationOfToken in db
+  await user.save({ validateBeforeSave: false }); // Disable validators to prevent unnecessary checks
 
-  // 3)Send it to user's email
-  const resetURL = `${req.protocol}://${req.get('host')}/api/v1/users/resetpassword/${resetToken}`;
+  // 3) Construct password reset URL
+  const resetURL = `${process.env.BASE_URL || `${req.protocol}://${req.get('host')}`}/api/v1/users/resetpassword/${resetToken}`;
 
-  const message = `Click the link below to reset your password:\n${resetURL}\n\nIf you did not request a password reset, please ignore this email.`;
+  // Email message (plain text and HTML)
+  const message = `
+    Hello,
 
+    Click the link below to reset your password:
+    ${resetURL}
+
+    This link is valid for 10 minutes.
+
+    If you did not request a password reset, please ignore this email.
+
+    Regards,
+    The Mediadent Team
+  `;
+  const htmlMessage = `
+    <p>Hello,</p>
+    <p>Click the link below to reset your password:</p>
+    <a href="${resetURL}" target="_blank">${resetURL}</a>
+    <p>This link is valid for 10 minutes.</p>
+    <p>If you did not request a password reset, please ignore this email.</p>
+    <br />
+    <p>Regards,</p>
+    <p>The Mediadent Team</p>
+  `;
+
+  // 4) Send email
   try {
     await sendEmail({
       email: user.email,
-      subject: 'Your password reset Token (valid for 10 minutes)',
-      message
+      subject: 'Your Password Reset Token (valid for 10 minutes)',
+      message,
+      html: htmlMessage
     });
 
     res.status(200).json({
       status: 'success',
-      message: 'Token sent to email'
+      message: 'Password reset token sent to email.'
     });
   } catch (err) {
+    // Reset token fields if email sending fails
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
-    await user.save({ validateBeforeSave: false });
+    await user.save({ validateBeforeSave: false }); // Ensure consistency in DB
 
-    return next(new AppError('There was an error sending the email. Try again later!', 500));
+    console.error('Error sending password reset email:', err); // Log for debugging
+    return next(new AppError('There was an error sending the email. Please try again later.', 500));
   }
 });
 

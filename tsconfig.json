@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2024" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
+
+    "module": "ES2022" /* Specify what module code is generated. */,
+    "rootDir": "./src" /* Specify the root folder within your source files. */,
+    "moduleResolution": "bundler" /* Specify how TypeScript looks up a file from a given module specifier. */,
+    "baseUrl": "./" /* Specify the base directory to resolve non-relative module names. */,
+    "paths": {
+      "@src/*": ["src/*"]
+    },
+    "outDir": "./dist" /* Specify an output folder for all emitted files. */,
+    "esModuleInterop": true /* Emit additional JavaScri    pt to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */,
+    "resolveJsonModule": true /* Enable importing .json files. */,
+    "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
+    "moduleSuffixes": [".ts", ".js"],
+"typeRoots": ["./node_modules/@types"],
+    "types": ["node", "mongoose"],
+
+    "allowJs": true,
+    "strict": true /* Enable all strict type-checking options. */,
+    "skipLibCheck": true /* Skip type checking all .d.ts files. */
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "public", "views"]
+}

@@ -1,54 +1,64 @@
 {
   "env": {
-    "browser": true,
-    "commonjs": true,
-    "es2021": true
+    "es2021": true,
+    "node": true
   },
-  "extends": "airbnb",
-  // "extends":  ["airbnb", "prettier", "plugin:node/recommend","eslint:recommended"],
-  // "extends": "eslint:recommended",
-
+  "extends": [
+    "airbnb-base",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:import/recommended",
+    "plugin:import/typescript"
+  ],
+  "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "ecmaVersion": "latest"
+    "ecmaVersion": "latest",
+    "sourceType": "module"
   },
+  "plugins": ["@typescript-eslint", "import"],
   "rules": {
     "comma-dangle": "off",
-    "spaced-comment": "off",
-    "arrow-parens": "off",
-    "import/no-extraneous-dependencies": "off",
+    "quotes": ["warn", "single"],
+    "no-unused-vars": "off",
+    "indent": ["warn", 2],
     "linebreak-style": "off",
-    // "linebreak-style": ["error", "windows"],
-    // "prettier/prettier": "error",
-    "no-console": "warn",
-    "consistent-return": "off",
-    "func-names": "off",
-    "object-shorthand": "off",
-    "no-process-exit": "off",
-    "no-param-reassign": "off",
-    "no-return-await": "off",
-    "no-underscore-dangle": "off",
-    "class-methods-use-this": "off",
-    "prefer-destructuring": ["error", { "object": true, "array": false }],
-    "no-unused-vars": [
-      "error",
+    "operator-linebreak": ["warn", "before"],
+    "implicit-arrow-linebreak": "off",
+    "max-len": ["warn", { "code": 120 }],
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
       { "argsIgnorePattern": "req|res|next|val|err|^_" }
+    ],
+    "import/order": [
+      "warn",
+      {
+        "groups": [
+          ["builtin", "external"],
+          ["internal", "parent", "sibling", "index"]
+        ],
+        "newlines-between": "always",
+        "alphabetize": { "order": "asc", "caseInsensitive": true }
+      }
     ],
     "import/extensions": [
       "error",
-      "always",
+      "ignorePackages",
       {
-        "js": "allow",
-        "jsx": "never",
         "ts": "never",
-        "tsx": "never"
+        "js": "never",
+        "cjs": "never",
+        "mjs": "never"
       }
-    ],
+    ]
   },
   "settings": {
     "import/resolver": {
+      "typescript": {},
+      "node": {
+        "extensions": [".js", ".ts", ".cjs", ".mjs"]
+      },
       "alias": {
         "map": [["@src", "./src"]],
-        "extensions": [".js", ".jsx", ".json"]
+        "extensions": [".ts", ".js"]
       }
     }
   }

@@ -1,3 +1,3 @@
-# Mediadent_Backend
+# StudenHub_Backend
 
-Backend for Mediadent App
+Backend for StudenHub App

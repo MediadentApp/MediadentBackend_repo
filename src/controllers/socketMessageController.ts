@@ -15,7 +15,7 @@ import {
   ISecondParticipantResponse,
   IUserB,
 } from '#src/types/request.socket.js';
-import AppError from '#src/utils/appError.js';
+import ApiError from '#src/utils/appError.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import catchSocket from '#src/utils/catchSocket.js';
 import { objectIdToString, stringToObjectID } from '#src/utils/index.js';
@@ -119,7 +119,7 @@ export const getChatID = catchAsync(
     const io = req.app.get('io');
 
     if (!userBId) {
-      return next(new AppError('User ID is required', 400));
+      return next(new ApiError('User ID is required', 400));
     }
 
     // Find chat either by `chatId` or by `participants`
@@ -146,7 +146,7 @@ export const getChatID = catchAsync(
     // Ensure userB exists before creating a new chat
     const userB = await User.findById(userBId).select('_id firstName').lean();
     if (!userB) {
-      return next(new AppError('User not found', 400));
+      return next(new ApiError('User not found', 400));
     }
 
     let newChatId: ObjectId;
@@ -172,7 +172,7 @@ export const getChatID = catchAsync(
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
-      return next(new AppError('Could not create chat', 500));
+      return next(new ApiError('Could not create chat', 500));
     }
 
     // Send notification to Recipient of new Chat
@@ -221,7 +221,7 @@ export const getChatID = catchAsync(
 
 export const chats = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { chatsIdArr } = req.body;
-  if (!chatsIdArr) return next(new AppError('Chat IDs are required', 400));
+  if (!chatsIdArr) return next(new ApiError('Chat IDs are required', 400));
 
   const chatIdArr = await Chat.find({ _id: { $in: chatsIdArr } });
 
@@ -238,10 +238,10 @@ export const getSecondParticipants = catchAsync(
 
     // Validate input
     if (!Array.isArray(chatIds) || chatIds.length === 0) {
-      return next(new AppError('Chat IDs must be provided as an array', 400));
+      return next(new ApiError('Chat IDs must be provided as an array', 400));
     }
     if (!userId) {
-      return next(new AppError('User ID must be provided', 400));
+      return next(new ApiError('User ID must be provided', 400));
     }
 
     const chatIdsObjectID = stringToObjectID(chatIds) as unknown as ObjectId[];
@@ -307,7 +307,7 @@ export const groupChatId = catchAsync(async (req: Request, res: Response, next: 
   const { groupId, groupName, participants, admins = [], groupPicture }: IGroupChatRequestBody = req.body;
 
   if (!groupName || !participants || participants.length === 0) {
-    return next(new AppError('Group name and participants are required', 400));
+    return next(new ApiError('Group name and participants are required', 400));
   }
 
   let groupChat;
@@ -315,7 +315,7 @@ export const groupChatId = catchAsync(async (req: Request, res: Response, next: 
   if (groupId) {
     // Retrieve existing group chat
     groupChat = await GroupChat.findById(groupId);
-    if (!groupChat) return next(new AppError('Chat group not found', 400));
+    if (!groupChat) return next(new ApiError('Chat group not found', 400));
   } else {
     // Ensure participants are unique
     const uniqueParticipants = Array.from(new Set([...participants, userId]));
@@ -349,16 +349,16 @@ export const leaveGroupChat = catchAsync(async (req: Request, res: Response, nex
   const { groupId }: ILeaveGroupChatRequestBody = req.body;
 
   if (!groupId) {
-    return next(new AppError('Group ID is required', 400));
+    return next(new ApiError('Group ID is required', 400));
   }
 
   const groupChat = await GroupChat.findById(groupId);
   if (!groupChat) {
-    return next(new AppError('Group chat not found', 400));
+    return next(new ApiError('Group chat not found', 400));
   }
 
   if (!groupChat.participants.includes(userId)) {
-    return next(new AppError('You are not a participant of this group chat', 403));
+    return next(new ApiError('You are not a participant of this group chat', 403));
   }
 
   // Remove user from group participants
@@ -382,21 +382,21 @@ export const leaveGroupChat = catchAsync(async (req: Request, res: Response, nex
 //     const { groupId }: { groupId: string } = req.body;
 
 //     if (!groupId || !mongoose.Types.ObjectId.isValid(groupId)) {
-//       return next(new AppError('Invalid or missing Group ID', 400));
+//       return next(new ApiError('Invalid or missing Group ID', 400));
 //     }
 
 //     const groupChat = await GroupChat.findById(groupId);
 //     if (!groupChat) {
-//       return next(new AppError('Group chat not found', 400));
+//       return next(new ApiError('Group chat not found', 400));
 //     }
 
 //     if (!groupChat.participants || !groupChat.participants.length) {
-//       return next(new AppError('Group chat data is corrupted', 500));
+//       return next(new ApiError('Group chat data is corrupted', 500));
 //     }
 
 //     if (!groupChat.participants.map((id) => id.toString()).includes(userId)) {
 //       return next(
-//         new AppError('You are not a participant of this group chat', 403)
+//         new ApiError('You are not a participant of this group chat', 403)
 //       );
 //     }
 
@@ -429,7 +429,7 @@ export const getMessagesByChatId = catchAsync(
 
     // Validate chatId
     if (!mongoose.Types.ObjectId.isValid(chatId)) {
-      return next(new AppError('Invalid chat ID', 400));
+      return next(new ApiError('Invalid chat ID', 400));
     }
 
     const query: { chatId: string; createdAt?: { $lt: Date } } = { chatId };

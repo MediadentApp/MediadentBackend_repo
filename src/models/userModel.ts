@@ -5,7 +5,7 @@ import mongoose, { Schema, Model, CallbackWithoutResultAndOptionalError, ObjectI
 import validator from 'validator';
 
 import { IUser, IUserModel } from '#src/types/model.js';
-import AppError from '#src/utils/appError.js';
+import ApiError from '#src/utils/appError.js';
 import { Chat } from '#src/models/userMessages.js';
 import appConfig from '#src/config/appConfig.js';
 
@@ -260,7 +260,7 @@ userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOpti
   if (normalizedEmail) {
     this.email = normalizedEmail;
   } else {
-    throw new AppError('Invalid email', 400);
+    throw new ApiError('Invalid email', 400);
   }
 
   if (!this?.fullName) {
@@ -322,7 +322,7 @@ userSchema.statics.protectApi = async function (
   selectFields: string = '-passwordChangedAt +chats.chatIds +chats.groupChatIds',
   populateFields?: string
 ): Promise<IUser> {
-  if (!token) throw new AppError('You are not logged in', 401);
+  if (!token) throw new ApiError('You are not logged in', 401);
 
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is not set');
@@ -330,7 +330,7 @@ userSchema.statics.protectApi = async function (
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
   if (typeof decoded === 'string') {
-    throw new AppError('Invalid token', 401);
+    throw new ApiError('Invalid token', 401);
   }
 
   const query = this.findById(decoded.id).select(selectFields);
@@ -338,11 +338,11 @@ userSchema.statics.protectApi = async function (
 
   const freshUser = await query.exec();
   if (!freshUser) {
-    throw new AppError('The user belonging to this token no longer exists', 401);
+    throw new ApiError('The user belonging to this token no longer exists', 401);
   }
 
   if (freshUser.changedPasswordAfter(decoded.iat)) {
-    throw new AppError('User recently changed the password! Please log in again', 401);
+    throw new ApiError('User recently changed the password! Please log in again', 401);
   }
 
   return freshUser;

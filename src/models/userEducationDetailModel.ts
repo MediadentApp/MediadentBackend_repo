@@ -1,7 +1,7 @@
 import mongoose, { CallbackError, Document, Model, Schema } from 'mongoose';
 import validator from 'validator';
 
-import AppError from '#src/utils/appError.js';
+import ApiError from '#src/utils/appError.js';
 import { IEducation } from '#src/types/model.js';
 import { sanitizeUpdate } from '#src/utils/index.js';
 import User from '#src/models/userModel.js';
@@ -50,8 +50,7 @@ const educationSchema = new Schema<IEducation>({
           validator(this: IEducation, value: string) {
             return isAfterDate(value, this.school.passoutYear);
           },
-          message:
-            'Junior college passout year must be after school passout year',
+          message: 'Junior college passout year must be after school passout year',
         },
       ],
     },
@@ -75,8 +74,7 @@ const educationSchema = new Schema<IEducation>({
           validator(this: IEducation, value: string) {
             return isAfterDate(value, this.juniorCollege.passoutYear);
           },
-          message:
-            'Senior college start year must be after junior college passout year',
+          message: 'Senior college start year must be after junior college passout year',
         },
       ],
     },
@@ -131,12 +129,8 @@ const educationSchema = new Schema<IEducation>({
 // Post-save hook to update the User document
 educationSchema.post('save', async (doc: IEducation, next) => {
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      doc.user,
-      { education: doc._id },
-      { new: true }
-    );
-    if (!updatedUser) return next(new AppError('Could not update user', 404));
+    const updatedUser = await User.findByIdAndUpdate(doc.user, { education: doc._id }, { new: true });
+    if (!updatedUser) return next(new ApiError('Could not update user', 404));
     next();
   } catch (error) {
     next(error as Error);
@@ -153,8 +147,5 @@ educationSchema.pre('findOneAndUpdate', function (next) {
   next();
 });
 
-const Education: Model<IEducation> = mongoose.model<IEducation>(
-  'Education',
-  educationSchema
-);
+const Education: Model<IEducation> = mongoose.model<IEducation>('Education', educationSchema);
 export default Education;

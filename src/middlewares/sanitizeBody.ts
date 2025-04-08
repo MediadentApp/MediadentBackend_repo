@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import validator from 'validator';
 
-import AppError from '#src/utils/appError.js';
+import ApiError from '#src/utils/appError.js';
 import fieldsToSanitize from '#src/config/sanitization.js';
 
 export default function sanitizeBody(req: Request, res: Response, next: NextFunction): void {
@@ -21,7 +21,7 @@ export default function sanitizeBody(req: Request, res: Response, next: NextFunc
     // Validate OTP (ensure it's numeric)
     if (req?.body?.otp) {
       if (!validator.isNumeric(req?.body.otp.toString())) {
-        return next(new AppError('OTP should contain only numeric characters', 400));
+        return next(new ApiError('OTP should contain only numeric characters', 400));
       }
     }
 
@@ -30,13 +30,13 @@ export default function sanitizeBody(req: Request, res: Response, next: NextFunc
       req.body.password = validator.trim(req?.body.password);
 
       if (!validator.isAlphanumeric(req?.body.password)) {
-        return next(new AppError('Password should only contain alphanumeric characters', 400));
+        return next(new ApiError('Password should only contain alphanumeric characters', 400));
       }
     }
 
     return next();
   } catch (err) {
     console.log('Error sanitizing request body:', err);
-    return next(new AppError('Client error: could not sanitize request body', 400));
+    return next(new ApiError('Client error: could not sanitize request body', 400));
   }
 }

@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 
-import AppError from '#src/utils/appError.js';
+import ApiError from '#src/utils/appError.js';
 import User from '#src/models/userModel.js';
 import userSockets from '#src/helper/socketMap.js';
 import {
@@ -17,7 +17,7 @@ export default (io: Server) => {
       const authSocket = socket as IAuthenticatedSocket;
 
       const { token } = authSocket.handshake.auth;
-      if (!token) throw new AppError('Token not provided', 401);
+      if (!token) throw new ApiError('Token not provided', 401);
 
       const user = await User.protectApi(token, '_id firstName lastName fullName email username');
       authSocket.user = user;

@@ -2,45 +2,38 @@ import axios from 'axios';
 import { Request, Response, NextFunction } from 'express';
 import querystring from 'querystring';
 
-import AppError from '#src/utils/appError.js';
+import ApiError from '#src/utils/appError.js';
 import User from '#src/models/userModel.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { createSendToken } from '#src/utils/authUtils.js';
+import { IOAuthCallbackQuery } from '#src/types/query.auth.js';
 
 const GOOGLE_REDIRECT_URI =
-  process.env.NODE_ENV === 'development'
-    ? process.env.GOOGLE_REDIRECT_URI_DEV
-    : process.env.GOOGLE_REDIRECT_URI_PROD;
+  process.env.NODE_ENV === 'development' ? process.env.GOOGLE_REDIRECT_URI_DEV : process.env.GOOGLE_REDIRECT_URI_PROD;
 
 const GITHUB_CLIENT_ID =
-  process.env.NODE_ENV === 'development'
-    ? process.env.GITHUB_CLIENT_ID_DEV
-    : process.env.GITHUB_CLIENT_ID_PROD;
+  process.env.NODE_ENV === 'development' ? process.env.GITHUB_CLIENT_ID_DEV : process.env.GITHUB_CLIENT_ID_PROD;
 
 const GITHUB_CLIENT_SECRET =
-  process.env.NODE_ENV === 'development'
-    ? process.env.GITHUB_CLIENT_SECRET_DEV
-    : process.env.GITHUB_CLIENT_SECRET_PROD;
+  process.env.NODE_ENV === 'development' ? process.env.GITHUB_CLIENT_SECRET_DEV : process.env.GITHUB_CLIENT_SECRET_PROD;
 
 export const googleAuth = (req: Request, res: Response, next: NextFunction) => {
   try {
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${
       process.env.GOOGLE_CLIENT_ID
-    }&redirect_uri=${encodeURIComponent(
-      GOOGLE_REDIRECT_URI!
-    )}&scope=openid%20profile%20email`;
+    }&redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI!)}&scope=openid%20profile%20email`;
     res.redirect(googleAuthUrl);
   } catch (error) {
-    next(new AppError('Failed to initiate Google authentication', 500));
+    next(new ApiError('Failed to initiate Google authentication', 500));
   }
 };
 
 export const googleAuthCallback = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const code = req.query.code as string | undefined;
+  async (req: Request<{}, {}, {}, IOAuthCallbackQuery>, res: Response, next: NextFunction) => {
+    const code = req.query.code;
 
     if (!code) {
-      return next(new AppError('Authorization code is missing', 400));
+      return next(new ApiError('Authorization code is missing', 400));
     }
 
     try {
@@ -58,25 +51,18 @@ export const googleAuthCallback = catchAsync(
       );
 
       if (!tokenResponse?.data?.access_token) {
-        return next(
-          new AppError('Failed to retrieve access token from Google', 500)
-        );
+        return next(new ApiError('Failed to retrieve access token from Google', 500));
       }
 
       const accessToken = tokenResponse.data.access_token;
 
       // Fetch user details
-      const userResponse = await axios.get(
-        'https://www.googleapis.com/oauth2/v2/userinfo',
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
+      const userResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
       if (!userResponse?.data) {
-        return next(
-          new AppError('Failed to retrieve user data from Google', 500)
-        );
+        return next(new ApiError('Failed to retrieve user data from Google', 500));
       }
 
       const {
@@ -88,7 +74,7 @@ export const googleAuthCallback = catchAsync(
       } = userResponse.data;
 
       if (!verifiedEmail) {
-        return next(new AppError('Your email is not verified by Google', 401));
+        return next(new ApiError('Your email is not verified by Google', 401));
       }
 
       let user = await User.findFullUser({ email });
@@ -113,7 +99,7 @@ export const googleAuthCallback = catchAsync(
       });
     } catch (error) {
       console.error('Google Authentication Error:', error);
-      next(new AppError('Authentication failed. Please try again.', 500));
+      next(new ApiError('Authentication failed. Please try again.', 500));
     }
   }
 );
@@ -123,16 +109,16 @@ export const githubAuth = (req: Request, res: Response, next: NextFunction) => {
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=user`;
     res.redirect(githubAuthUrl);
   } catch (error) {
-    next(new AppError('Failed to initiate GitHub authentication', 500));
+    next(new ApiError('Failed to initiate GitHub authentication', 500));
   }
 };
 
 export const githubAuthCallback = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const code = req.query.code as string | undefined;
+  async (req: Request<{}, {}, {}, IOAuthCallbackQuery>, res: Response, next: NextFunction) => {
+    const code = req.query.code;
 
     if (!code) {
-      return next(new AppError('Authorization code is missing', 400));
+      return next(new ApiError('Authorization code is missing', 400));
     }
 
     try {
@@ -148,9 +134,7 @@ export const githubAuthCallback = catchAsync(
       );
 
       if (!tokenResponse?.data?.access_token) {
-        return next(
-          new AppError('Failed to retrieve access token from GitHub', 500)
-        );
+        return next(new ApiError('Failed to retrieve access token from GitHub', 500));
       }
 
       const accessToken = tokenResponse.data.access_token;
@@ -164,17 +148,10 @@ export const githubAuthCallback = catchAsync(
       });
 
       if (!userResponse?.data) {
-        return next(
-          new AppError('Failed to retrieve user data from GitHub', 500)
-        );
+        return next(new ApiError('Failed to retrieve user data from GitHub', 500));
       }
 
-      const {
-        avatar_url: githubPicture,
-        url: githubUrl,
-        name,
-        email,
-      } = userResponse.data;
+      const { avatar_url: githubPicture, url: githubUrl, name, email } = userResponse.data;
 
       let user = await User.findFullUser({ email });
 
@@ -207,9 +184,7 @@ export const githubAuthCallback = catchAsync(
       });
     } catch (error) {
       console.error('GitHub Authentication Error:', error);
-      next(
-        new AppError('GitHub authentication failed. Please try again.', 500)
-      );
+      next(new ApiError('GitHub authentication failed. Please try again.', 500));
     }
   }
 );

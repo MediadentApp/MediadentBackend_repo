@@ -225,7 +225,7 @@ interface IUserFormat extends Document {
   userInterest: IUserInterest;
 }
 
-export {
+export type {
   IUser,
   IUserModel,
   ITempUser,

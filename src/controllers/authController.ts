@@ -24,8 +24,9 @@ import crypto from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 
 export const emailReg = catchAsync(async (req: Request<{}, {}, EmailRegBody>, res: Response, next: NextFunction) => {
-  console.log('emailReg hit');
   const { email } = req.body;
+
+  if (!email) next(new ApiError('Please provide email', 400, ErrorCodes.SIGNUP.INCOMPLETE_CREDENTIALS));
 
   // Check if a user already exists with that email
   const userExists = await User.findOne({ email });

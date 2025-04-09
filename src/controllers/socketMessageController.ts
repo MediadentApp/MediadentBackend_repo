@@ -93,7 +93,7 @@ const VAPID_WEBPUSH_EMAIL = process.env.WEBPUSH_EMAIL;
 // console.log('VAPID keys:', VAPID_WEBPUSH_PUBLIC_KEY, VAPID_WEBPUSH_PRIVATE_KEY, VAPID_WEBPUSH_EMAIL);
 
 if (!VAPID_WEBPUSH_PUBLIC_KEY || !VAPID_WEBPUSH_PRIVATE_KEY) {
-  throw new Error('VAPID keys are missing. Please set them in your environment variables.');
+  throw new Error('VAPID keys are missing.');
 }
 
 if (Buffer.from(VAPID_WEBPUSH_PUBLIC_KEY, 'base64').length !== 65) {

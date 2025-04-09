@@ -9,7 +9,10 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "dev": "nodemon --watch . --ext ts --exec tsx server.ts",
     "build": "tsc",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "vitest --watch=false",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage"
   },
   "author": "Vinay Poojary",
   "license": "ISC",
@@ -42,16 +45,21 @@
     "@types/node": "^22.14.0",
     "@types/nodemailer": "^6.4.17",
     "@types/socket.io": "^3.0.1",
+    "@types/supertest": "^6.0.3",
     "@types/validator": "^13.12.3",
     "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^8.29.0",
     "@typescript-eslint/parser": "^8.29.0",
+    "@vitest/coverage-v8": "^3.1.1",
     "eslint": "^9.24.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.31.0",
     "nodemon": "^3.1.9",
+    "supertest": "^7.1.0",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.1.1"
   },
   "imports": {
     "#src/*": "./src/*"

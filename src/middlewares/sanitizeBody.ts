@@ -3,6 +3,7 @@ import validator from 'validator';
 
 import ApiError from '#src/utils/appError.js';
 import fieldsToSanitize from '#src/config/sanitization.js';
+import { ErrorCodes } from '#src/config/errorCodes.js';
 
 export default function sanitizeBody(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -18,25 +19,37 @@ export default function sanitizeBody(req: Request, res: Response, next: NextFunc
       }
     });
 
+    // For email
+    if (req.body.email) {
+      req.body.email = validator.trim(req.body.email);
+      if (!validator.isEmail(req.body.email)) {
+        return next(new ApiError('Invalid email format', 400, ErrorCodes.CLIENT.INVALID_EMAIL));
+      }
+    }
+
     // Validate OTP (ensure it's numeric)
     if (req?.body?.otp) {
       if (!validator.isNumeric(req?.body.otp.toString())) {
-        return next(new ApiError('OTP should contain only numeric characters', 400));
+        return next(
+          new ApiError('OTP should contain only numeric characters', 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+        );
       }
     }
 
     // Validate password (ensure it contains only alphanumeric characters)
-    if (req?.body?.password) {
-      req.body.password = validator.trim(req?.body.password);
+    // if (req?.body?.password) {
+    //   req.body.password = validator.trim(req?.body.password);
 
-      if (!validator.isAlphanumeric(req?.body.password)) {
-        return next(new ApiError('Password should only contain alphanumeric characters', 400));
-      }
-    }
+    //   if (!validator.isAlphanumeric(req?.body.password)) {
+    //     return next(new ApiError('Password should only contain alphanumeric characters', 400));
+    //   }
+    // }
 
     return next();
   } catch (err) {
     console.log('Error sanitizing request body:', err);
-    return next(new ApiError('Client error: could not sanitize request body', 400));
+    return next(
+      new ApiError('Client error: could not sanitize request body', 400, ErrorCodes.SERVER.INTERNAL_SERVER_ERROR)
+    );
   }
 }

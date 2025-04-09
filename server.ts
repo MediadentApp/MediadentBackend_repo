@@ -1,5 +1,3 @@
-import './loadEnv';
-
 import mongoose, { MongooseError } from 'mongoose';
 
 import { server } from '#src/app.js';

@@ -1,3 +1,5 @@
+import '#src/../loadenv.js';
+
 import express, { Request, Response, NextFunction } from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';

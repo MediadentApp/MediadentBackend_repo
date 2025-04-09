@@ -1,11 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
+import e, { Request, Response, NextFunction } from 'express';
 import { CastError, Error as MongooseError } from 'mongoose';
 
 import ApiError from '#src/utils/appError.js';
+import { ErrorCodes } from '#src/config/errorCodes.js';
 
 const handleCastErrorDB = (err: CastError): ApiError => {
   const message = `Invalid ${err.path}: ${err.value}.`;
-  return new ApiError(message, 400);
+  return new ApiError(message, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT);
 };
 
 const handleDuplicateFieldsDB = (err: MongooseError): ApiError => {
@@ -13,23 +14,26 @@ const handleDuplicateFieldsDB = (err: MongooseError): ApiError => {
   const value = match ? match[0] : 'Unknown';
 
   const message = `Duplicate field value: ${value}. Please use another value!`;
-  return new ApiError(message, 400);
+  return new ApiError(message, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT);
 };
 
 const handleValidationErrorDB = (err: MongooseError.ValidationError): ApiError => {
   const errors = Object.values(err.errors).map(el => el.message);
   const message = `Invalid input data. ${errors.join('. ')}`;
-  return new ApiError(message, 400);
+  return new ApiError(message, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT);
 };
 
-const handleJwtError = (): ApiError => new ApiError('Invalid Token. Please log in again.', 401);
+const handleJwtError = (): ApiError =>
+  new ApiError('Invalid Token. Please log in again.', 401, ErrorCodes.CLIENT.UNAUTHORIZED);
 
-const handleJwtExpiredError = (): ApiError => new ApiError('Your Token has expired. Please log in again.', 401);
+const handleJwtExpiredError = (): ApiError =>
+  new ApiError('Your Token has expired. Please log in again.', 401, ErrorCodes.CLIENT.UNAUTHORIZED);
 
 const sendErrorDev = (err: ApiError, res: Response): void => {
   res.status(err.statusCode).json({
     status: err.status,
     name: err.name,
+    errorCode: err.errorCode,
     message: err.message,
     redirectUrl: err.redirectUrl,
     stack: err.stack,
@@ -41,6 +45,7 @@ const sendErrorProd = (err: ApiError, res: Response): void => {
   if (err.isOperational) {
     res.status(err.statusCode).json({
       status: err.status,
+      errorCode: err.errorCode,
       message: err.message,
       ...(err.redirectUrl && { redirectUrl: err.redirectUrl }),
     });
@@ -48,6 +53,7 @@ const sendErrorProd = (err: ApiError, res: Response): void => {
     console.error('ERROR 💥', err);
     res.status(500).json({
       status: 'error',
+      errorCode: ErrorCodes.SERVER.UNKNOWN_ERROR,
       message: 'Something went very wrong!',
     });
   }

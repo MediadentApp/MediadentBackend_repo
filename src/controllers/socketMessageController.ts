@@ -1,4 +1,5 @@
 import appConfig from '#src/config/appConfig.js';
+import { ErrorCodes } from '#src/config/errorCodes.js';
 import userSockets from '#src/helper/socketMap.js';
 import { Chat, GroupChat, Message, WebPushSubscription } from '#src/models/userMessages.js';
 import User from '#src/models/userModel.js';
@@ -119,7 +120,7 @@ export const getChatID = catchAsync(
     const io = req.app.get('io');
 
     if (!userBId) {
-      return next(new ApiError('User ID is required', 400));
+      return next(new ApiError('User ID is required', 400, ErrorCodes.SOCKET.USER_NOT_FOUND));
     }
 
     // Find chat either by `chatId` or by `participants`
@@ -146,7 +147,7 @@ export const getChatID = catchAsync(
     // Ensure userB exists before creating a new chat
     const userB = await User.findById(userBId).select('_id firstName').lean();
     if (!userB) {
-      return next(new ApiError('User not found', 400));
+      return next(new ApiError('User not found', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
     }
 
     let newChatId: ObjectId;
@@ -221,7 +222,7 @@ export const getChatID = catchAsync(
 
 export const chats = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { chatsIdArr } = req.body;
-  if (!chatsIdArr) return next(new ApiError('Chat IDs are required', 400));
+  if (!chatsIdArr) return next(new ApiError('Chat IDs are required', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
 
   const chatIdArr = await Chat.find({ _id: { $in: chatsIdArr } });
 
@@ -238,10 +239,10 @@ export const getSecondParticipants = catchAsync(
 
     // Validate input
     if (!Array.isArray(chatIds) || chatIds.length === 0) {
-      return next(new ApiError('Chat IDs must be provided as an array', 400));
+      return next(new ApiError('Chat IDs must be provided as an array', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
     }
     if (!userId) {
-      return next(new ApiError('User ID must be provided', 400));
+      return next(new ApiError('User ID must be provided', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
     }
 
     const chatIdsObjectID = stringToObjectID(chatIds) as unknown as ObjectId[];
@@ -307,7 +308,7 @@ export const groupChatId = catchAsync(async (req: Request, res: Response, next: 
   const { groupId, groupName, participants, admins = [], groupPicture }: IGroupChatRequestBody = req.body;
 
   if (!groupName || !participants || participants.length === 0) {
-    return next(new ApiError('Group name and participants are required', 400));
+    return next(new ApiError('Group name and participants are required', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
   }
 
   let groupChat;
@@ -315,7 +316,7 @@ export const groupChatId = catchAsync(async (req: Request, res: Response, next: 
   if (groupId) {
     // Retrieve existing group chat
     groupChat = await GroupChat.findById(groupId);
-    if (!groupChat) return next(new ApiError('Chat group not found', 400));
+    if (!groupChat) return next(new ApiError('Chat group not found', 400, ErrorCodes.SOCKET.CHAT_NOT_FOUND));
   } else {
     // Ensure participants are unique
     const uniqueParticipants = Array.from(new Set([...participants, userId]));
@@ -349,16 +350,16 @@ export const leaveGroupChat = catchAsync(async (req: Request, res: Response, nex
   const { groupId }: ILeaveGroupChatRequestBody = req.body;
 
   if (!groupId) {
-    return next(new ApiError('Group ID is required', 400));
+    return next(new ApiError('Group ID is required', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
   }
 
   const groupChat = await GroupChat.findById(groupId);
   if (!groupChat) {
-    return next(new ApiError('Group chat not found', 400));
+    return next(new ApiError('Group chat not found', 400, ErrorCodes.SOCKET.CHAT_NOT_FOUND));
   }
 
   if (!groupChat.participants.includes(userId)) {
-    return next(new ApiError('You are not a participant of this group chat', 403));
+    return next(new ApiError('You are not a participant of this group chat', 403, ErrorCodes.SOCKET.NOT_PARTICIPANT));
   }
 
   // Remove user from group participants
@@ -429,7 +430,7 @@ export const getMessagesByChatId = catchAsync(
 
     // Validate chatId
     if (!mongoose.Types.ObjectId.isValid(chatId)) {
-      return next(new ApiError('Invalid chat ID', 400));
+      return next(new ApiError('Invalid chat ID', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
     }
 
     const query: { chatId: string; createdAt?: { $lt: Date } } = { chatId };

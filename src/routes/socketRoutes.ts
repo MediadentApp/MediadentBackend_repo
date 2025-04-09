@@ -10,6 +10,7 @@ import {
   readNotification,
 } from '#src/controllers/socketMessageController.js';
 import { IAuthenticatedSocket } from '#src/types/request.socket.js';
+import { ErrorCodes } from '#src/config/errorCodes.js';
 
 export default (io: Server) => {
   io.use(async (socket: Socket, next) => {
@@ -17,7 +18,7 @@ export default (io: Server) => {
       const authSocket = socket as IAuthenticatedSocket;
 
       const { token } = authSocket.handshake.auth;
-      if (!token) throw new ApiError('Token not provided', 401);
+      if (!token) throw new ApiError('Token not provided', 401, ErrorCodes.SOCKET.INVALID_TOKEN);
 
       const user = await User.protectApi(token, '_id firstName lastName fullName email username');
       authSocket.user = user;

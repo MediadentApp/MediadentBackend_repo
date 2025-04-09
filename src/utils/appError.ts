@@ -1,3 +1,5 @@
+import { ErrorCodeType } from '#src/types/response.error.js';
+
 /**
  * Custom error class for handling HTTP errors.
  *
@@ -21,6 +23,12 @@ export default class ApiError extends Error {
   public isOperational: boolean;
 
   /**
+   * A unique error code for the error, if applicable.
+   * Used to handle different error scenarios.
+   */
+  public errorCode?: ErrorCodeType;
+
+  /**
    * Optional URL to redirect the user, if applicable.
    */
   public redirectUrl?: string | null;
@@ -32,10 +40,11 @@ export default class ApiError extends Error {
    * @param {number} statusCode - The HTTP status code.
    * @param {string | null} [redirectUrl] - The URL to redirect to (if applicable).
    */
-  constructor(message: string, statusCode: number, redirectUrl: string | null = null) {
+  constructor(message: string, statusCode: number, errorCode?: ErrorCodeType, redirectUrl: string | null = null) {
     super(message);
 
     this.statusCode = statusCode;
+    if (errorCode) this.errorCode = errorCode;
     this.status = ApiError.determineStatus(statusCode);
     this.isOperational = true;
     this.redirectUrl = redirectUrl;

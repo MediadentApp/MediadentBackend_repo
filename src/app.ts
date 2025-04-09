@@ -8,6 +8,7 @@ import middlewares from '#src/middlewares/index.js';
 import { routes } from '#src/routes/index.js';
 import socketRoutes from '#src/routes/socketRoutes.js';
 import ApiError from '#src/utils/appError.js';
+import { ErrorCodes } from '#src/config/errorCodes.js';
 
 const app = express();
 
@@ -19,7 +20,7 @@ app.use('/', routes);
 
 // Handle unknown routes
 app.all('/*name', (req: Request, res: Response, next: NextFunction) => {
-  next(new ApiError(`Can't find ${req.originalUrl} on this server!`, 404));
+  next(new ApiError(`Can't find ${req.originalUrl} on this server!`, 404, ErrorCodes.SERVER.ROUTE_NOT_FOUND));
 });
 
 // Global error handler

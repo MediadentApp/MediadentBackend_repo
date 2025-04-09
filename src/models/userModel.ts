@@ -8,6 +8,7 @@ import { IUser, IUserModel } from '#src/types/model.js';
 import ApiError from '#src/utils/appError.js';
 import { Chat } from '#src/models/userMessages.js';
 import appConfig from '#src/config/appConfig.js';
+import { ErrorCodes } from '#src/config/errorCodes.js';
 
 // User schema definition
 const userSchema: Schema<IUser> = new Schema(
@@ -260,7 +261,7 @@ userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOpti
   if (normalizedEmail) {
     this.email = normalizedEmail;
   } else {
-    throw new ApiError('Invalid email', 400);
+    throw new ApiError('Invalid email', 400, ErrorCodes.CLIENT.INVALID_EMAIL);
   }
 
   if (!this?.fullName) {
@@ -322,7 +323,7 @@ userSchema.statics.protectApi = async function (
   selectFields: string = '-passwordChangedAt +chats.chatIds +chats.groupChatIds',
   populateFields?: string
 ): Promise<IUser> {
-  if (!token) throw new ApiError('You are not logged in', 401);
+  if (!token) throw new ApiError('You are not logged in', 401, ErrorCodes.CLIENT.UNAUTHORIZED);
 
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is not set');
@@ -330,7 +331,7 @@ userSchema.statics.protectApi = async function (
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
   if (typeof decoded === 'string') {
-    throw new ApiError('Invalid token', 401);
+    throw new ApiError('Invalid token', 401, ErrorCodes.CLIENT.UNAUTHORIZED);
   }
 
   const query = this.findById(decoded.id).select(selectFields);
@@ -338,11 +339,11 @@ userSchema.statics.protectApi = async function (
 
   const freshUser = await query.exec();
   if (!freshUser) {
-    throw new ApiError('The user belonging to this token no longer exists', 401);
+    throw new ApiError('The user belonging to this token no longer exists', 401, ErrorCodes.GENERAL.USER_NOT_FOUND);
   }
 
   if (freshUser.changedPasswordAfter(decoded.iat)) {
-    throw new ApiError('User recently changed the password! Please log in again', 401);
+    throw new ApiError('User recently changed the password! Please log in again', 401, ErrorCodes.CLIENT.UNAUTHORIZED);
   }
 
   return freshUser;

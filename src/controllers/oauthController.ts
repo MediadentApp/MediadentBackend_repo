@@ -7,6 +7,7 @@ import User from '#src/models/userModel.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { createSendToken } from '#src/utils/authUtils.js';
 import { IOAuthCallbackQuery } from '#src/types/query.auth.js';
+import { ErrorCodes } from '#src/config/errorCodes.js';
 
 const GOOGLE_REDIRECT_URI =
   process.env.NODE_ENV === 'development' ? process.env.GOOGLE_REDIRECT_URI_DEV : process.env.GOOGLE_REDIRECT_URI_PROD;
@@ -33,7 +34,7 @@ export const googleAuthCallback = catchAsync(
     const code = req.query.code;
 
     if (!code) {
-      return next(new ApiError('Authorization code is missing', 400));
+      return next(new ApiError('Authorization code is missing', 400, ErrorCodes.CLIENT.BAD_REQUEST));
     }
 
     try {
@@ -74,7 +75,7 @@ export const googleAuthCallback = catchAsync(
       } = userResponse.data;
 
       if (!verifiedEmail) {
-        return next(new ApiError('Your email is not verified by Google', 401));
+        return next(new ApiError('Your email is not verified by Google', 401, ErrorCodes.CLIENT.FORBIDDEN));
       }
 
       let user = await User.findFullUser({ email });
@@ -118,7 +119,7 @@ export const githubAuthCallback = catchAsync(
     const code = req.query.code;
 
     if (!code) {
-      return next(new ApiError('Authorization code is missing', 400));
+      return next(new ApiError('Authorization code is missing', 400, ErrorCodes.CLIENT.BAD_REQUEST));
     }
 
     try {

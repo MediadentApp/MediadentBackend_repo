@@ -6,14 +6,16 @@ import catchAsync from '#src/utils/catchAsync.js';
 import Notification from '#src/models/userNotificationModel.js';
 import User from '#src/models/userModel.js';
 import Education from '#src/models/userEducationDetailModel.js';
+import { ErrorCodes } from '#src/config/errorCodes.js';
 
 // User by ID
 export const userById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { idArr }: { idArr: string[] } = req.body;
-  if (!idArr || idArr.length === 0) return next(new ApiError('User IDs are required', 400));
+  if (!idArr || idArr.length === 0)
+    return next(new ApiError('User IDs are required', 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
 
   const users = await User.find({ _id: { $in: idArr } });
-  if (users.length === 0) return next(new ApiError('No users found', 404));
+  if (users.length === 0) return next(new ApiError('No users found', 404, ErrorCodes.GENERAL.USER_NOT_FOUND));
 
   res.status(200).json({
     status: 'success',
@@ -39,7 +41,7 @@ export const saveAcademicDetails = catchAsync(async (req: Request, res: Response
   const userId = req.user._id as string;
 
   const userDetails = await User.findById(userId);
-  if (!userDetails) return next(new ApiError('User not found', 404));
+  if (!userDetails) return next(new ApiError('User not found', 404, ErrorCodes.GENERAL.USER_NOT_FOUND));
 
   // if (
   //   userDetails.education &&
@@ -67,7 +69,7 @@ export const updateAcademicDetails = catchAsync(async (req: Request, res: Respon
   }>('education');
 
   if (!userDetails || !userDetails.education) {
-    return next(new ApiError('Academic Details do not exist', 405));
+    return next(new ApiError('Academic Details do not exist', 405, ErrorCodes.GENERAL.NO_DATA_FOUND));
   }
 
   Object.assign(userDetails.education, req.body);
@@ -87,7 +89,7 @@ export const getAcademicDetails = catchAsync(async (req: Request, res: Response,
   }>('education');
 
   if (!userDetails || !userDetails.education) {
-    return next(new ApiError('Academic Details do not exist', 405));
+    return next(new ApiError('Academic Details do not exist', 405, ErrorCodes.GENERAL.NO_DATA_FOUND));
   }
 
   res.status(200).json({

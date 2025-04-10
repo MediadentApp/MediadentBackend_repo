@@ -26,7 +26,7 @@ import { NextFunction, Request, Response } from 'express';
 export const emailReg = catchAsync(async (req: Request<{}, {}, EmailRegBody>, res: Response, next: NextFunction) => {
   const { email } = req.body;
 
-  if (!email) next(new ApiError('Please provide email', 400, ErrorCodes.SIGNUP.INCOMPLETE_CREDENTIALS));
+  if (!email) return next(new ApiError('Email is required', 400, ErrorCodes.SIGNUP.INCOMPLETE_CREDENTIALS));
 
   // Check if a user already exists with that email
   const userExists = await User.findOne({ email });
@@ -41,7 +41,6 @@ export const emailReg = catchAsync(async (req: Request<{}, {}, EmailRegBody>, re
         )
       );
     }
-    console.log('user email already valid');
     return next(new ApiError(`User email is already verified.`, 409, ErrorCodes.SIGNUP.EMAIL_ALREADY_VERIFIED));
   }
 
@@ -49,7 +48,7 @@ export const emailReg = catchAsync(async (req: Request<{}, {}, EmailRegBody>, re
   const tempUserDb = await TempUser.findOne({ email }, 'emailVerified otpSendAt');
   if (tempUserDb) {
     if (tempUserDb.emailVerified) {
-      return res.status(204).end(); // No Content
+      return res.status(200).json({ message: 'Email is already verified.', status: 'success', data: { email } });
     }
     if (tempUserDb.otpSendAt && (await tempUserDb.checkOtpTime())) {
       return next(
@@ -61,7 +60,7 @@ export const emailReg = catchAsync(async (req: Request<{}, {}, EmailRegBody>, re
       );
     }
     // Cleanup existing temp user data
-    await TempUser.deleteOne({ email });
+    TempUser.deleteOne({ email });
   }
 
   // Generate OTP and prepare email

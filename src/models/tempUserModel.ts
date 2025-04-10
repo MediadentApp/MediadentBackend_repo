@@ -21,9 +21,7 @@ const tempUserSchema = new Schema<ITempUser>({
 tempUserSchema.methods.checkOtpTime = function (): boolean {
   if (!this.otpSendAt) return false;
   const sendOtpAfterMilliseconds = appConfig.otp.sendOtpAfter * 60 * 1000;
-  const otpSendAtWithDelay = new Date(
-    this.otpSendAt.getTime() + sendOtpAfterMilliseconds
-  );
+  const otpSendAtWithDelay = new Date(this.otpSendAt.getTime() + sendOtpAfterMilliseconds);
   return otpSendAtWithDelay > new Date();
 };
 
@@ -36,8 +34,5 @@ tempUserSchema.methods.checkOtpExpiration = function (): boolean {
   return this.otpExpiration < new Date();
 };
 
-const TempUser: Model<ITempUser> = mongoose.model<ITempUser>(
-  'TempUser',
-  tempUserSchema
-);
+const TempUser: Model<ITempUser> = mongoose.model<ITempUser>('TempUser', tempUserSchema);
 export default TempUser;

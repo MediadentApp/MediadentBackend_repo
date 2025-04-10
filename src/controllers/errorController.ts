@@ -62,8 +62,7 @@ const sendErrorProd = (err: ApiError, res: Response): void => {
 const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction): void => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'Internal Server Error';
-
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') {
     let error: ApiError = err;
 
     if (error.name === 'CastError') error = handleCastErrorDB(error as unknown as CastError);

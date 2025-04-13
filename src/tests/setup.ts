@@ -1,4 +1,5 @@
 import '#src/../loadenv.js';
+import seedDatabase from '#src/tests/seeds.js';
 
 import mongoose from 'mongoose';
 import { beforeAll, beforeEach, afterAll } from 'vitest';
@@ -17,6 +18,7 @@ export const connectDB = async () => {
       connectTimeoutMS: 10000, // 10 seconds timeout
       serverSelectionTimeoutMS: 10000, // 10 seconds timeout for server selection
     });
+    await mongoose.connection.dropDatabase();
     console.log('✅ Test Database Connected');
   } catch (error) {
     console.error('❌ Database Connection Failed', error);
@@ -26,7 +28,7 @@ export const connectDB = async () => {
 
 export const disconnectDB = async () => {
   try {
-    await mongoose.connection.dropDatabase();
+    // await mongoose.connection.dropDatabase();
     await mongoose.connection.close();
     console.log('🛑 Test Database Disconnected');
   } catch (error) {
@@ -37,6 +39,7 @@ export const disconnectDB = async () => {
 // Ensure database is connected before running tests
 beforeAll(async () => {
   await connectDB();
+  await seedDatabase();
 });
 
 // Clean up database before each test

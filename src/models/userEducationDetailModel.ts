@@ -1,10 +1,11 @@
 import mongoose, { CallbackError, Document, Model, Schema } from 'mongoose';
 import validator from 'validator';
 
-import ApiError from '#src/utils/appError.js';
+import ApiError from '#src/utils/ApiError.js';
 import { IEducation } from '#src/types/model.js';
 import { sanitizeUpdate } from '#src/utils/index.js';
 import User from '#src/models/userModel.js';
+import responseMessages from '#src/config/constants/responseMessages.js';
 
 const isValidDateFormat = (value: string) =>
   validator.isDate(value, {
@@ -130,7 +131,7 @@ const educationSchema = new Schema<IEducation>({
 educationSchema.post('save', async (doc: IEducation, next) => {
   try {
     const updatedUser = await User.findByIdAndUpdate(doc.user, { education: doc._id }, { new: true });
-    if (!updatedUser) return next(new ApiError('Could not update user', 404));
+    if (!updatedUser) return next(new ApiError(responseMessages.DATA.COULD_NOT_UPDATE, 404));
     next();
   } catch (error) {
     next(error as Error);

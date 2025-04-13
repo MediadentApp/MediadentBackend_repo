@@ -55,7 +55,7 @@ interface IUser extends Document {
 
 interface IUserModel extends Model<IUser> {
   findFullUser(query: object, additionalSelects?: string): Promise<IUser | null>;
-  protectApi(token: string, selectFields?: string, populateFields?: string): Promise<IUser>;
+  protectApi(token: string | null | undefined, selectFields?: string, populateFields?: string): Promise<IUser>;
 }
 
 interface ITempUser extends Document {

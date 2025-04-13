@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 
-import ApiError from '#src/utils/appError.js';
+import ApiError from '#src/utils/ApiError.js';
 import User from '#src/models/userModel.js';
 import userSockets from '#src/helper/socketMap.js';
 import {
@@ -10,7 +10,8 @@ import {
   readNotification,
 } from '#src/controllers/socketMessageController.js';
 import { IAuthenticatedSocket } from '#src/types/request.socket.js';
-import { ErrorCodes } from '#src/config/errorCodes.js';
+import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import responseMessages from '#src/config/constants/responseMessages.js';
 
 export default (io: Server) => {
   io.use(async (socket: Socket, next) => {
@@ -18,7 +19,7 @@ export default (io: Server) => {
       const authSocket = socket as IAuthenticatedSocket;
 
       const { token } = authSocket.handshake.auth;
-      if (!token) throw new ApiError('Token not provided', 401, ErrorCodes.SOCKET.INVALID_TOKEN);
+      if (!token) throw new ApiError(responseMessages.AUTH.NO_TOKEN, 401, ErrorCodes.SOCKET.INVALID_TOKEN);
 
       const user = await User.protectApi(token, '_id firstName lastName fullName email username');
       authSocket.user = user;

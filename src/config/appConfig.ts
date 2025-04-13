@@ -2,6 +2,7 @@ import { IAppConfig } from '#src/types/config.js';
 
 const appConfig: IAppConfig = {
   allowedOrigins: ['http://localhost:3000', 'http://192.168.0.155:3000', 'https://studenthub-mauve.vercel.app'],
+  bycryptHashSalt: 10,
   otp: {
     sendOtpAfter: 2,
     otpExpiration: 10,
@@ -15,9 +16,10 @@ const appConfig: IAppConfig = {
   urls: {
     signupAdditionalDetailsUrl: '/additionalinfo',
     signupInterestUrl: '/interest',
+    loginUrl: '/login',
   },
   app: {
-    numOfSignupInterests: 5,
+    numOfSignupInterests: 3,
   },
   chat: {
     DEFAULT_MESSAGES_PER_PAGE: 25,

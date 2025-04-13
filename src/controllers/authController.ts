@@ -1,7 +1,12 @@
 import appConfig from '#src/config/appConfig.js';
-import { ErrorCodes } from '#src/config/errorCodes.js';
+import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import responseMessages from '#src/config/constants/responseMessages.js';
 import TempUser from '#src/models/tempUserModel.js';
 import User from '#src/models/userModel.js';
+import {
+  loginServiceErrorResponse,
+  otherLoginServiceErrorResponse,
+} from '#src/services/auth/checkUserExists.service.js';
 import { sendEmail } from '#src/services/email.js';
 import { IUser } from '#src/types/model.js';
 import { ResetPasswordParams } from '#src/types/param.auth.js';
@@ -16,57 +21,43 @@ import {
   SignupInterestsBody,
   UpdatePasswordBody,
 } from '#src/types/request.auth.js';
-import ApiError from '#src/utils/appError.js';
+import { IResponseExtra } from '#src/types/response.message.js';
+import ApiError from '#src/utils/ApiError.js';
+import ApiResponse from '#src/utils/ApiResponse.js';
 import { createSendToken } from '#src/utils/authUtils.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { generateOTP } from '#src/utils/index.js';
 import crypto from 'crypto';
-import { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, response, Response } from 'express';
 
 export const emailReg = catchAsync(async (req: Request<{}, {}, EmailRegBody>, res: Response, next: NextFunction) => {
   const { email } = req.body;
 
-  if (!email) return next(new ApiError('Email is required', 400, ErrorCodes.SIGNUP.INCOMPLETE_CREDENTIALS));
+  if (!email)
+    return next(new ApiError(responseMessages.AUTH.INCOMPLETE_INFO, 400, ErrorCodes.SIGNUP.INCOMPLETE_CREDENTIALS));
 
   // Check if a user already exists with that email
-  const userExists = await User.findOne({ email });
-  if (userExists) {
-    if (userExists.manualSignup) {
-      return next(
-        new ApiError(
-          'User already exists. Please log in using your email and password.',
-          409,
-          ErrorCodes.SIGNUP.USER_ALREADY_EXISTS,
-          '/login'
-        )
-      );
-    }
-    return next(new ApiError(`User email is already verified.`, 409, ErrorCodes.SIGNUP.EMAIL_ALREADY_VERIFIED));
+
+  const user = await User.findOne({ email });
+  if (user) {
+    loginServiceErrorResponse(user);
   }
 
   // Fetch TempUser data
   const tempUserDb = await TempUser.findOne({ email }, 'emailVerified otpSendAt');
   if (tempUserDb) {
     if (tempUserDb.emailVerified) {
-      return res.status(200).json({ message: 'Email is already verified.', status: 'success', data: { email } });
+      return ApiResponse(res, 200, responseMessages.AUTH.EMAIL_ALREADY_VERIFIED, { email });
     }
     if (tempUserDb.otpSendAt && (await tempUserDb.checkOtpTime())) {
-      return next(
-        new ApiError(
-          `Please wait ${appConfig.otp.sendOtpAfter} minutes before requesting a new OTP if one has already been sent.`,
-          400,
-          ErrorCodes.SIGNUP.OTP_ALREADY_SENT
-        )
-      );
+      return next(new ApiError(responseMessages.AUTH.OTP_ALREADY_SENT, 400, ErrorCodes.SIGNUP.OTP_ALREADY_SENT));
     }
     // Cleanup existing temp user data
-    TempUser.deleteOne({ email });
+    await TempUser.deleteOne({ email });
   }
 
   // Generate OTP and prepare email
   const otp = generateOTP();
-  const otpSendAt = new Date();
-  const otpExpiration = new Date(Date.now() + appConfig.otp.otpExpiration * 60 * 1000);
 
   const emailMessage = `
      Hello,
@@ -92,19 +83,13 @@ export const emailReg = catchAsync(async (req: Request<{}, {}, EmailRegBody>, re
       TempUser.create({
         email,
         otp,
-        otpSendAt,
-        otpExpiration,
       }),
     ]);
 
-    res.status(200).json({
-      status: 'success',
-      message: 'OTP sent to your email for verification',
-      data: { email },
-    });
+    return ApiResponse(res, 200, responseMessages.AUTH.OTP_SENT, { email });
   } catch (err: unknown) {
     console.error('Error during email registration:', err);
-    return next(new ApiError('There was an error sending the email', 500));
+    return next(new ApiError(responseMessages.GENERAL.CANNOT_SENT_EMAIL, 500));
   }
 });
 
@@ -112,61 +97,67 @@ export const emailVerify = catchAsync(
   async (req: Request<{}, {}, EmailVerifyBody>, res: Response, next: NextFunction) => {
     const { otp, email } = req.body;
 
+    if (!otp || !email)
+      return next(new ApiError(responseMessages.AUTH.INCOMPLETE_INFO, 400, ErrorCodes.SIGNUP.INCOMPLETE_CREDENTIALS));
+
     // Check if a user already exists with that email
     const userExists = await User.findOne({ email });
-    if (userExists && userExists.password) {
-      return res.status(409).json({
-        status: 'fail',
-        message: 'User already exists',
-      });
+    if (userExists) {
+      return next(new ApiError(responseMessages.USER.ALREADY_EXISTS_EMAIL, 409, ErrorCodes.SIGNUP.USER_ALREADY_EXISTS));
     }
 
     const tempUser = await TempUser.findOne({ email });
     if (!tempUser)
-      return next(
-        new ApiError('Please register your email before proceeding.', 400, ErrorCodes.SIGNUP.EMAIL_UNVERIFIED)
-      );
+      return next(new ApiError(responseMessages.AUTH.EMAIL_UNVERIFIED, 400, ErrorCodes.SIGNUP.EMAIL_UNVERIFIED));
     if (tempUser.emailVerified)
-      return next(new ApiError('Email is already verified', 409, ErrorCodes.SIGNUP.EMAIL_ALREADY_VERIFIED));
+      return next(
+        new ApiError(responseMessages.AUTH.EMAIL_ALREADY_VERIFIED, 409, ErrorCodes.SIGNUP.EMAIL_ALREADY_VERIFIED)
+      );
 
     if (!tempUser.checkOtp(Number(otp)))
-      return next(new ApiError('The OTP provided is incorrect.', 400, ErrorCodes.SIGNUP.OTP_INCORRECT));
+      return next(new ApiError(responseMessages.AUTH.OTP_INCORRECT, 400, ErrorCodes.SIGNUP.OTP_INCORRECT));
 
     if (tempUser.checkOtpExpiration())
-      return next(new ApiError('The OTP has expired, please request a new one.', 400, ErrorCodes.SIGNUP.OTP_EXPIRED));
+      return next(new ApiError(responseMessages.AUTH.OTP_EXPIRED, 400, ErrorCodes.SIGNUP.OTP_EXPIRED));
 
     tempUser.emailVerified = true;
     await tempUser.save({ validateBeforeSave: false });
 
-    res.status(200).json({
-      status: 'success',
-      message: 'Email is verified, Redirect to Sign-in page',
-      data: { email },
-    });
+    return ApiResponse(res, 200, responseMessages.AUTH.EMAIL_VERIFIED, { email });
   }
 );
 
 export const signup = catchAsync(async (req: Request<{}, {}, SignupBody>, res: Response, next: NextFunction) => {
-  const { firstName, lastName, email, password, passwordConfirm, passwordChangedAt } = req.body;
+  const { firstName, lastName, email, password, passwordConfirm } = req.body;
 
-  const userExists = await User.findFullUser({ email });
-  if (userExists) {
-    if (userExists.manualSignup) {
-      return next(
-        new ApiError('User already exists, Redirect to Login page', 409, ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN)
-      );
-    }
-    userExists.manualSignup = true;
-    userExists.password = password;
-    userExists.passwordConfirm = passwordConfirm;
-    userExists.passwordChangedAt = passwordChangedAt;
-    await userExists.save({ validateBeforeSave: true });
-    return createSendToken(userExists, 201, res);
+  if (!firstName || !lastName || !email || !password || !passwordConfirm)
+    return next(new ApiError(responseMessages.AUTH.INCOMPLETE_INFO, 400, ErrorCodes.SIGNUP.INCOMPLETE_CREDENTIALS));
+
+  // Check if a user already exists with that email
+  const user = await User.findOne({ email });
+  if (user) {
+    loginServiceErrorResponse(user);
   }
+
+  // To manual register with email verified by other login service
+  // const userExists = await User.findFullUser({ email });
+  // if (userExists) {
+  //   if (userExists.manualSignup) {
+  //     return next(
+  //       new ApiError('User already exists, Redirect to Login page', 409, ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN)
+  //     );
+  //   }
+  //   userExists.manualSignup = true;
+  //   userExists.password = password;
+  //   userExists.passwordConfirm = passwordConfirm;
+  //   userExists.passwordChangedAt = passwordChangedAt;
+  //   await userExists.save({ validateBeforeSave: true });
+  //   return createSendToken(userExists, 201, res);
+  // }
 
   const tempUser = await TempUser.findOne({ email });
   if (!tempUser || !tempUser.emailVerified) {
-    return next(new ApiError('Please verify your email before registering.', 401, ErrorCodes.SIGNUP.EMAIL_UNVERIFIED));
+    return next(new ApiError(responseMessages.AUTH.EMAIL_UNVERIFIED, 401, ErrorCodes.SIGNUP.EMAIL_UNVERIFIED));
   }
 
   const newUser = await User.create({
@@ -175,7 +166,6 @@ export const signup = catchAsync(async (req: Request<{}, {}, SignupBody>, res: R
     email: tempUser.email,
     password,
     passwordConfirm,
-    passwordChangedAt,
     manualSignup: true,
   });
 
@@ -185,23 +175,22 @@ export const signup = catchAsync(async (req: Request<{}, {}, SignupBody>, res: R
   createSendToken(newUser, 201, res, redirectUrl ? { redirectUrl } : {});
 });
 
+// Shouldn't be used with Protect middleware
 export const signupDetails = catchAsync(
   async (req: Request<{}, {}, SignupDetailsBody>, res: Response, next: NextFunction) => {
     const { userType, gender, institute, currentCity } = req.body;
-
     let token: string | undefined;
 
     if (req.headers.authorization?.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     }
 
-    if (!token) return next(new ApiError('Unauthorized: No token provided', 401, ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN));
-
     const { _id } = await User.protectApi(token);
-    if (!_id) return next(new ApiError('Unauthorized: Invalid token', 401, ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN));
 
     if (!userType || !gender || !institute || !currentCity) {
-      return next(new ApiError('Validation Fail', 400));
+      return next(
+        new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+      );
     }
 
     const additionalInfo = {
@@ -214,25 +203,19 @@ export const signupDetails = catchAsync(
     const updatedUser = await User.findByIdAndUpdate(_id, { additionalInfo }, { new: true });
 
     const redirectUrl = updatedUser?.isAdditionalInfoFilled();
+
+    const data = { user: updatedUser! };
+    let extra: IResponseExtra = { authenticated: true };
     if (redirectUrl) {
-      return res.status(200).json({
-        status: 'success',
-        message: 'Additional Info is not filled, action required',
-        code: 200,
-        redirectUrl,
-        data: { user: updatedUser },
-        authenticated: true,
-      });
+      extra.redirectUrl = redirectUrl;
+      return ApiResponse(res, 200, responseMessages.DATA.ADDITIONAL_DETAILS_NOT_FOUND, data, extra);
     }
 
-    res.status(200).json({
-      status: 'success',
-      code: 200,
-      data: updatedUser,
-    });
+    return ApiResponse(res, 200, responseMessages.AUTH.SUCCESS, data, extra);
   }
 );
 
+// Shouldn't be used with Protect middleware
 export const signupInterests = catchAsync(
   async (req: Request<{}, {}, SignupInterestsBody>, res: Response, next: NextFunction) => {
     const { interests } = req.body;
@@ -242,26 +225,26 @@ export const signupInterests = catchAsync(
       token = req.headers.authorization.split(' ')[1];
     }
 
-    if (!token) return next(new ApiError('Unauthorized: No token provided', 401, ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN));
-
     const { _id } = await User.protectApi(token);
-    if (!_id) return next(new ApiError('Unauthorized: Invalid token', 401, ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN));
-
-    if (!Array.isArray(interests)) {
-      return next(new ApiError('Interests must be an array', 400));
-    }
 
     if (interests.length < appConfig.app.numOfSignupInterests) {
-      return next(new ApiError(`Choose at least ${appConfig.app.numOfSignupInterests} interests`, 406));
+      return next(new ApiError(responseMessages.DATA.INTERESTS_LENGTH, 406, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
     }
 
+    // Updated User with the interests
     const updatedUser = await User.findByIdAndUpdate(_id, { interests }, { new: true, runValidators: true });
 
-    res.status(200).json({
-      status: 'success',
-      code: 200,
-      data: updatedUser,
-    });
+    // Now check for other details are filled
+    const redirectUrl = updatedUser?.isAdditionalInfoFilled();
+
+    const data = { user: updatedUser! };
+    let extra: IResponseExtra = { authenticated: true };
+    if (redirectUrl) {
+      extra.redirectUrl = redirectUrl;
+      return ApiResponse(res, 200, responseMessages.DATA.INTERESTS_DETAILS_NOT_FOUND, data, extra);
+    }
+
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data, extra);
   }
 );
 
@@ -269,31 +252,26 @@ export const login = catchAsync(async (req: Request<{}, {}, LoginBody>, res: Res
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return next(new ApiError('Please provide email and password', 400, ErrorCodes.LOGIN.INCOMPLETE_CREDENTIALS));
+    return next(
+      new ApiError(responseMessages.AUTH.INCOMPLETE_CREDENTIALS, 400, ErrorCodes.LOGIN.INCOMPLETE_CREDENTIALS)
+    );
   }
 
   const user = await User.findFullUser({ email }, '+password');
 
   if (!user || !user.password)
-    return next(new ApiError('User is not registered.', 403, ErrorCodes.LOGIN.USER_NOT_FOUND, '/login'));
+    return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 400, ErrorCodes.LOGIN.USER_NOT_FOUND, '/login'));
 
-  if (user.googleAccount)
-    return next(new ApiError('Login with Google Account', 401, ErrorCodes.LOGIN.USE_GOOGLE_ACCOUNT));
-
-  if (user.githubAccount)
-    return next(new ApiError('Login with GitHub Account', 401, ErrorCodes.LOGIN.USE_GITHUB_ACCOUNT));
-
-  if (user.linkedinAccount)
-    return next(new ApiError('Login with LinkedIn Account', 401, ErrorCodes.LOGIN.USE_LINKEDIN_ACCOUNT));
+  otherLoginServiceErrorResponse(user);
 
   const isPasswordCorrect = await user.correctPassword(password, user.password);
   if (!isPasswordCorrect)
-    return next(new ApiError('Incorrect email or password', 403, ErrorCodes.LOGIN.INVALID_CREDENTIALS));
+    return next(new ApiError(responseMessages.AUTH.INCORRECT_CREDENTIALS, 401, ErrorCodes.LOGIN.INVALID_CREDENTIALS));
 
   const redirectUrl = user.isAdditionalInfoFilled();
 
   // Creating JWT token
-  createSendToken(user, 201, res, { ...(redirectUrl && { redirectUrl }) });
+  return createSendToken(user, 200, res, { redirectUrl });
 });
 
 export const fetchUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -301,7 +279,7 @@ export const fetchUser = catchAsync(async (req: Request, res: Response, next: Ne
   const { user } = req.body;
 
   if (!user || !(user instanceof User)) {
-    return next(new ApiError('User not found', 404, ErrorCodes.LOGIN.USER_NOT_FOUND));
+    return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.LOGIN.USER_NOT_FOUND));
   }
   // Sending user and creating JWT token
   createSendToken(user, 200, res);
@@ -316,14 +294,7 @@ export const protect = catchAsync(async (req: Request, res: Response, next: Next
   }
 
   if (!token) {
-    return next(
-      new ApiError(
-        'You are not logged in. Please log in to access this route.',
-        401,
-        ErrorCodes.LOGIN.REDIRECT,
-        '/login'
-      )
-    );
+    return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 401, ErrorCodes.LOGIN.REDIRECT, '/login'));
   }
 
   // 2) Use the schema method to protect the route
@@ -332,14 +303,15 @@ export const protect = catchAsync(async (req: Request, res: Response, next: Next
   // 3) Check if user has filled additional info
   const redirectUrl = freshUser.isAdditionalInfoFilled();
   if (redirectUrl) {
-    return res.status(206).json({
-      status: 'partial',
-      message: 'Additional Info is not filled, action required',
-      code: 206,
+    const data = {
+      user: freshUser,
+    };
+    const extra = {
       redirectUrl,
-      data: { user: freshUser },
       authenticated: true,
-    });
+    };
+    // Additional Info is not filled, action required
+    return ApiResponse(res, 206, responseMessages.USER.SIGNUP_DETAILS_NOT_FOUND, data, extra);
   }
 
   // 4) Grant access to the protected route
@@ -352,9 +324,7 @@ export const restrict =
   (...roles: string[]) =>
   (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return next(
-        new ApiError('You do not have permission to perform this action', 403, ErrorCodes.LOGIN.UNAUTHORIZED)
-      );
+      return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 403, ErrorCodes.CLIENT.UNAUTHORIZED));
     }
     next();
   };
@@ -367,7 +337,7 @@ export const forgotPassword = catchAsync(
     if (!email) {
       return next(
         new ApiError(
-          'Please provide your email address to receive the password reset email.',
+          responseMessages.CLIENT.MISSING_INVALID_INPUT,
           400,
           ErrorCodes.PASSWORD_RESET.INCOMPLETE_CREDENTIALS
         )
@@ -377,26 +347,18 @@ export const forgotPassword = catchAsync(
     // 1) Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return next(
-        new ApiError('There is no user with that email address.', 404, ErrorCodes.PASSWORD_RESET.USER_NOT_FOUND)
-      );
+      return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.PASSWORD_RESET.USER_NOT_FOUND));
     }
     if (user.googleAccount) {
+      // Your account is registered with Google. No password reset is needed.
       return next(
-        new ApiError(
-          'Your account is registered with Google. No password reset is needed.',
-          400,
-          ErrorCodes.PASSWORD_RESET.USE_GOOGLE_ACCOUNT
-        )
+        new ApiError(responseMessages.GENERAL.METHOD_NOT_ALLOWED, 400, ErrorCodes.GENERAL.METHOD_NOT_ALLOWED)
       );
     }
     if (user.githubAccount) {
+      // 'Your account is registered with GitHub. No password reset is needed.',
       return next(
-        new ApiError(
-          'Your account is registered with GitHub. No password reset is needed.',
-          400,
-          ErrorCodes.PASSWORD_RESET.USE_GITHUB_ACCOUNT
-        )
+        new ApiError(responseMessages.GENERAL.METHOD_NOT_ALLOWED, 400, ErrorCodes.GENERAL.METHOD_NOT_ALLOWED)
       );
     }
 
@@ -442,10 +404,7 @@ export const forgotPassword = catchAsync(
         html: htmlMessage,
       });
 
-      res.status(200).json({
-        status: 'success',
-        message: 'Password reset token sent to email.',
-      });
+      return ApiResponse(res, 200, responseMessages.AUTH.PASSWORD_RESET_SENT, { email });
     } catch (err: unknown) {
       // Reset token fields if email sending fails
       const userUpdates: Partial<IUser> = {
@@ -456,7 +415,7 @@ export const forgotPassword = catchAsync(
       await user.save({ validateBeforeSave: false }); // Ensure consistency in DB
 
       console.error('Error sending password reset email:', err);
-      return next(new ApiError('There was an error sending the email. Please try again later.', 500));
+      return next(new ApiError(responseMessages.AUTH.PASSWORD_RESET_SENT_ERROR, 500));
     }
   }
 );
@@ -467,12 +426,12 @@ export const resetPassword = catchAsync(
     const { token } = req.params;
 
     if (!token) {
-      return next(new ApiError('Client error: invalid token provided', 400, ErrorCodes.PASSWORD_RESET.TOKEN_INVALID));
+      return next(new ApiError(responseMessages.AUTH.INVALID_TOKEN, 400, ErrorCodes.PASSWORD_RESET.TOKEN_INVALID));
     }
 
     if (!password || !passwordConfirm) {
       return next(
-        new ApiError('Please provide your new password.', 400, ErrorCodes.PASSWORD_RESET.PROVIDE_NEW_PASSWORD)
+        new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.PASSWORD_RESET.PROVIDE_NEW_PASSWORD)
       );
     }
 
@@ -486,7 +445,7 @@ export const resetPassword = catchAsync(
 
     // 2) If the token is expired or the user doesn't exist, return an error
     if (!user) {
-      return next(new ApiError('Token is invalid or expired.', 400, ErrorCodes.PASSWORD_RESET.TOKEN_EXPIRED));
+      return next(new ApiError(responseMessages.AUTH.INVALID_TOKEN, 400, ErrorCodes.PASSWORD_RESET.TOKEN_EXPIRED));
     }
 
     user.password = password;
@@ -507,7 +466,7 @@ export const updatePassword = catchAsync(
     if (!currentPassword || !updatedPassword || !updatedPasswordConfirm) {
       return next(
         new ApiError(
-          'Please provide all required password fields.',
+          responseMessages.AUTH.INCORRECT_CREDENTIALS,
           400,
           ErrorCodes.PASSWORD_UPDATE.INCOMPLETE_CREDENTIALS
         )
@@ -517,14 +476,14 @@ export const updatePassword = catchAsync(
     // 1) Get user from the collection
     const user = await User.findById(req.user?.id).select('+password');
     if (!user || !user?.password) {
-      return next(new ApiError('User not found.', 404, ErrorCodes.PASSWORD_UPDATE.USER_NOT_FOUND));
+      return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.PASSWORD_UPDATE.USER_NOT_FOUND));
     }
 
     // 2) Check if POSTed current password is correct
     const isPasswordCorrect = await user.correctPassword(currentPassword, user.password);
     if (!isPasswordCorrect) {
       return next(
-        new ApiError('The provided password is incorrect.', 401, ErrorCodes.PASSWORD_UPDATE.INCORRECT_PASSWORD)
+        new ApiError(responseMessages.AUTH.INCORRECT_PASSWORD, 401, ErrorCodes.PASSWORD_UPDATE.INCORRECT_PASSWORD)
       );
     }
 

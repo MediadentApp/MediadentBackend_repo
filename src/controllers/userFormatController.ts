@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
-import ApiError from '#src/utils/appError.js';
+import ApiError from '#src/utils/ApiError.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { findKeyValues, stringToObjectID } from '#src/utils/index.js';
 import { CityStates, College, University, UserFormat } from '#src/models/userFormatModel.js';
 import User from '#src/models/userModel.js';
 import appConfig from '#src/config/appConfig.js';
-import { ErrorCodes } from '#src/config/errorCodes.js';
+import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import ApiResponse from '#src/utils/ApiResponse.js';
+import responseMessages from '#src/config/constants/responseMessages.js';
 
 // Search Users
 export const searchUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -13,7 +15,8 @@ export const searchUsers = catchAsync(async (req: Request, res: Response, next: 
   const userId = req.query.userId as string;
 
   if (!searchValue.trim()) {
-    return next(new ApiError('Please provide a search term', 400));
+    // Please provide a search term
+    return next(new ApiError(responseMessages.GENERAL.BAD_REQUEST, 400));
   }
 
   const users = await User.aggregate([
@@ -38,18 +41,17 @@ export const searchUsers = catchAsync(async (req: Request, res: Response, next: 
     },
   ]);
 
-  res.status(200).json({
-    status: 'success',
-    results: users.length,
-    data: { users },
-  });
+  const data = { users };
+  const extra = { results: users.length };
+  return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data, extra);
 });
 
 // Fetch user types
 export const userTypes = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const userTypes = await UserFormat.findOne({}, 'userType');
   if (!userTypes || !userTypes.userType)
-    return next(new ApiError('Could not find User Type Options', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // Could not find User Type Options
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
 
   res.status(200).json({ data: userTypes.userType });
 });
@@ -58,7 +60,8 @@ export const userTypes = catchAsync(async (req: Request, res: Response, next: Ne
 export const userGenders = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const userGenders = await UserFormat.findOne({}, 'userGender');
   if (!userGenders || !userGenders.userGender)
-    return next(new ApiError('Could not find Gender Options', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // Could not find Gender Options
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
 
   res.status(200).json({ data: userGenders.userGender });
 });
@@ -67,7 +70,8 @@ export const userGenders = catchAsync(async (req: Request, res: Response, next: 
 export const userInterests = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const userInterests = await UserFormat.findOne({}, 'userInterest');
   if (!userInterests || !userInterests.userInterest)
-    return next(new ApiError('Could not find Interest Options', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // Could not find Interest Options
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
 
   res.status(200).json({
     data: {
@@ -82,7 +86,8 @@ export const allBoards = catchAsync(async (req: Request, res: Response, next: Ne
   const result = await UserFormat.findOne({}, 'userAcademicDetails.boards');
   const boards = result?.userAcademicDetails?.boards;
   if (!boards || boards.length === 0)
-    return next(new ApiError('Could not find board list', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // Could not find board list
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
 
   res.status(200).json({ data: boards });
 });
@@ -91,7 +96,8 @@ export const allStreams = catchAsync(async (req: Request, res: Response, next: N
   const result = await UserFormat.findOne({}, 'userAcademicDetails.streams');
   const streams = result?.userAcademicDetails?.streams;
   if (!streams || streams.length === 0)
-    return next(new ApiError('Could not find streams list', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // Could not find streams list
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
 
   res.status(200).json({ data: streams });
 });
@@ -100,7 +106,8 @@ export const allGraduationCourses = catchAsync(async (req: Request, res: Respons
   const result = await UserFormat.findOne({}, 'userAcademicDetails.graduation');
   const graduationCourses = result?.userAcademicDetails?.graduation;
   if (!graduationCourses)
-    return next(new ApiError('Could not find graduation courses list', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // Could not find graduation courses list
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
 
   const courses = findKeyValues(graduationCourses, 'courses');
 
@@ -111,7 +118,8 @@ export const allPostGraduationCourses = catchAsync(async (req: Request, res: Res
   const result = await UserFormat.findOne({}, 'userAcademicDetails.postGraduation');
   const postGraduationCourses = result?.userAcademicDetails?.postGraduation;
   if (!postGraduationCourses) {
-    return next(new ApiError('Could not find post-graduation courses list', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // Could not find post-graduation courses list
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
   }
 
   const courses = findKeyValues(postGraduationCourses, 'courses');
@@ -123,7 +131,8 @@ export const allProfessions = catchAsync(async (req: Request, res: Response, nex
   const result = await UserFormat.findOne({}, 'userAcademicDetails.professions');
   const professions = result?.userAcademicDetails?.professions;
   if (!professions || professions.length === 0)
-    return next(new ApiError('Could not find professions list', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // Could not find professions list
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
 
   res.status(200).json({ data: professions });
 });
@@ -146,7 +155,8 @@ export const getAllUniversities = catchAsync(async (req: Request, res: Response,
   ]);
 
   if (!universities.length || !universities[0].universitiesArr.length) {
-    return next(new ApiError('No universities found', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // No universities found
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
   }
 
   res.status(200).json({ data: universities[0].universitiesArr });
@@ -158,7 +168,8 @@ export const searchCollege = catchAsync(async (req: Request, res: Response, next
 
   if (!keyword) {
     return next(
-      new ApiError('Keyword is required for searching colleges', 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+      // Keyword is required for searching colleges
+      new ApiError(responseMessages.DATA.NOT_FOUND, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
     );
   }
 
@@ -175,7 +186,8 @@ export const searchCollege = catchAsync(async (req: Request, res: Response, next
   );
 
   if (colleges.length === 0) {
-    return next(new ApiError('No colleges found matching the search criteria', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // No colleges found matching the search criteria
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
   }
 
   const formattedColleges = colleges.map(college => `${college.name} - ${college.state}, ${college.city}`);
@@ -195,7 +207,8 @@ export const getAllStates = catchAsync(async (req: Request, res: Response, next:
   ]);
 
   if (states.length === 0 || !states[0].states.length) {
-    return next(new ApiError('No states found', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // No states found
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
   }
 
   res.status(200).json({ data: states[0].states.sort() });
@@ -213,7 +226,8 @@ export const getAllCities = catchAsync(async (req: Request, res: Response, next:
   ]);
 
   if (cities.length === 0 || !cities[0].cities.length) {
-    return next(new ApiError('No cities found', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // No cities found
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
   }
 
   res.status(200).json({ data: cities[0].cities.sort() });
@@ -288,7 +302,8 @@ export const getCityStates = catchAsync(async (req: Request, res: Response, next
 export const getByState = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const state = (req.query.state as string)?.toLowerCase();
   if (!state) {
-    return next(new ApiError('State is required', 400));
+    // State is required
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 400));
   }
 
   const offset = parseInt(req.query.offset as string, 10) || 0;
@@ -300,7 +315,8 @@ export const getByState = catchAsync(async (req: Request, res: Response, next: N
     .select('_id state');
 
   if (result.length === 0) {
-    return next(new ApiError('No colleges found for the specified state', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // No colleges found for the specified state
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
   }
 
   res.status(200).json({ data: result });
@@ -310,7 +326,8 @@ export const getByState = catchAsync(async (req: Request, res: Response, next: N
 export const getByDistrict = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const district = (req.query.district as string)?.toLowerCase();
   if (!district) {
-    return next(new ApiError('District is required', 400));
+    // District is required
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 400));
   }
 
   const offset = parseInt(req.query.offset as string, 10) || 0;
@@ -322,7 +339,8 @@ export const getByDistrict = catchAsync(async (req: Request, res: Response, next
     .select('_id district');
 
   if (result.length === 0) {
-    return next(new ApiError('No colleges found for the specified district', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // No colleges found for the specified district
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
   }
 
   res.status(200).json({ data: result });
@@ -332,7 +350,8 @@ export const getByDistrict = catchAsync(async (req: Request, res: Response, next
 export const getDistrictsByState = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const state = (req.query.state as string)?.toLowerCase();
   if (!state) {
-    return next(new ApiError('State is required', 400));
+    // State is required
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 400));
   }
 
   const districts = await College.distinct('district', {
@@ -340,7 +359,8 @@ export const getDistrictsByState = catchAsync(async (req: Request, res: Response
   });
 
   if (districts.length === 0) {
-    return next(new ApiError('No districts found for the specified state', 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    // No districts found for the specified state
+    return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.GENERAL.NO_DATA_FOUND));
   }
 
   res.status(200).json({ data: districts });

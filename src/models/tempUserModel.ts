@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema } from 'mongoose';
+import mongoose, { CallbackWithoutResultAndOptionalError, Document, Model, Schema } from 'mongoose';
 import validator from 'validator';
 
 import { ITempUser } from '#src/types/model.js';
@@ -16,6 +16,14 @@ const tempUserSchema = new Schema<ITempUser>({
   otpSendAt: Date,
   otpExpiration: Date,
   emailVerified: Boolean,
+});
+
+tempUserSchema.pre<ITempUser>('save', async function (next: CallbackWithoutResultAndOptionalError) {
+  if (!this.emailVerified) {
+    this.otpSendAt = new Date();
+    this.otpExpiration = new Date(Date.now() + appConfig.otp.otpExpiration * 60 * 1000);
+  }
+  next();
 });
 
 tempUserSchema.methods.checkOtpTime = function (): boolean {

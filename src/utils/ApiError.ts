@@ -1,4 +1,6 @@
+import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import { ErrorCodeType } from '#src/types/response.error.js';
+import { IResponseMessage } from '#src/types/response.message.js';
 
 /**
  * Custom error class for handling HTTP errors.
@@ -36,15 +38,21 @@ export default class ApiError extends Error {
   /**
    * Creates an instance of HttpError.
    *
-   * @param {string} message - The error message.
+   * @param {IResponseMessage} message - The error message to be sent to the client.
    * @param {number} statusCode - The HTTP status code.
+   * @param {ErrorCodeType} [errorCode] - A unique error code for the error, if applicable.
    * @param {string | null} [redirectUrl] - The URL to redirect to (if applicable).
    */
-  constructor(message: string, statusCode: number, errorCode?: ErrorCodeType, redirectUrl: string | null = null) {
+  constructor(
+    message: IResponseMessage,
+    statusCode: number,
+    errorCode: ErrorCodeType | null = null,
+    redirectUrl: string | null = null
+  ) {
     super(message);
 
     this.statusCode = statusCode;
-    if (errorCode) this.errorCode = errorCode;
+    this.errorCode = errorCode ?? ErrorCodes.GENERAL.FAIL;
     this.status = ApiError.determineStatus(statusCode);
     this.isOperational = true;
     this.redirectUrl = redirectUrl;

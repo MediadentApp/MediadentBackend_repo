@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import validator from 'validator';
 
-import ApiError from '#src/utils/appError.js';
+import ApiError from '#src/utils/ApiError.js';
 import fieldsToSanitize from '#src/config/sanitization.js';
-import { ErrorCodes } from '#src/config/errorCodes.js';
+import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { IResponseMessage } from '#src/types/response.message.js';
+import responseMessages from '#src/config/constants/responseMessages.js';
 
 export default function sanitizeBody(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -23,16 +25,14 @@ export default function sanitizeBody(req: Request, res: Response, next: NextFunc
     if (req.body.email) {
       req.body.email = validator.trim(req.body.email);
       if (!validator.isEmail(req.body.email)) {
-        return next(new ApiError('Invalid email format', 400, ErrorCodes.CLIENT.INVALID_EMAIL));
+        return next(new ApiError(responseMessages.CLIENT.INVALID_EMAIL, 400, ErrorCodes.CLIENT.INVALID_EMAIL));
       }
     }
 
     // Validate OTP (ensure it's numeric)
     if (req?.body?.otp) {
       if (!validator.isNumeric(req?.body.otp.toString())) {
-        return next(
-          new ApiError('OTP should contain only numeric characters', 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
-        );
+        return next(new ApiError(responseMessages.CLIENT.INVALID_OTP, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
       }
     }
 
@@ -49,7 +49,7 @@ export default function sanitizeBody(req: Request, res: Response, next: NextFunc
   } catch (err) {
     console.log('Error sanitizing request body:', err);
     return next(
-      new ApiError('Client error: could not sanitize request body', 400, ErrorCodes.SERVER.INTERNAL_SERVER_ERROR)
+      new ApiError(responseMessages.CLIENT.SANITIZATION_FAILED, 400, ErrorCodes.SERVER.INTERNAL_SERVER_ERROR)
     );
   }
 }

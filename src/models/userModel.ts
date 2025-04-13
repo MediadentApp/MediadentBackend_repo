@@ -5,10 +5,11 @@ import mongoose, { Schema, Model, CallbackWithoutResultAndOptionalError, ObjectI
 import validator from 'validator';
 
 import { IUser, IUserModel } from '#src/types/model.js';
-import ApiError from '#src/utils/appError.js';
+import ApiError from '#src/utils/ApiError.js';
 import { Chat } from '#src/models/userMessages.js';
 import appConfig from '#src/config/appConfig.js';
-import { ErrorCodes } from '#src/config/errorCodes.js';
+import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import responseMessages from '#src/config/constants/responseMessages.js';
 
 // User schema definition
 const userSchema: Schema<IUser> = new Schema(
@@ -244,7 +245,7 @@ const userSchema: Schema<IUser> = new Schema(
 userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOptionalError) {
   // Hash password if modified
   if (this.password && this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, 10);
+    this.password = await bcrypt.hash(this.password, appConfig.bycryptHashSalt);
     this.passwordConfirm = undefined;
 
     // Set passwordChangedAt if password is changed
@@ -261,7 +262,7 @@ userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOpti
   if (normalizedEmail) {
     this.email = normalizedEmail;
   } else {
-    throw new ApiError('Invalid email', 400, ErrorCodes.CLIENT.INVALID_EMAIL);
+    throw new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.INVALID_EMAIL);
   }
 
   if (!this?.fullName) {
@@ -319,31 +320,30 @@ userSchema.methods.isAdditionalInfoFilled = function (): string | null {
 };
 
 userSchema.statics.protectApi = async function (
-  token: string,
-  selectFields: string = '-passwordChangedAt +chats.chatIds +chats.groupChatIds',
+  token: string | undefined | null,
+  selectFields: string = '',
   populateFields?: string
 ): Promise<IUser> {
-  if (!token) throw new ApiError('You are not logged in', 401, ErrorCodes.CLIENT.UNAUTHORIZED);
+  selectFields = selectFields + ' ' + '-passwordChangedAt +chats.chatIds +chats.groupChatIds';
+  const redirect = appConfig.urls.loginUrl;
+
+  if (!token) throw new ApiError(responseMessages.AUTH.NO_TOKEN, 401, ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN, redirect);
 
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is not set');
   }
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-  if (typeof decoded === 'string') {
-    throw new ApiError('Invalid token', 401, ErrorCodes.CLIENT.UNAUTHORIZED);
+  if (typeof decoded !== 'object' || decoded === null || !('id' in decoded)) {
+    throw new ApiError(responseMessages.AUTH.INVALID_TOKEN, 401, ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN, redirect);
   }
 
   const query = this.findById(decoded.id).select(selectFields);
   if (populateFields) query.populate(populateFields);
 
   const freshUser = await query.exec();
-  if (!freshUser) {
-    throw new ApiError('The user belonging to this token no longer exists', 401, ErrorCodes.GENERAL.USER_NOT_FOUND);
-  }
-
-  if (freshUser.changedPasswordAfter(decoded.iat)) {
-    throw new ApiError('User recently changed the password! Please log in again', 401, ErrorCodes.CLIENT.UNAUTHORIZED);
+  if (!freshUser || freshUser.changedPasswordAfter(decoded.iat)) {
+    throw new ApiError(responseMessages.AUTH.INVALID_TOKEN, 401, ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN, redirect);
   }
 
   return freshUser;

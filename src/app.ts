@@ -9,8 +9,7 @@ import globalErrorHandler from '#src/controllers/errorController.js';
 import middlewares from '#src/middlewares/index.js';
 import { routes } from '#src/routes/index.js';
 import socketRoutes from '#src/routes/socketRoutes.js';
-import ApiError from '#src/utils/appError.js';
-import { ErrorCodes } from '#src/config/errorCodes.js';
+import { unknownRoute } from '#src/controllers/serverHealthController.js';
 
 const app = express();
 
@@ -21,9 +20,7 @@ app.use(middlewares);
 app.use('/', routes);
 
 // Handle unknown routes
-app.all('/*name', (req: Request, res: Response, next: NextFunction) => {
-  next(new ApiError(`Can't find ${req.originalUrl} on this server!`, 404, ErrorCodes.SERVER.ROUTE_NOT_FOUND));
-});
+app.all('/*name', unknownRoute);
 
 // Global error handler
 app.use(globalErrorHandler);

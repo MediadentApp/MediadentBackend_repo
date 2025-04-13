@@ -1,5 +1,6 @@
 export interface IAppConfig {
   allowedOrigins: string[];
+  bycryptHashSalt: number;
   otp: {
     sendOtpAfter: number;
     otpExpiration: number;
@@ -13,6 +14,7 @@ export interface IAppConfig {
   urls: {
     signupAdditionalDetailsUrl: string;
     signupInterestUrl: string;
+    loginUrl: string;
   };
   app: {
     numOfSignupInterests: number;

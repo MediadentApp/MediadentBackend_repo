@@ -1,5 +1,6 @@
 import appConfig from '#src/config/appConfig.js';
-import { ErrorCodes } from '#src/config/errorCodes.js';
+import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import responseMessages from '#src/config/constants/responseMessages.js';
 import userSockets from '#src/helper/socketMap.js';
 import { Chat, GroupChat, Message, WebPushSubscription } from '#src/models/userMessages.js';
 import User from '#src/models/userModel.js';
@@ -16,7 +17,8 @@ import {
   ISecondParticipantResponse,
   IUserB,
 } from '#src/types/request.socket.js';
-import ApiError from '#src/utils/appError.js';
+import ApiError from '#src/utils/ApiError.js';
+import ApiResponse from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import catchSocket from '#src/utils/catchSocket.js';
 import { objectIdToString, stringToObjectID } from '#src/utils/index.js';
@@ -120,7 +122,7 @@ export const getChatID = catchAsync(
     const io = req.app.get('io');
 
     if (!userBId) {
-      return next(new ApiError('User ID is required', 400, ErrorCodes.SOCKET.USER_NOT_FOUND));
+      return next(new ApiError(responseMessages.SOCKET.USER_ID_INVALID, 400, ErrorCodes.SOCKET.USER_NOT_FOUND));
     }
 
     // Find chat either by `chatId` or by `participants`
@@ -137,17 +139,13 @@ export const getChatID = catchAsync(
         }).lean();
 
     if (chat) {
-      return res.status(200).json({
-        status: 'success',
-        message: 'ChatID fetched successfully',
-        data: { chatId: chat._id, userBId },
-      });
+      return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, { chatId: chat._id, userBId });
     }
 
     // Ensure userB exists before creating a new chat
     const userB = await User.findById(userBId).select('_id firstName').lean();
     if (!userB) {
-      return next(new ApiError('User not found', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
+      return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
     }
 
     let newChatId: ObjectId;
@@ -173,7 +171,7 @@ export const getChatID = catchAsync(
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
-      return next(new ApiError('Could not create chat', 500));
+      return next(new ApiError(responseMessages.SOCKET.COULD_NOT_CREATE_CHAT, 500));
     }
 
     // Send notification to Recipient of new Chat
@@ -208,99 +206,94 @@ export const getChatID = catchAsync(
 
     const updatedUserA = await User.findFullUser({ _id: userAId });
 
-    res.status(200).json({
-      status: 'success',
-      message: 'ChatID created successfully',
-      data: {
-        chatId: newChatId,
-        userBId: userB._id,
-        updatedUser: updatedUserA,
-      },
+    return ApiResponse(res, 201, responseMessages.GENERAL.SUCCESS, {
+      chatId: newChatId,
+      userBId,
+      updatedUser: updatedUserA,
     });
   }
 );
 
-export const chats = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const chats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { chatsIdArr } = req.body;
-  if (!chatsIdArr) return next(new ApiError('Chat IDs are required', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
+  if (!chatsIdArr)
+    return next(new ApiError(responseMessages.SOCKET.CHAT_ID_INVALID, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
 
   const chatIdArr = await Chat.find({ _id: { $in: chatsIdArr } });
 
-  res.status(201).json({
-    status: 'success',
-    data: chatIdArr,
+  return ApiResponse(res, 201, responseMessages.GENERAL.SUCCESS, {
+    chatIdArr,
   });
 });
 
-export const getSecondParticipants = catchAsync(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { _id: userId } = req.user as any;
-    const { chatIds } = req.body as { chatIds: string[] };
+export const getSecondParticipants = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { _id: userId } = req.user as any;
+  const { chatIds } = req.body as { chatIds: string[] };
 
-    // Validate input
-    if (!Array.isArray(chatIds) || chatIds.length === 0) {
-      return next(new ApiError('Chat IDs must be provided as an array', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
-    }
-    if (!userId) {
-      return next(new ApiError('User ID must be provided', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
-    }
-
-    const chatIdsObjectID = stringToObjectID(chatIds) as unknown as ObjectId[];
-    const userIdObjectID = stringToObjectID(userId);
-
-    // Use aggregation to find chats and exclude the current user from participants
-    const chats: ISecondParticipantResponse[] = await Chat.aggregate([
-      {
-        $match: {
-          _id: { $in: chatIdsObjectID },
-          participants: userIdObjectID, // Ensure the user is part of the chat
-        },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'participants',
-          foreignField: '_id',
-          as: 'participantsDetails',
-        },
-      },
-      {
-        $unwind: '$participantsDetails',
-      },
-      {
-        $match: {
-          'participantsDetails._id': { $ne: userIdObjectID }, // Exclude the current user
-        },
-      },
-      {
-        $project: {
-          chatId: '$_id',
-          secondParticipant: {
-            _id: '$participantsDetails._id',
-            profilePicture: '$participantsDetails.profilePicture',
-            firstName: '$participantsDetails.firstName',
-            lastName: '$participantsDetails.lastName',
-            fullName: '$participantsDetails.fullName',
-            username: '$participantsDetails.username',
-            email: '$participantsDetails.email',
-          },
-        },
-      },
-    ]);
-
-    const foundChatIds = new Set(chats.map(chat => chat.chatId.toString()));
-    const missingChatIds = chatIdsObjectID.filter(id => !foundChatIds.has(id.toString()));
-
-    if (missingChatIds.length > 0) {
-      await User.updateOne({ _id: userIdObjectID }, { $pullAll: { 'chats.chatIds': missingChatIds } });
-    }
-
-    res.status(200).json({
-      status: 'success',
-      data: chats,
-    });
+  // Validate input
+  if (!Array.isArray(chatIds) || chatIds.length === 0) {
+    return next(
+      new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT)
+    );
   }
-);
+  if (!userId) {
+    return next(new ApiError(responseMessages.SOCKET.USER_ID_INVALID, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
+  }
+
+  const chatIdsObjectID = stringToObjectID(chatIds) as unknown as ObjectId[];
+  const userIdObjectID = stringToObjectID(userId);
+
+  // Use aggregation to find chats and exclude the current user from participants
+  const chats: ISecondParticipantResponse[] = await Chat.aggregate([
+    {
+      $match: {
+        _id: { $in: chatIdsObjectID },
+        participants: userIdObjectID, // Ensure the user is part of the chat
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'participants',
+        foreignField: '_id',
+        as: 'participantsDetails',
+      },
+    },
+    {
+      $unwind: '$participantsDetails',
+    },
+    {
+      $match: {
+        'participantsDetails._id': { $ne: userIdObjectID }, // Exclude the current user
+      },
+    },
+    {
+      $project: {
+        chatId: '$_id',
+        secondParticipant: {
+          _id: '$participantsDetails._id',
+          profilePicture: '$participantsDetails.profilePicture',
+          firstName: '$participantsDetails.firstName',
+          lastName: '$participantsDetails.lastName',
+          fullName: '$participantsDetails.fullName',
+          username: '$participantsDetails.username',
+          email: '$participantsDetails.email',
+        },
+      },
+    },
+  ]);
+
+  const foundChatIds = new Set(chats.map(chat => chat.chatId.toString()));
+  const missingChatIds = chatIdsObjectID.filter(id => !foundChatIds.has(id.toString()));
+
+  if (missingChatIds.length > 0) {
+    await User.updateOne({ _id: userIdObjectID }, { $pullAll: { 'chats.chatIds': missingChatIds } });
+  }
+
+  return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, {
+    chats,
+  });
+});
 
 // Create or Retrieve Group Chat
 export const groupChatId = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -308,7 +301,9 @@ export const groupChatId = catchAsync(async (req: Request, res: Response, next: 
   const { groupId, groupName, participants, admins = [], groupPicture }: IGroupChatRequestBody = req.body;
 
   if (!groupName || !participants || participants.length === 0) {
-    return next(new ApiError('Group name and participants are required', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
+    return next(
+      new ApiError(responseMessages.SOCKET.GROUP_CREATION_DATA_REQUIRED, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT)
+    );
   }
 
   let groupChat;
@@ -316,7 +311,10 @@ export const groupChatId = catchAsync(async (req: Request, res: Response, next: 
   if (groupId) {
     // Retrieve existing group chat
     groupChat = await GroupChat.findById(groupId);
-    if (!groupChat) return next(new ApiError('Chat group not found', 400, ErrorCodes.SOCKET.CHAT_NOT_FOUND));
+    if (!groupChat)
+      return next(
+        new ApiError(responseMessages.SOCKET.GROUP_CREATION_DATA_REQUIRED, 400, ErrorCodes.SOCKET.CHAT_NOT_FOUND)
+      );
   } else {
     // Ensure participants are unique
     const uniqueParticipants = Array.from(new Set([...participants, userId]));
@@ -337,10 +335,8 @@ export const groupChatId = catchAsync(async (req: Request, res: Response, next: 
     );
   }
 
-  res.status(200).json({
-    status: 'success',
-    message: groupId ? 'Group chat retrieved successfully' : 'Group chat created successfully',
-    data: { groupChat },
+  return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, {
+    groupChat,
   });
 });
 
@@ -350,16 +346,16 @@ export const leaveGroupChat = catchAsync(async (req: Request, res: Response, nex
   const { groupId }: ILeaveGroupChatRequestBody = req.body;
 
   if (!groupId) {
-    return next(new ApiError('Group ID is required', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
+    return next(new ApiError(responseMessages.SOCKET.GROUP_ID_REQUIRED, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
   }
 
   const groupChat = await GroupChat.findById(groupId);
   if (!groupChat) {
-    return next(new ApiError('Group chat not found', 400, ErrorCodes.SOCKET.CHAT_NOT_FOUND));
+    return next(new ApiError(responseMessages.SOCKET.GROUP_NOT_FOUND, 400, ErrorCodes.SOCKET.CHAT_NOT_FOUND));
   }
 
   if (!groupChat.participants.includes(userId)) {
-    return next(new ApiError('You are not a participant of this group chat', 403, ErrorCodes.SOCKET.NOT_PARTICIPANT));
+    return next(new ApiError(responseMessages.SOCKET.NOT_PARTICIPANT, 403, ErrorCodes.SOCKET.NOT_PARTICIPANT));
   }
 
   // Remove user from group participants
@@ -369,10 +365,8 @@ export const leaveGroupChat = catchAsync(async (req: Request, res: Response, nex
   // Update user document to remove the group chat ID
   await User.findByIdAndUpdate(userId, { $pull: { 'groups.groupChatIds': groupId } }, { new: true });
 
-  res.status(200).json({
-    status: 'success',
-    message: 'You have left the group chat successfully',
-    data: { groupChatId: groupId },
+  return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, {
+    groupChatId: groupId,
   });
 });
 
@@ -430,7 +424,7 @@ export const getMessagesByChatId = catchAsync(
 
     // Validate chatId
     if (!mongoose.Types.ObjectId.isValid(chatId)) {
-      return next(new ApiError('Invalid chat ID', 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
+      return next(new ApiError(responseMessages.SOCKET.CHAT_ID_INVALID, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
     }
 
     const query: { chatId: string; createdAt?: { $lt: Date } } = { chatId };
@@ -441,29 +435,24 @@ export const getMessagesByChatId = catchAsync(
     const messages = await Message.find(query).sort('-createdAt').limit(limit).lean();
 
     if (messages.length === 0) {
-      return res.status(200).json({
-        status: 'success',
-        message: 'No more messages found',
+      const data = {
+        chatId,
+        messages: [],
+        oldestMessageDate: null,
+      };
+      return ApiResponse(res, 200, responseMessages.SOCKET.MESSAGES_NOT_FOUND, data, {
         results: 0,
-        data: {
-          chatId,
-          messages: [],
-          oldestMessageDate: null,
-        },
       });
     }
 
     const newOldestMessageDate = messages[messages.length - 1].createdAt;
 
-    res.status(200).json({
-      status: 'success',
-      results: messages.length,
-      data: {
-        chatId,
-        messages,
-        oldestMessageDate: newOldestMessageDate,
-      },
-    });
+    const data = {
+      chatId,
+      messages,
+      oldestMessageDate: newOldestMessageDate,
+    };
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data, { results: messages.length });
   }
 );
 
@@ -473,7 +462,7 @@ export const subscribe = catchAsync(async (req: Request, res: Response) => {
 
   await WebPushSubscription.findOneAndUpdate({ userId: req.user._id }, { subscription }, { upsert: true, new: true });
 
-  res.status(200).json({ message: 'Subscription saved successfully' });
+  return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
 });
 
 // Delete notifications in batch with threshold
@@ -637,16 +626,18 @@ export const markNotificationAsRead = async (req: Request, res: Response) => {
   try {
     const notification = await Notification.findById(notificationId);
     if (!notification) {
-      return res.status(404).json({ message: 'Notification not found' });
+      // Notification not found
+      return new ApiError(responseMessages.GENERAL.FAIL, 500);
     }
 
     notification.isRead = true;
     await notification.save();
 
-    res.status(200).json({ message: 'Notification marked as read' });
+    // Notification marked as read
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
   } catch (error) {
     console.error('Error marking notification as read:', error);
-    res.status(500).json({ message: 'Failed to mark notification as read' });
+    return new ApiError(responseMessages.GENERAL.FAIL, 500);
   }
 };
 
@@ -658,9 +649,11 @@ export const getUnreadNotifications = async (req: Request, res: Response) => {
       userId,
       isRead: false,
     }).lean();
-    res.status(200).json(notifications);
+
+    const data = { notifications };
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data);
   } catch (error) {
     console.error('Error fetching unread notifications:', error);
-    res.status(500).json({ message: 'Failed to fetch unread notifications' });
+    return new ApiError(responseMessages.GENERAL.FAIL, 500);
   }
 };

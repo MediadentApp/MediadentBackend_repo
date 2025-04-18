@@ -1,4 +1,4 @@
-import { IResponseMessage } from '#src/types/api.response.js';
+import { IResponseMessage } from '#src/types/api.response.messages.js';
 import ApiResponse from '#src/utils/ApiResponse.js';
 import type { Response } from 'express';
 import { describe, it, expect, vi, beforeEach } from 'vitest';

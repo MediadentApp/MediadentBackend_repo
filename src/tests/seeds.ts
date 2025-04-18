@@ -2,11 +2,24 @@ import appConfig from '#src/config/appConfig.js';
 import User from '#src/models/userModel.js';
 import { IUser } from '#src/types/model.js';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 
 /**
  * Direct User insertion will not hash password, passwordConfirm and passwordChangedAt
  * Unique email and username must also be directly provided.
  */
+
+export const dropCollection = async () => {
+  const collections = mongoose.connection.collections;
+
+  const keepCollections = ['userformats', 'colleges', 'universities', 'citystates']; // collection names you want to keep
+
+  for (const key in collections) {
+    if (!keepCollections.includes(key)) {
+      await collections[key].deleteMany({});
+    }
+  }
+};
 
 const seedDatabase = async () => {
   const pass = await bcrypt.hash('Test@1234', appConfig.bycryptHashSalt);

@@ -5,7 +5,8 @@ import userSockets from '#src/helper/socketMap.js';
 import { Chat, GroupChat, Message, WebPushSubscription } from '#src/models/userMessages.js';
 import User from '#src/models/userModel.js';
 import Notification from '#src/models/userNotificationModel.js';
-import { AppRequestBody, AppResponse } from '#src/types/api.request.js';
+import { AppRequestBody } from '#src/types/api.request.js';
+import { AppResponse } from '#src/types/api.response.js';
 import {
   IAuthenticatedSocket,
   IChatRequestBody,

@@ -222,7 +222,7 @@ interface IUserFormat extends Document {
   userType: string[];
   userAcademicDetails: IUserAcademicDetails;
   userGender: string[];
-  userInterest: IUserInterest;
+  userInterest: IUserInterest[];
 }
 
 export type {

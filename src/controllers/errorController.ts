@@ -4,7 +4,7 @@ import { CastError, Error as MongooseError } from 'mongoose';
 import ApiError from '#src/utils/ApiError.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
-import { IResponseMessage } from '#src/types/api.response.js';
+import { IResponseMessage } from '#src/types/api.response.messages.js';
 
 const handleCastErrorDB = (err: CastError): ApiError => {
   const message = `Invalid ${err.path}: ${err.value}.` as IResponseMessage;

@@ -1,10 +1,11 @@
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { IUser } from '#src/types/model.js';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 
-// This type extracts all the values (deeply) from the object
-type Flatten<T> = T extends object ? T[keyof T] : never;
-export type IResponseMessage = Flatten<Flatten<typeof responseMessages>>;
+export type AppResponse<ResponseType = IApiResponse, DataType = any> = Response<
+  ResponseType & { data: IResponseData<DataType> }
+>;
+// export type AppResponse = Response<IApiResponse<IResponseData<unknown>>>;
 
 export interface IApiResponse<T = any> extends IBaseApiResponse, IResponseExtra<T> {}
 
@@ -17,7 +18,7 @@ export interface IResponseExtra<T = any> {
   data?: IResponseData<T>;
   authenticated?: boolean;
   redirectUrl?: string;
-  [key: string]: any;
+  token?: string;
 }
 
 export interface IResponseData<T> {

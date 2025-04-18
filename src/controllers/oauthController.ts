@@ -7,8 +7,8 @@ import User from '#src/models/userModel.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { createSendToken } from '#src/utils/authUtils.js';
 import { IOAuthCallbackQuery } from '#src/types/query.auth.js';
-import { IResponseMessage } from '#src/types/api.response.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { IResponseMessage } from '#src/types/api.response.messages.js';
 
 const GOOGLE_REDIRECT_URI =
   process.env.NODE_ENV === 'development' ? process.env.GOOGLE_REDIRECT_URI_DEV : process.env.GOOGLE_REDIRECT_URI_PROD;

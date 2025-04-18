@@ -1,6 +1,6 @@
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import { ErrorCodeType } from '#src/types/api.response.error.js';
-import { IResponseMessage } from '#src/types/api.response.js';
+import { IResponseMessage } from '#src/types/api.response.messages.js';
 
 /**
  * Custom error class for handling HTTP errors.

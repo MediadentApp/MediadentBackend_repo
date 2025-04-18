@@ -1,6 +1,7 @@
 import responseMessages from '#src/config/constants/responseMessages.js';
-import { IApiResponse, IResponseData, IResponseExtra, IResponseMessage } from '#src/types/api.response.js';
-import { IPaginatedResponse } from '#src/types/api.response.paginated.js';
+import { IApiResponse, IResponseData, IResponseExtra } from '#src/types/api.response.js';
+import { IResponseMessage } from '#src/types/api.response.messages.js';
+import { AppPaginatedResponse, IPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { Response } from 'express';
 
 export default function ApiResponse<ResponseDataType = any>(
@@ -29,9 +30,9 @@ export default function ApiResponse<ResponseDataType = any>(
   });
 }
 
-export function ApiPaginatedResponse<T>(
+export function ApiPaginatedResponse<T = any>(
   res: Response<IPaginatedResponse<T>>,
   data: IPaginatedResponse<T>
-): Response<IPaginatedResponse<T>> {
+): AppPaginatedResponse<T> {
   return res.status(200).json(data);
 }

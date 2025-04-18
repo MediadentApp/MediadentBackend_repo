@@ -21,7 +21,7 @@ import {
   SignupInterestsBody,
   UpdatePasswordBody,
 } from '#src/types/request.auth.js';
-import { IResponseExtra } from '#src/types/api.response.js';
+import { AppResponse, IResponseExtra } from '#src/types/api.response.js';
 import ApiError from '#src/utils/ApiError.js';
 import ApiResponse from '#src/utils/ApiResponse.js';
 import { createSendToken } from '#src/utils/authUtils.js';
@@ -29,7 +29,7 @@ import catchAsync from '#src/utils/catchAsync.js';
 import { generateOTP } from '#src/utils/index.js';
 import crypto from 'crypto';
 import { NextFunction } from 'express';
-import { AppRequest, AppResponse, AppRequestBody } from '#src/types/api.request.js';
+import { AppRequest, AppRequestBody } from '#src/types/api.request.js';
 
 export const emailReg = catchAsync(async (req: AppRequestBody<EmailRegBody>, res: AppResponse, next: NextFunction) => {
   const { email } = req.body;

@@ -4,7 +4,6 @@ import validator from 'validator';
 import ApiError from '#src/utils/ApiError.js';
 import fieldsToSanitize from '#src/config/sanitization.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
-import { IResponseMessage } from '#src/types/api.response.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 
 export default function sanitizeBody(req: Request, res: Response, next: NextFunction): void {

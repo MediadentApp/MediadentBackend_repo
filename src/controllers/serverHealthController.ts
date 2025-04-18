@@ -1,5 +1,5 @@
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
-import { IResponseMessage } from '#src/types/response.message.js';
+import { IResponseMessage } from '#src/types/api.response.js';
 import ApiError from '#src/utils/ApiError.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { NextFunction, Request, Response } from 'express';

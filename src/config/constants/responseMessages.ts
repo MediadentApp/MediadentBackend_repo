@@ -27,7 +27,7 @@ const responseMessages = {
     EMAIL_UNVERIFIED: 'Please register your email before proceeding.',
     OTP_INCORRECT: 'The OTP provided is incorrect.',
     OTP_EXPIRED: 'The OTP has expired, please request a new one.',
-    OTP_ALREADY_SENT: `Please wait ${appConfig.otp.sendOtpAfter} minutes before requesting a new OTP if one has already been sent.`,
+    OTP_ALREADY_SENT: `Please wait ${appConfig.otp.sendOtpAfter} seconds before requesting a new OTP.`,
     OTP_SENT: 'OTP sent successfully',
     OTP_VERIFIED: 'OTP verified successfully',
     PASSWORD_CHANGED: 'Password changed successfully',

@@ -4,8 +4,8 @@ const appConfig: IAppConfig = {
   allowedOrigins: ['http://localhost:3000', 'http://192.168.0.155:3000', 'https://studenthub-mauve.vercel.app'],
   bycryptHashSalt: 10,
   otp: {
-    sendOtpAfter: 2,
-    otpExpiration: 10,
+    sendOtpAfter: 30, // in seconds
+    otpExpiration: 10, // in minutes
   },
   database: {
     host: 'localhost',

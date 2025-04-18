@@ -5,6 +5,7 @@ import userSockets from '#src/helper/socketMap.js';
 import { Chat, GroupChat, Message, WebPushSubscription } from '#src/models/userMessages.js';
 import User from '#src/models/userModel.js';
 import Notification from '#src/models/userNotificationModel.js';
+import { AppRequestBody, AppResponse } from '#src/types/api.request.js';
 import {
   IAuthenticatedSocket,
   IChatRequestBody,
@@ -21,10 +22,10 @@ import ApiError from '#src/utils/ApiError.js';
 import ApiResponse from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import catchSocket from '#src/utils/catchSocket.js';
-import { objectIdToString, stringToObjectID } from '#src/utils/index.js';
-import { Request, Response, NextFunction } from 'express';
+import { stringToObjectID } from '#src/utils/index.js';
+import { Request, NextFunction } from 'express';
 import mongoose, { ObjectId, ClientSession } from 'mongoose';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import webPush from 'web-push';
 
 /**
@@ -116,7 +117,7 @@ const findSocketByUserId = (userId: string): any => userSockets.get(userId);
  * Gets or creates a chat ID between two users.
  */
 export const getChatID = catchAsync(
-  async (req: Request<{}, {}, IChatRequestBody>, res: Response, next: NextFunction) => {
+  async (req: AppRequestBody<IChatRequestBody>, res: AppResponse, next: NextFunction) => {
     const { _id: userAId, fullName: userAFullName, username: userAUsername } = req.user as any;
     const { userBId, chatId = null } = req.body;
     const io = req.app.get('io');
@@ -214,7 +215,7 @@ export const getChatID = catchAsync(
   }
 );
 
-export const chats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export const chats = catchAsync(async (req: Request, res: AppResponse, next: NextFunction) => {
   const { chatsIdArr } = req.body;
   if (!chatsIdArr)
     return next(new ApiError(responseMessages.SOCKET.CHAT_ID_INVALID, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
@@ -226,7 +227,7 @@ export const chats = catchAsync(async (req: Request, res: Response, next: NextFu
   });
 });
 
-export const getSecondParticipants = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export const getSecondParticipants = catchAsync(async (req: Request, res: AppResponse, next: NextFunction) => {
   const { _id: userId } = req.user as any;
   const { chatIds } = req.body as { chatIds: string[] };
 
@@ -296,7 +297,7 @@ export const getSecondParticipants = catchAsync(async (req: Request, res: Respon
 });
 
 // Create or Retrieve Group Chat
-export const groupChatId = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export const groupChatId = catchAsync(async (req: Request, res: AppResponse, next: NextFunction) => {
   const userId = (req.user as any)._id as string;
   const { groupId, groupName, participants, admins = [], groupPicture }: IGroupChatRequestBody = req.body;
 
@@ -341,7 +342,7 @@ export const groupChatId = catchAsync(async (req: Request, res: Response, next: 
 });
 
 // Leave Group Chat
-export const leaveGroupChat = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export const leaveGroupChat = catchAsync(async (req: Request, res: AppResponse, next: NextFunction) => {
   const userId = req.user._id;
   const { groupId }: ILeaveGroupChatRequestBody = req.body;
 
@@ -372,7 +373,7 @@ export const leaveGroupChat = catchAsync(async (req: Request, res: Response, nex
 
 // !Not Working
 // export const leaveGroupChat = catchAsync(
-//   async (req: Request, res: Response, next: NextFunction) => {
+//   async (req: Request, res: AppResponse, next: NextFunction) => {
 //     const userId = (req.user as any)._id.toString();
 //     const { groupId }: { groupId: string } = req.body;
 
@@ -418,7 +419,7 @@ export const leaveGroupChat = catchAsync(async (req: Request, res: Response, nex
 // );
 
 export const getMessagesByChatId = catchAsync(
-  async (req: Request<{}, {}, IGetMessagesRequestBody>, res: Response, next: NextFunction) => {
+  async (req: AppRequestBody<IGetMessagesRequestBody>, res: AppResponse, next: NextFunction) => {
     const { chatId, oldestMessageDate } = req.body;
     const limit = appConfig.chat.DEFAULT_MESSAGES_PER_PAGE || 20;
 
@@ -457,7 +458,7 @@ export const getMessagesByChatId = catchAsync(
 );
 
 // Subscribe to push notifications
-export const subscribe = catchAsync(async (req: Request, res: Response) => {
+export const subscribe = catchAsync(async (req: Request, res: AppResponse) => {
   const subscription = req.body;
 
   await WebPushSubscription.findOneAndUpdate({ userId: req.user._id }, { subscription }, { upsert: true, new: true });
@@ -621,7 +622,7 @@ export const sendPushNotification = async (userId: string, notificationData: obj
 };
 
 // Mark a Notification as Read
-export const markNotificationAsRead = async (req: Request, res: Response) => {
+export const markNotificationAsRead = async (req: Request, res: AppResponse) => {
   const { notificationId } = req.params;
   try {
     const notification = await Notification.findById(notificationId);
@@ -642,7 +643,7 @@ export const markNotificationAsRead = async (req: Request, res: Response) => {
 };
 
 // Get Unread Notifications for a User
-export const getUnreadNotifications = async (req: Request, res: Response) => {
+export const getUnreadNotifications = async (req: Request, res: AppResponse) => {
   const userId = req.user?.id as string;
   try {
     const notifications = await Notification.find({

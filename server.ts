@@ -2,8 +2,8 @@ import mongoose, { MongooseError } from 'mongoose';
 
 import { server } from '#src/app.js';
 
-// Ensure required environment variables exist
-const DB_URI = process.env.DATABASE?.replace('<PASSWORD>', process.env.DATABASE_PASSWORD || '');
+const DB = process.env.NODE_ENV === 'production' ? process.env.DATABASE : process.env.TEST_DATABASE1;
+const DB_URI = DB?.replace('<PASSWORD>', process.env.DATABASE_PASSWORD || '');
 if (!DB_URI) {
   throw new Error('Database connection string is missing.');
 }
@@ -12,7 +12,7 @@ if (!DB_URI) {
 async function connectDB() {
   try {
     await mongoose.connect(DB_URI as string);
-    console.log('Database connected successfully');
+    console.log(process.env.NODE_ENV, 'database connected successfully');
   } catch (error) {
     console.error('Database connection failed', error);
     throw new MongooseError('Database connection failed');

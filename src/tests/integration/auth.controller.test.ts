@@ -81,6 +81,7 @@ describe('Authentication Tests:', () => {
         expect(res.statusCode).toBe(200);
         expect(res.body.status).toBe('success');
         expect(res.body.message).toBe(responseMessages.AUTH.EMAIL_ALREADY_VERIFIED);
+        expect(res.body.errorCode).toBe(ErrorCodes.SIGNUP.EMAIL_ALREADY_VERIFIED);
         expect(res.body.data).toHaveProperty('email');
       });
     });
@@ -517,9 +518,9 @@ describe('Authentication Tests:', () => {
 
       it('should return 400, if user does not exist', async () => {
         const res = await request(app).post('/api/v1/auth/login').send({ email: 'example@example.com', password });
-        expect(res.statusCode).toBe(400);
-        expect(res.body.message).toBe(responseMessages.USER.USER_NOT_FOUND);
-        expect(res.body.errorCode).toBe(ErrorCodes.LOGIN.USER_NOT_FOUND);
+        expect(res.statusCode).toBe(401);
+        expect(res.body.message).toBe(responseMessages.AUTH.INCORRECT_CREDENTIALS);
+        expect(res.body.errorCode).toBe(ErrorCodes.LOGIN.INVALID_CREDENTIALS);
       });
 
       it('should return 401, if wrong password entered', async () => {

@@ -21,16 +21,17 @@ import {
   SignupInterestsBody,
   UpdatePasswordBody,
 } from '#src/types/request.auth.js';
-import { IResponseExtra } from '#src/types/response.message.js';
+import { IResponseExtra } from '#src/types/api.response.js';
 import ApiError from '#src/utils/ApiError.js';
 import ApiResponse from '#src/utils/ApiResponse.js';
 import { createSendToken } from '#src/utils/authUtils.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { generateOTP } from '#src/utils/index.js';
 import crypto from 'crypto';
-import { NextFunction, Request, response, Response } from 'express';
+import { NextFunction } from 'express';
+import { AppRequest, AppResponse, AppRequestBody } from '#src/types/api.request.js';
 
-export const emailReg = catchAsync(async (req: Request<{}, {}, EmailRegBody>, res: Response, next: NextFunction) => {
+export const emailReg = catchAsync(async (req: AppRequestBody<EmailRegBody>, res: AppResponse, next: NextFunction) => {
   const { email } = req.body;
 
   if (!email)
@@ -47,7 +48,9 @@ export const emailReg = catchAsync(async (req: Request<{}, {}, EmailRegBody>, re
   const tempUserDb = await TempUser.findOne({ email }, 'emailVerified otpSendAt');
   if (tempUserDb) {
     if (tempUserDb.emailVerified) {
-      return ApiResponse(res, 200, responseMessages.AUTH.EMAIL_ALREADY_VERIFIED, { email });
+      return next(
+        new ApiError(responseMessages.AUTH.EMAIL_ALREADY_VERIFIED, 200, ErrorCodes.SIGNUP.EMAIL_ALREADY_VERIFIED)
+      );
     }
     if (tempUserDb.otpSendAt && (await tempUserDb.checkOtpTime())) {
       return next(new ApiError(responseMessages.AUTH.OTP_ALREADY_SENT, 400, ErrorCodes.SIGNUP.OTP_ALREADY_SENT));
@@ -94,7 +97,7 @@ export const emailReg = catchAsync(async (req: Request<{}, {}, EmailRegBody>, re
 });
 
 export const emailVerify = catchAsync(
-  async (req: Request<{}, {}, EmailVerifyBody>, res: Response, next: NextFunction) => {
+  async (req: AppRequestBody<EmailVerifyBody>, res: AppResponse, next: NextFunction) => {
     const { otp, email } = req.body;
 
     if (!otp || !email)
@@ -127,7 +130,7 @@ export const emailVerify = catchAsync(
   }
 );
 
-export const signup = catchAsync(async (req: Request<{}, {}, SignupBody>, res: Response, next: NextFunction) => {
+export const signup = catchAsync(async (req: AppRequestBody<SignupBody>, res: AppResponse, next: NextFunction) => {
   const { firstName, lastName, email, password, passwordConfirm } = req.body;
 
   if (!firstName || !lastName || !email || !password || !passwordConfirm)
@@ -177,7 +180,7 @@ export const signup = catchAsync(async (req: Request<{}, {}, SignupBody>, res: R
 
 // Shouldn't be used with Protect middleware
 export const signupDetails = catchAsync(
-  async (req: Request<{}, {}, SignupDetailsBody>, res: Response, next: NextFunction) => {
+  async (req: AppRequestBody<SignupDetailsBody>, res: AppResponse, next: NextFunction) => {
     const { userType, gender, institute, currentCity } = req.body;
     let token: string | undefined;
 
@@ -217,7 +220,7 @@ export const signupDetails = catchAsync(
 
 // Shouldn't be used with Protect middleware
 export const signupInterests = catchAsync(
-  async (req: Request<{}, {}, SignupInterestsBody>, res: Response, next: NextFunction) => {
+  async (req: AppRequestBody<SignupInterestsBody>, res: AppResponse, next: NextFunction) => {
     const { interests } = req.body;
     let token: string | undefined;
 
@@ -248,7 +251,7 @@ export const signupInterests = catchAsync(
   }
 );
 
-export const login = catchAsync(async (req: Request<{}, {}, LoginBody>, res: Response, next: NextFunction) => {
+export const login = catchAsync(async (req: AppRequestBody<LoginBody>, res: AppResponse, next: NextFunction) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -260,7 +263,7 @@ export const login = catchAsync(async (req: Request<{}, {}, LoginBody>, res: Res
   const user = await User.findFullUser({ email }, '+password');
 
   if (!user || !user.password)
-    return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 400, ErrorCodes.LOGIN.USER_NOT_FOUND, '/login'));
+    return next(new ApiError(responseMessages.AUTH.INCORRECT_CREDENTIALS, 401, ErrorCodes.LOGIN.INVALID_CREDENTIALS));
 
   otherLoginServiceErrorResponse(user);
 
@@ -274,9 +277,9 @@ export const login = catchAsync(async (req: Request<{}, {}, LoginBody>, res: Res
   return createSendToken(user, 200, res, { redirectUrl });
 });
 
-export const fetchUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export const fetchUser = catchAsync(async (req: AppRequest, res: AppResponse, next: NextFunction) => {
   // From protect middleware
-  const { user } = req.body;
+  const { user } = req;
 
   if (!user || !(user instanceof User)) {
     return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.LOGIN.USER_NOT_FOUND));
@@ -285,7 +288,7 @@ export const fetchUser = catchAsync(async (req: Request, res: Response, next: Ne
   createSendToken(user, 200, res);
 });
 
-export const protect = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export const protect = catchAsync(async (req: AppRequest, res: AppResponse, next: NextFunction) => {
   let token: string | undefined;
 
   // 1) Extract token from the headers
@@ -322,7 +325,7 @@ export const protect = catchAsync(async (req: Request, res: Response, next: Next
 // A restrict function for roles, it will run after protect middleware
 export const restrict =
   (...roles: string[]) =>
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: AppRequest, res: AppResponse, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
       return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 403, ErrorCodes.CLIENT.UNAUTHORIZED));
     }
@@ -330,7 +333,7 @@ export const restrict =
   };
 
 export const forgotPassword = catchAsync(
-  async (req: Request<{}, {}, ForgotPasswordBody>, res: Response, next: NextFunction) => {
+  async (req: AppRequestBody<ForgotPasswordBody>, res: AppResponse, next: NextFunction) => {
     const { email } = req.body;
 
     // Validate email input
@@ -421,7 +424,7 @@ export const forgotPassword = catchAsync(
 );
 
 export const resetPassword = catchAsync(
-  async (req: Request<ResetPasswordParams, {}, ResetPasswordBody>, res: Response, next: NextFunction) => {
+  async (req: AppRequest<ResetPasswordParams, ResetPasswordBody>, res: AppResponse, next: NextFunction) => {
     const { password, passwordConfirm } = req.body;
     const { token } = req.params;
 
@@ -460,7 +463,7 @@ export const resetPassword = catchAsync(
 );
 
 export const updatePassword = catchAsync(
-  async (req: Request<{}, {}, UpdatePasswordBody>, res: Response, next: NextFunction) => {
+  async (req: AppRequestBody<UpdatePasswordBody>, res: AppResponse, next: NextFunction) => {
     const { currentPassword, updatedPassword, updatedPasswordConfirm } = req.body;
 
     if (!currentPassword || !updatedPassword || !updatedPasswordConfirm) {
@@ -497,7 +500,7 @@ export const updatePassword = catchAsync(
   }
 );
 
-// export const logout = (req: Request, res: Response, next: NextFunction) => {
+// export const logout = (req: AppRequest, res: AppResponse, next: NextFunction) => {
 //   req.logout((err) => {
 //     if (err) {
 //       return next(err);

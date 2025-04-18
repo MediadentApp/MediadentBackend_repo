@@ -28,7 +28,7 @@ tempUserSchema.pre<ITempUser>('save', async function (next: CallbackWithoutResul
 
 tempUserSchema.methods.checkOtpTime = function (): boolean {
   if (!this.otpSendAt) return false;
-  const sendOtpAfterMilliseconds = appConfig.otp.sendOtpAfter * 60 * 1000;
+  const sendOtpAfterMilliseconds = appConfig.otp.sendOtpAfter * 1000;
   const otpSendAtWithDelay = new Date(this.otpSendAt.getTime() + sendOtpAfterMilliseconds);
   return otpSendAtWithDelay > new Date();
 };

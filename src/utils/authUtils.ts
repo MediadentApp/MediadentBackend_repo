@@ -1,7 +1,7 @@
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { IUser } from '#src/types/model.js';
-import { IResponseExtra } from '#src/types/response.message.js';
+import { IResponseExtra } from '#src/types/api.response.js';
 import ApiError from '#src/utils/ApiError.js';
 import ApiResponse from '#src/utils/ApiResponse.js';
 import { Response } from 'express';

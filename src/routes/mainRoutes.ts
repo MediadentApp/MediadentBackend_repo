@@ -7,10 +7,7 @@ import {
   sendPushNotification,
   subscribe,
 } from '#src/controllers/socketMessageController.js';
-import {
-  userById,
-  userNotifications,
-} from '#src/controllers/userController.js';
+import { userById, userNotifications } from '#src/controllers/userController.js';
 import express from 'express';
 
 const router = express.Router();
@@ -39,10 +36,6 @@ router.post('/send-notification', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Failed to send notification', error });
   }
-});
-
-router.get('/', protect, (req, res) => {
-  res.send('hello world');
 });
 
 export { router as mainRoutes };

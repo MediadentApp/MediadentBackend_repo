@@ -7,7 +7,7 @@ import User from '#src/models/userModel.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { createSendToken } from '#src/utils/authUtils.js';
 import { IOAuthCallbackQuery } from '#src/types/query.auth.js';
-import { IResponseMessage } from '#src/types/response.message.js';
+import { IResponseMessage } from '#src/types/api.response.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 
 const GOOGLE_REDIRECT_URI =

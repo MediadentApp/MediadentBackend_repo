@@ -5,7 +5,7 @@ const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
     if (
       !origin ||
-      appConfig.allowedOrigins.includes(origin) ||
+      appConfig.allowedOrigins.includes(origin as any) ||
       (process.env.NODE_ENV === 'development' && /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d{1,5}$/.test(origin))
     ) {
       callback(null, true);

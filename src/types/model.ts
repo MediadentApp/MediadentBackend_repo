@@ -1,3 +1,5 @@
+import { ErrorCodeType } from '#src/types/api.response.error.js';
+import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { IUserAcademicDetails, IUserInterest } from '#src/types/request.userFormat.js';
 import { Document, Model, ObjectId } from 'mongoose';
 
@@ -47,7 +49,11 @@ interface IUser extends Document {
   followingCommunities: ObjectId[];
   followingUsers: ObjectId[];
   followers: ObjectId[];
-  isAdditionalInfoFilled(): string | null;
+  isAdditionalInfoFilled(): {
+    message: IResponseMessage;
+    redirectUrl: string;
+    errorCode: ErrorCodeType;
+  } | null;
   correctPassword(candidatePassword: string, userPasswordInDB: string): Promise<boolean>;
   changedPasswordAfter(JwtTimestamp: number): boolean;
   createPasswordResetToken(): string;

@@ -9,6 +9,7 @@ import { createSendToken } from '#src/utils/authUtils.js';
 import { IOAuthCallbackQuery } from '#src/types/query.auth.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
+import { IResponseExtra } from '#src/types/api.response.js';
 
 const GOOGLE_REDIRECT_URI =
   process.env.NODE_ENV === 'development' ? process.env.GOOGLE_REDIRECT_URI_DEV : process.env.GOOGLE_REDIRECT_URI_PROD;
@@ -99,10 +100,16 @@ export const googleAuthCallback = catchAsync(
         });
       }
 
-      const redirectUrl = user.isAdditionalInfoFilled();
-      createSendToken(user, 200, res, {
-        ...(redirectUrl && { redirectUrl }),
-      });
+      let extra: IResponseExtra = { authenticated: true };
+
+      const result = user?.isAdditionalInfoFilled();
+      if (result && result.redirectUrl) {
+        const { redirectUrl, message, errorCode } = result;
+        extra = { ...extra, errorCode, redirectUrl, message };
+      }
+
+      // Creating JWT token
+      createSendToken(user, 201, res, extra);
     } catch (error) {
       console.error('Google Authentication Error:', error);
       next(new ApiError('Google Authentication failed. Please try again.' as IResponseMessage, 500));
@@ -186,10 +193,16 @@ export const githubAuthCallback = catchAsync(
         });
       }
 
-      const redirectUrl = user.isAdditionalInfoFilled();
-      createSendToken(user, 200, res, {
-        ...(redirectUrl && { redirectUrl }),
-      });
+      let extra: IResponseExtra = { authenticated: true };
+
+      const result = user?.isAdditionalInfoFilled();
+      if (result && result.redirectUrl) {
+        const { redirectUrl, message, errorCode } = result;
+        extra = { ...extra, errorCode, redirectUrl, message };
+      }
+
+      // Creating JWT token
+      createSendToken(user, 201, res, extra);
     } catch (error) {
       console.error('GitHub Authentication Error:', error);
       next(new ApiError('GitHub authentication failed. Please try again.' as IResponseMessage, 500));

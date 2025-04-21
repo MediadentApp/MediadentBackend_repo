@@ -4,10 +4,16 @@ import { CityStates, College, University, UserFormat } from '#src/models/userFor
 import User from '#src/models/userModel.js';
 import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
-import { AppPaginatedResponse, DefaultProjectionType, IPaginationOptions } from '#src/types/api.response.paginated.js';
+import {
+  AppPaginatedResponse,
+  DefaultProjectionType,
+  IPaginatedResponse,
+  IPaginationOptions,
+} from '#src/types/api.response.paginated.js';
 import { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
 import { ICityStates, ICollege, IUniversity, IUser, IUserFormat } from '#src/types/model.js';
 import { PipelineStage } from 'mongoose';
+import responseMessages from '#src/config/constants/responseMessages.js';
 
 // Search Users
 export const getUsers = catchAsync(
@@ -170,34 +176,22 @@ export const getCollege = catchAsync(
 // Get all unique states
 export const getAllStates = catchAsync(
   async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
-    const aggregation: PipelineStage[] = [];
-
-    // Optional: Add search (will be added dynamically by FetchPaginatedDataWithAggregation)
-    if (req.query.searchValue) {
-      aggregation.push({
-        $match: {
-          state: { $regex: req.query.searchValue.trim(), $options: 'i' },
-        },
-      });
-    }
-
-    // Group by state (for uniqueness)
-    aggregation.push({
-      $group: {
-        _id: '$state',
-      },
+    const states = await CityStates.distinct('state', {
+      ...(req.query.searchValue && {
+        state: { $regex: req.query.searchValue.trim(), $options: 'i' },
+      }),
     });
 
-    // Replace root so each document is like { state: "Andhra Pradesh" }
-    aggregation.push({
-      $replaceRoot: {
-        newRoot: { state: '$_id' },
-      },
-    });
-
-    const fetchedResponse = await FetchPaginatedDataWithAggregation<ICityStates>(CityStates, aggregation, {
-      pageSize: '50',
-    });
+    states.sort(); // Optional: sort alphabetically
+    const fetchedResponse: IPaginatedResponse = {
+      data: states,
+      message: responseMessages.GENERAL.SUCCESS,
+      totalItems: states.length,
+      totalPages: 1,
+      currentPage: 1,
+      pageSize: states.length,
+      status: 'success',
+    };
 
     return ApiPaginatedResponse(res, fetchedResponse);
   }
@@ -206,34 +200,32 @@ export const getAllStates = catchAsync(
 // Get all unique cities
 export const getAllCities = catchAsync(
   async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
-    const aggregation: PipelineStage[] = [];
+    const searchValue = req.query.searchValue?.trim();
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 10;
 
-    // Optional: Add search (will be added dynamically by FetchPaginatedDataWithAggregation)
-    if (req.query.searchValue) {
-      aggregation.push({
-        $match: {
-          city: { $regex: req.query.searchValue.trim(), $options: 'i' },
-        },
-      });
-    }
-
-    // Group by city (for uniqueness)
-    aggregation.push({
-      $group: {
-        _id: '$city',
-      },
+    const cities = await CityStates.distinct('city', {
+      ...(searchValue && {
+        city: { $regex: searchValue, $options: 'i' },
+      }),
     });
 
-    // Replace root so each document is like { city: "Andhra Pradesh" }
-    aggregation.push({
-      $replaceRoot: {
-        newRoot: { city: '$_id' },
-      },
-    });
+    cities.sort();
 
-    const fetchedResponse = await FetchPaginatedDataWithAggregation<ICityStates>(CityStates, aggregation, {
-      ...req.query,
-    });
+    const totalItems = cities.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const startIndex = (page - 1) * pageSize;
+    const paginatedCities = cities.slice(startIndex, startIndex + pageSize);
+
+    const fetchedResponse: IPaginatedResponse = {
+      data: paginatedCities,
+      message: responseMessages.GENERAL.SUCCESS,
+      totalItems,
+      totalPages,
+      currentPage: page,
+      pageSize,
+      status: 'success',
+    };
 
     return ApiPaginatedResponse(res, fetchedResponse);
   }

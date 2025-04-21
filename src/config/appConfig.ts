@@ -1,6 +1,6 @@
 import { IAppConfig } from '#src/types/config.js';
 
-const appConfig: IAppConfig = {
+const appConfig = {
   allowedOrigins: ['http://localhost:3000', 'http://192.168.0.155:3000', 'https://studenthub-mauve.vercel.app'],
   bycryptHashSalt: 10,
   otp: {
@@ -14,8 +14,8 @@ const appConfig: IAppConfig = {
   },
   apiKey: 'your-api-key',
   urls: {
-    signupAdditionalDetailsUrl: '/additionalinfo',
-    signupInterestUrl: '/interest',
+    signupAdditionalDetailsUrl: '/userdetails',
+    signupInterestUrl: '/interests',
     loginUrl: '/login',
   },
   app: {
@@ -29,6 +29,6 @@ const appConfig: IAppConfig = {
     READ_NOTIFICATION_BATCH_THRESHOLD: 5,
     DELETE_NOTIFICATION_BATCH_THRESHOLD: 5,
   },
-};
+} as const;
 
 export default appConfig;

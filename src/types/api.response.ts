@@ -1,3 +1,4 @@
+import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { IUser } from '#src/types/model.js';
 import { Response } from 'express';
@@ -7,7 +8,7 @@ export type AppResponse<ResponseType = IApiResponse, DataType = any> = Response<
 >;
 // export type AppResponse = Response<IApiResponse<IResponseData<unknown>>>;
 
-export interface IApiResponse<T = any> extends IBaseApiResponse, IResponseExtra<T> {}
+export interface IApiResponse<T = any> extends IBaseApiResponse, Omit<IResponseExtra<T>, 'message'> {}
 
 export interface IBaseApiResponse {
   status: 'success' | 'error';
@@ -19,6 +20,10 @@ export interface IResponseExtra<T = any> {
   authenticated?: boolean;
   redirectUrl?: string;
   token?: string;
+  errorCode?: ErrorCodeType;
+
+  // For exceptions, like createSendToken
+  message?: IResponseMessage;
 }
 
 export interface IResponseData<T> {

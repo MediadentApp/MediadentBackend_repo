@@ -10,6 +10,8 @@ import { Chat } from '#src/models/userMessages.js';
 import appConfig from '#src/config/appConfig.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodeType } from '#src/types/api.response.error.js';
+import { IResponseMessage } from '#src/types/api.response.messages.js';
 
 // User schema definition
 const userSchema: Schema<IUser> = new Schema(
@@ -307,15 +309,27 @@ userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOpti
 });
 
 // This is an Instance Method
-userSchema.methods.isAdditionalInfoFilled = function (): string | null {
+userSchema.methods.isAdditionalInfoFilled = function (): {
+  message: IResponseMessage;
+  redirectUrl: string;
+  errorCode: ErrorCodeType;
+} | null {
   const { userType, gender, institute, currentCity } = this.additionalInfo || {};
 
   if (!userType || !gender || !institute || !currentCity) {
-    return appConfig.urls.signupAdditionalDetailsUrl;
+    return {
+      redirectUrl: appConfig.urls.signupAdditionalDetailsUrl,
+      message: responseMessages.AUTH.REDIRECT_TO_DETAILS,
+      errorCode: ErrorCodes.SIGNUP.REDIRECT_TO_DETAILS,
+    };
   }
 
   return this.interests && this.interests.length < appConfig.app.numOfSignupInterests
-    ? appConfig.urls.signupInterestUrl
+    ? {
+        redirectUrl: appConfig.urls.signupInterestUrl,
+        message: responseMessages.AUTH.REDIRECT_TO_INTERESTS,
+        errorCode: ErrorCodes.SIGNUP.REDIRECT_TO_INTERESTS,
+      }
     : null;
 };
 

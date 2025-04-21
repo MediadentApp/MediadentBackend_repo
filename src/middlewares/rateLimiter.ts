@@ -8,7 +8,7 @@ const generalLimiter = rateLimit({
   headers: true,
   skip: req =>
     !req.headers.origin ||
-    appConfig.allowedOrigins.includes(req.headers.origin) ||
+    appConfig.allowedOrigins.includes(req.headers.origin as any) ||
     req.ip === '127.0.0.1' ||
     req.ip === '::1' ||
     (process.env.NODE_ENV === 'development' &&

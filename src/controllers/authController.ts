@@ -30,6 +30,7 @@ import { generateOTP } from '#src/utils/index.js';
 import crypto from 'crypto';
 import { NextFunction } from 'express';
 import { AppRequest, AppRequestBody } from '#src/types/api.request.js';
+import { IResponseMessage } from '#src/types/api.response.messages.js';
 
 export const emailReg = catchAsync(async (req: AppRequestBody<EmailRegBody>, res: AppResponse, next: NextFunction) => {
   const { email } = req.body;
@@ -172,10 +173,16 @@ export const signup = catchAsync(async (req: AppRequestBody<SignupBody>, res: Ap
     manualSignup: true,
   });
 
-  const redirectUrl = newUser.isAdditionalInfoFilled();
+  let extra: IResponseExtra = { authenticated: true };
+
+  const result = newUser?.isAdditionalInfoFilled();
+  if (result && result.redirectUrl) {
+    const { redirectUrl, message, errorCode } = result;
+    extra = { ...extra, errorCode, redirectUrl, message };
+  }
 
   // Creating JWT token
-  createSendToken(newUser, 201, res, redirectUrl ? { redirectUrl } : {});
+  createSendToken(newUser, 201, res, extra);
 });
 
 // Shouldn't be used with Protect middleware
@@ -205,13 +212,14 @@ export const signupDetails = catchAsync(
 
     const updatedUser = await User.findByIdAndUpdate(_id, { additionalInfo }, { new: true });
 
-    const redirectUrl = updatedUser?.isAdditionalInfoFilled();
-
     const data = { user: updatedUser! };
     let extra: IResponseExtra = { authenticated: true };
-    if (redirectUrl) {
-      extra.redirectUrl = redirectUrl;
-      return ApiResponse(res, 200, responseMessages.DATA.ADDITIONAL_DETAILS_NOT_FOUND, data, extra);
+
+    const result = updatedUser?.isAdditionalInfoFilled();
+    if (result && result.redirectUrl) {
+      const { redirectUrl, message, errorCode } = result;
+      extra = { ...extra, errorCode, redirectUrl };
+      return ApiResponse(res, 200, message, data, extra);
     }
 
     return ApiResponse(res, 200, responseMessages.AUTH.SUCCESS, data, extra);
@@ -237,14 +245,15 @@ export const signupInterests = catchAsync(
     // Updated User with the interests
     const updatedUser = await User.findByIdAndUpdate(_id, { interests }, { new: true, runValidators: true });
 
-    // Now check for other details are filled
-    const redirectUrl = updatedUser?.isAdditionalInfoFilled();
-
     const data = { user: updatedUser! };
     let extra: IResponseExtra = { authenticated: true };
-    if (redirectUrl) {
-      extra.redirectUrl = redirectUrl;
-      return ApiResponse(res, 200, responseMessages.DATA.INTERESTS_DETAILS_NOT_FOUND, data, extra);
+
+    // Now check for other details are filled
+    const result = updatedUser?.isAdditionalInfoFilled();
+    if (result && result.redirectUrl) {
+      const { redirectUrl, message, errorCode } = result;
+      extra = { ...extra, errorCode, redirectUrl };
+      return ApiResponse(res, 200, message, data, extra);
     }
 
     return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data, extra);
@@ -271,10 +280,16 @@ export const login = catchAsync(async (req: AppRequestBody<LoginBody>, res: AppR
   if (!isPasswordCorrect)
     return next(new ApiError(responseMessages.AUTH.INCORRECT_CREDENTIALS, 401, ErrorCodes.LOGIN.INVALID_CREDENTIALS));
 
-  const redirectUrl = user.isAdditionalInfoFilled();
+  let extra: IResponseExtra = { authenticated: true };
+
+  const result = user?.isAdditionalInfoFilled();
+  if (result && result.redirectUrl) {
+    const { redirectUrl, message, errorCode } = result;
+    extra = { ...extra, errorCode, redirectUrl, message };
+  }
 
   // Creating JWT token
-  return createSendToken(user, 200, res, { redirectUrl });
+  return createSendToken(user, 200, res, extra);
 });
 
 export const fetchUser = catchAsync(async (req: AppRequest, res: AppResponse, next: NextFunction) => {
@@ -304,17 +319,15 @@ export const protect = catchAsync(async (req: AppRequest, res: AppResponse, next
   const freshUser = await User.protectApi(token); // Calls the static method on User model
 
   // 3) Check if user has filled additional info
-  const redirectUrl = freshUser.isAdditionalInfoFilled();
-  if (redirectUrl) {
+  const result = freshUser?.isAdditionalInfoFilled();
+  if (result && result.redirectUrl) {
+    const { redirectUrl, message, errorCode } = result;
     const data = {
       user: freshUser,
     };
-    const extra = {
-      redirectUrl,
-      authenticated: true,
-    };
-    // Additional Info is not filled, action required
-    return ApiResponse(res, 206, responseMessages.USER.SIGNUP_DETAILS_NOT_FOUND, data, extra);
+    const extra = { authenticated: true, errorCode, redirectUrl };
+
+    return ApiResponse(res, 206, message, data, extra);
   }
 
   // 4) Grant access to the protected route

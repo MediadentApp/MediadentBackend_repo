@@ -7,6 +7,7 @@ import ApiResponse from '#src/utils/ApiResponse.js';
 import { Response } from 'express';
 import jwt from 'jsonwebtoken';
 import type { StringValue } from 'ms';
+import { IResponseMessage } from '#src/types/api.response.messages.js';
 
 const signToken = (id: string): string => {
   const expiresIn = process.env.JWT_EXPIRES_IN as StringValue;
@@ -15,11 +16,7 @@ const signToken = (id: string): string => {
   });
 };
 
-interface TokenOptions {
-  redirectUrl?: string | null;
-}
-
-const createSendToken = (user: IUser, statusCode: number, res: Response, options: TokenOptions = {}) => {
+const createSendToken = (user: IUser, statusCode: number, res: Response, options: IResponseExtra = {}) => {
   if (!user || !user?._id) {
     throw new ApiError(responseMessages.GENERAL.SERVER_ERROR, 404, ErrorCodes.GENERAL.FAIL);
   }
@@ -30,6 +27,7 @@ const createSendToken = (user: IUser, statusCode: number, res: Response, options
   user.password = undefined;
 
   const extraData: IResponseExtra = {
+    ...options,
     token,
     authenticated: true,
   };
@@ -39,7 +37,7 @@ const createSendToken = (user: IUser, statusCode: number, res: Response, options
     extraData.redirectUrl = options.redirectUrl;
   }
 
-  return ApiResponse(res, statusCode, responseMessages.GENERAL.SUCCESS, { user: user! }, extraData);
+  return ApiResponse(res, statusCode, options?.message ?? responseMessages.GENERAL.SUCCESS, { user: user! }, extraData);
 };
 
 export { signToken, createSendToken };

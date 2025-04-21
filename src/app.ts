@@ -31,7 +31,7 @@ const server = createServer(app);
 // Initialize Socket.IO with CORS settings
 const io = new Server(server, {
   cors: {
-    origin: appConfig.allowedOrigins, // Same allowed origins for WebSocket
+    origin: [...appConfig.allowedOrigins], // Same allowed origins for WebSocket
     methods: ['GET', 'POST'],
     allowedHeaders: ['my-custom-header'],
     credentials: true,

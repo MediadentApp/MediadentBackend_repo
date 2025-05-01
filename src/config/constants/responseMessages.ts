@@ -73,9 +73,10 @@ const responseMessages = {
     NOT_FOUND: 'Data not found',
     ADDITIONAL_DETAILS_NOT_FOUND: 'Details not found',
     INTERESTS_DETAILS_NOT_FOUND: 'Choose Interests',
-    INTERESTS_LENGTH: `Please choose at least ${appConfig.app.numOfSignupInterests} interests`,
+    INTERESTS_LENGTH: `Please choose at least ${appConfig.app.signup.numOfSignupInterests} interests`,
     COULD_NOT_DELETE: 'Could not delete data',
     COULD_NOT_UPDATE: 'Could not update data',
+    INVALID_IMAGE: 'Invalid image format',
   },
   GENERAL: {
     FAIL: 'Failed',

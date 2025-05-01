@@ -1,5 +1,3 @@
-import { IAppConfig } from '#src/types/config.js';
-
 const appConfig = {
   allowedOrigins: ['http://localhost:3000', 'http://192.168.0.155:3000', 'https://studenthub-mauve.vercel.app'],
   bycryptHashSalt: 10,
@@ -19,7 +17,16 @@ const appConfig = {
     loginUrl: '/login',
   },
   app: {
-    numOfSignupInterests: 3,
+    signup: {
+      minPasswordLength: 8,
+      numOfSignupInterests: 3,
+    },
+    post: {
+      allowedPostsPerUser: 5,
+      allowedPostImagesPerPost: 5,
+      allowedPostsImageType: /jpeg|jpg|png/,
+      postsMaxImageSize: 5 * 1024 * 1024, // 5MB
+    }
   },
   chat: {
     DEFAULT_MESSAGES_PER_PAGE: 25,

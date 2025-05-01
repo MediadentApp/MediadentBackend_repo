@@ -64,6 +64,20 @@ interface IUserModel extends Model<IUser> {
   protectApi(token: string | null | undefined, selectFields?: string, populateFields?: string): Promise<IUser>;
 }
 
+interface IUserActivity extends Document {
+  userId: ObjectId;
+  likedPosts: ObjectId[];
+  onlineStatus: boolean;
+  lastSeen: Date;
+  viewedPosts: {
+    postId: ObjectId;
+    timestamp: Date;
+  }[];
+  dismissedPosts: ObjectId[];
+  commentedPosts: ObjectId[];
+  lastSuggestedAt: Date;
+}
+
 interface ITempUser extends Document {
   email: string;
   otp?: number;
@@ -234,6 +248,7 @@ interface IUserFormat extends Document {
 export type {
   IUser,
   IUserModel,
+  IUserActivity,
   ITempUser,
   IEducation,
   ICollege,

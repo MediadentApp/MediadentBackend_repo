@@ -8,12 +8,16 @@ import {
   subscribe,
 } from '#src/controllers/socketMessageController.js';
 import { userById, userNotifications } from '#src/controllers/userController.js';
+import postUpload from '#src/middlewares/multerPosts.js';
 import express from 'express';
 
 const router = express.Router();
 
 router.post('/usersbyid', userById);
 router.get('/notifications', userNotifications);
+
+// Post APIs
+router.post('./community-post', postUpload)
 
 // Communication System APIs
 router.post('/getSecondParticipants', getSecondParticipants);

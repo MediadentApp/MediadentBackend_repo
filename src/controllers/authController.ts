@@ -238,7 +238,7 @@ export const signupInterests = catchAsync(
 
     const { _id } = await User.protectApi(token);
 
-    if (interests.length < appConfig.app.numOfSignupInterests) {
+    if (interests.length < appConfig.app.signup.numOfSignupInterests) {
       return next(new ApiError(responseMessages.DATA.INTERESTS_LENGTH, 406, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
     }
 
@@ -338,12 +338,12 @@ export const protect = catchAsync(async (req: AppRequest, res: AppResponse, next
 // A restrict function for roles, it will run after protect middleware
 export const restrict =
   (...roles: string[]) =>
-  (req: AppRequest, res: AppResponse, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 403, ErrorCodes.CLIENT.UNAUTHORIZED));
-    }
-    next();
-  };
+    (req: AppRequest, res: AppResponse, next: NextFunction) => {
+      if (!req.user || !roles.includes(req.user.role)) {
+        return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 403, ErrorCodes.CLIENT.UNAUTHORIZED));
+      }
+      next();
+    };
 
 export const forgotPassword = catchAsync(
   async (req: AppRequestBody<ForgotPasswordBody>, res: AppResponse, next: NextFunction) => {

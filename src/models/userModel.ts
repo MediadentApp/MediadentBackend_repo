@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import mongoose, { Schema, Model, CallbackWithoutResultAndOptionalError, ObjectId } from 'mongoose';
 import validator from 'validator';
 
-import { IUser, IUserModel } from '#src/types/model.js';
+import { IUser, IUserActivity, IUserModel } from '#src/types/model.js';
 import ApiError from '#src/utils/ApiError.js';
 import { Chat } from '#src/models/userMessages.js';
 import appConfig from '#src/config/appConfig.js';
@@ -324,12 +324,12 @@ userSchema.methods.isAdditionalInfoFilled = function (): {
     };
   }
 
-  return this.interests && this.interests.length < appConfig.app.numOfSignupInterests
+  return this.interests && this.interests.length < appConfig.app.signup.numOfSignupInterests
     ? {
-        redirectUrl: appConfig.urls.signupInterestUrl,
-        message: responseMessages.AUTH.REDIRECT_TO_INTERESTS,
-        errorCode: ErrorCodes.SIGNUP.REDIRECT_TO_INTERESTS,
-      }
+      redirectUrl: appConfig.urls.signupInterestUrl,
+      message: responseMessages.AUTH.REDIRECT_TO_INTERESTS,
+      errorCode: ErrorCodes.SIGNUP.REDIRECT_TO_INTERESTS,
+    }
     : null;
 };
 

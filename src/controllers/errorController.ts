@@ -11,6 +11,13 @@ const handleCastErrorDB = (err: CastError): ApiError => {
   return new ApiError(message, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT);
 };
 
+const handleMulterError = (err: any): ApiError => {
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return new ApiError(responseMessages.CLIENT.MAX_IMAGE_SIZE, 400, ErrorCodes.CLIENT.IMAGE_TOO_LARGE);
+  }
+  return new ApiError(err.message, 400, ErrorCodes.SERVER.UNKNOWN_ERROR)
+};
+
 const handleDuplicateFieldsDB = (err: MongooseError): ApiError => {
   const match = err.message.match(/(["'])(\\?.)*?\1/);
   const value = match ? match[0] : 'Unknown';
@@ -66,11 +73,14 @@ const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFun
   err.status = err.status || 'Internal Server Error';
 
   // console.log(`\x1b[33m${err.stack.replace(/\n/g, '\n  ')}\x1b[0m`);
+  // console.log('error', err)
+  // console.log('errorName', err.name)
 
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') {
     let error: ApiError = err;
 
     if (error.name === 'CastError') error = handleCastErrorDB(error as unknown as CastError);
+    if (error.name === 'MulterError') error = handleMulterError(error as unknown as CastError);
     if (error.statusCode === 11000) error = handleDuplicateFieldsDB(error);
     if (error.name === 'ValidationError')
       error = handleValidationErrorDB(error as unknown as MongooseError.ValidationError);

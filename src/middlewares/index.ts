@@ -13,7 +13,7 @@ middlewares.use(logger);
 middlewares.use(corsMiddleware);
 middlewares.use(rateLimiter);
 middlewares.use(parser);
-middlewares.use(multerMiddleware);
+// middlewares.use(multerMiddleware);
 middlewares.use(requestInfo);
 middlewares.use(sanitizeBody);
 

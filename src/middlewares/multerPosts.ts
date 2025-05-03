@@ -21,12 +21,12 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: any) => {
 
 // Multer route
 const upload = multer({
-    storage: multer.diskStorage({}),
+    storage: multer.memoryStorage(), // ← Store files in memory
     limits: {
         fileSize: appConfig.app.post.postsMaxImageSize
     },
     fileFilter
 })
 
-const postUpload = upload.array('mediaUrls', appConfig.app.post.allowedPostImagesPerPost)
+const postUpload = upload.array('data', appConfig.app.post.allowedPostImagesPerPost)
 export default postUpload

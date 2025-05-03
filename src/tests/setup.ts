@@ -14,6 +14,7 @@ if (!DB_URI) {
 
 export const connectDB = async () => {
   try {
+    console.log('uri: ', DB_URI)
     await mongoose.connect(DB_URI, {
       connectTimeoutMS: 10000, // 10 seconds timeout
       serverSelectionTimeoutMS: 10000, // 10 seconds timeout for server selection

@@ -1,4 +1,5 @@
 import { protect } from '#src/controllers/authController.js';
+import { posts } from '#src/controllers/postController.js';
 import {
   chats,
   getChatID,
@@ -17,7 +18,7 @@ router.post('/usersbyid', userById);
 router.get('/notifications', userNotifications);
 
 // Post APIs
-router.post('./community-post', postUpload)
+router.post('/communitypost', postUpload, posts)
 
 // Communication System APIs
 router.post('/getSecondParticipants', getSecondParticipants);

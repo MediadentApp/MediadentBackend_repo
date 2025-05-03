@@ -25,7 +25,7 @@ const appConfig = {
       allowedPostsPerUser: 5,
       allowedPostImagesPerPost: 5,
       allowedPostsImageType: /jpeg|jpg|png/,
-      postsMaxImageSize: 5 * 1024 * 1024, // 5MB
+      postsMaxImageSize: 2 * 1024 * 1024, // 2MB
     }
   },
   chat: {

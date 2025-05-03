@@ -9,7 +9,7 @@ import { health } from '#src/controllers/serverHealthController.js';
 
 const router: Router = express.Router();
 
-router.get('/health', health);
+router.get('/api/v1/health', health);
 
 router.use('/api/v1/user', protect, mainRoutes);
 router.use('/api/v1/auth', userAuthRoutes);

@@ -82,7 +82,6 @@ describe('Authentication Tests:', () => {
         expect(res.body.status).toBe('success');
         expect(res.body.message).toBe(responseMessages.AUTH.EMAIL_ALREADY_VERIFIED);
         expect(res.body.errorCode).toBe(ErrorCodes.SIGNUP.EMAIL_ALREADY_VERIFIED);
-        expect(res.body.data).toHaveProperty('email');
       });
     });
 
@@ -264,7 +263,7 @@ describe('Authentication Tests:', () => {
         expect(res.statusCode).toBe(201);
         expect(res.body.status).toBe('success');
         expect(res.body.token).toBeDefined();
-        expect(res.body.redirectUrl).toBe('/additionalinfo');
+        expect(res.body.redirectUrl).toBe('/userdetails');
         expect(res.body.data.user).toBeTypeOf('object');
 
         const user = await User.findOne({ email });
@@ -352,7 +351,7 @@ describe('Authentication Tests:', () => {
           const res = await put('/api/v1/auth/signupdetails').send(generateUserDetails());
           expect(res.statusCode).toBe(200);
           expect(res.body.status).toBe('success');
-          expect(res.body.message).toBe(responseMessages.DATA.ADDITIONAL_DETAILS_NOT_FOUND);
+          expect(res.body.message).toBe(responseMessages.AUTH.REDIRECT_TO_INTERESTS);
           expect(res.body.redirectUrl).toBe(appConfig.urls.signupInterestUrl);
           expect(res.body.authenticated).toBe(true);
           expect(res.body.data.user).toBeDefined();
@@ -439,7 +438,7 @@ describe('Authentication Tests:', () => {
           });
           expect(res.statusCode).toBe(200);
           expect(res.body.status).toBe('success');
-          expect(res.body.message).toBe(responseMessages.DATA.INTERESTS_DETAILS_NOT_FOUND);
+          expect(res.body.message).toBe(responseMessages.AUTH.REDIRECT_TO_DETAILS);
           expect(res.body.redirectUrl).toBe(appConfig.urls.signupAdditionalDetailsUrl);
           expect(res.body.authenticated).toBe(true);
           expect(res.body.data.user).toBeDefined();

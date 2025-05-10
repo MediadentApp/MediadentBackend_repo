@@ -28,7 +28,7 @@ export const userById = catchAsync(async (req: Request, res: Response, next: Nex
 
 // Fetch user notifications
 export const userNotifications = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user._id as string;
+  const userId = req.user._id;
   const notifications = await Notification.find({ userId }).sort({
     createdAt: -1,
   });
@@ -39,7 +39,7 @@ export const userNotifications = catchAsync(async (req: Request, res: Response) 
 
 // Save academic details
 export const saveAcademicDetails = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user._id as string;
+  const userId = req.user._id;
 
   const userDetails = await User.findById(userId);
   if (!userDetails)
@@ -63,7 +63,7 @@ export const saveAcademicDetails = catchAsync(async (req: Request, res: Response
 
 // Update academic details
 export const updateAcademicDetails = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user._id as string;
+  const userId = req.user._id;
   const userDetails = await User.findById(userId).populate<{
     education: any;
   }>('education');
@@ -82,7 +82,7 @@ export const updateAcademicDetails = catchAsync(async (req: Request, res: Respon
 
 // Get academic details
 export const getAcademicDetails = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.user._id as string;
+  const userId = req.user._id;
   const userDetails = await User.findById(userId).populate<{
     education: any;
   }>('education');

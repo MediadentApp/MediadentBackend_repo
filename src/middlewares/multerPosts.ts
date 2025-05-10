@@ -10,7 +10,6 @@ import path from 'path';
 const allowedTypes = appConfig.app.post.allowedPostsImageType;
 
 const fileFilter = (req: Request, file: Express.Multer.File, cb: any) => {
-  console.log('file', file);
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
   if (extname && mimetype) {

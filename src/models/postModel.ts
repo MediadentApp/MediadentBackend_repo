@@ -1,5 +1,5 @@
 import { PostAuthorType } from "#src/types/enum.js";
-import { IPost, IPostComment, IPostTag } from "#src/types/model.post.js";
+import { IPost, IPostTag } from "#src/types/model.post.js";
 import mongoose, { Schema } from "mongoose";
 
 const postSchema: Schema<IPost> = new Schema({
@@ -9,10 +9,11 @@ const postSchema: Schema<IPost> = new Schema({
     mediaUrls: [String],
     tags: [{ type: String, index: { type: 'text', exact: true } }], // !Array of tags, string or ObjecId
 
-    PostAuthorType: PostAuthorType,
+    authorType: { type: String, enum: Object.values(PostAuthorType), required: true },
     author: {
         type: Schema.Types.ObjectId,
         index: true,
+        required: true
     },
     views: Number,
     likes: [String],
@@ -24,6 +25,11 @@ const postSchema: Schema<IPost> = new Schema({
     isApproved: Boolean,
     flagReason: String
 }, { timestamps: true }).index({ _id: -1 })
+
+postSchema.pre<IPost>('save', async function (next: any) {
+    console.log('postSchema', this)
+    next();
+});
 
 const Post = mongoose.model<IPost>('Post', postSchema);
 

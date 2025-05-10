@@ -1,10 +1,10 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import mongoose, { Schema, Model, CallbackWithoutResultAndOptionalError, ObjectId } from 'mongoose';
+import mongoose, { Schema, CallbackWithoutResultAndOptionalError, ObjectId } from 'mongoose';
 import validator from 'validator';
 
-import { IUser, IUserActivity, IUserModel } from '#src/types/model.js';
+import { IUser, IUserModel } from '#src/types/model.js';
 import ApiError from '#src/utils/ApiError.js';
 import { Chat } from '#src/models/userMessages.js';
 import appConfig from '#src/config/appConfig.js';

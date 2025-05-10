@@ -78,6 +78,22 @@ const responseMessages = {
     COULD_NOT_DELETE: 'Could not delete data',
     COULD_NOT_UPDATE: 'Could not update data',
     INVALID_IMAGE: 'Invalid image format',
+    INVALID_IMAGE_TYPE: 'Invalid image type',
+    INVALID_IMAGE_SIZE: `Image size should be less than ${appConfig.app.post.postsMaxImageSize / 1024 / 1024} MB`,
+  },
+  APP: {
+    POST: {
+      POST_NOT_FOUND: 'Post not found',
+      POSTS_NOT_FOUND: 'Posts not found',
+      COULD_NOT_DELETE: 'Could not delete post',
+      COULD_NOT_UPDATE: 'Could not update post',
+      INVALID_IMAGE: 'Invalid image format',
+      INVALID_IMAGE_TYPE: 'Invalid image type',
+      INVALID_IMAGE_SIZE: `Image size should be less than ${appConfig.app.post.postsMaxImageSize / 1024 / 1024} MB`,
+      TITLE_REQUIRED: 'Title is required',
+      CONTENT_REQUIRED: 'Content is required',
+      TAGS_REQUIRED: 'Tags are required',
+    }
   },
   GENERAL: {
     FAIL: 'Failed',

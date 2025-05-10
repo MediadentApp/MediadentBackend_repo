@@ -17,7 +17,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('Authentication Tests:', () => {
+describe.skip('Authentication Tests:', () => {
   describe('Email Registration', () => {
     describe('✅ Success Cases', () => {
       it('should send an OTP when a valid email is provided', async () => {

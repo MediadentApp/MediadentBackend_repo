@@ -1,5 +1,5 @@
-import { IApiResponse, IResponseData } from '#src/types/api.response.js';
-import { Request, Response } from 'express';
+import { IApiResponse } from '#src/types/api.response.js';
+import { Request } from 'express-serve-static-core';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
 

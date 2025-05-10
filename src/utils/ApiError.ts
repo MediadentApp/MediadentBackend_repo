@@ -38,7 +38,7 @@ export default class ApiError extends Error {
   /**
    * Creates an instance of HttpError.
    *
-   * @param {IResponseMessage} message - The error message to be sent to the client.
+   * @param {IResponseMessage} message - The error message to be sent to the client, of type IResponseMessage.
    * @param {number} statusCode - The HTTP status code.
    * @param {ErrorCodeType} [errorCode] - A unique error code for the error, if applicable.
    * @param {string | null} [redirectUrl] - The URL to redirect to (if applicable).
@@ -49,7 +49,7 @@ export default class ApiError extends Error {
     errorCode: ErrorCodeType | null = null,
     redirectUrl: string | null = null
   ) {
-    super(message);
+    super(message as string);
 
     this.statusCode = statusCode;
     this.errorCode = errorCode ?? ErrorCodes.GENERAL.FAIL;

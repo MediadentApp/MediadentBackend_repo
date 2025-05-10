@@ -1,46 +1,53 @@
-import responseMessages from '#src/config/constants/responseMessages.js';
-import { uploadToS3 } from '#src/libs/s3.js';
-import { AppRequestBody } from '#src/types/api.request.js';
-import { AppResponse } from '#src/types/api.response.js';
-import { PostBody } from '#src/types/request.post.js';
-import ApiResponse from '#src/utils/ApiResponse.js';
-import catchAsync from '#src/utils/catchAsync.js';
-import axios from 'axios';
-import { NextFunction } from 'express';
+import { ErrorCodes } from "#src/config/constants/errorCodes.js";
+import responseMessages from "#src/config/constants/responseMessages.js";
+import ImageUpload, { ImageFileData } from "#src/libs/imageUpload.js";
+import Post from "#src/models/postModel.js";
+import { AppRequestBody } from "#src/types/api.request.js";
+import { AppResponse } from "#src/types/api.response.js";
+import { PostAuthorType } from "#src/types/enum.js";
+import { PostBody } from "#src/types/request.post.js";
+import ApiError from "#src/utils/ApiError.js";
+import ApiResponse from "#src/utils/ApiResponse.js";
+import catchAsync from "#src/utils/catchAsync.js";
+import { NextFunction } from "express";
 
 export const posts = catchAsync(async (req: AppRequestBody<PostBody>, res: AppResponse, next: NextFunction) => {
-  console.log('posts', req.body);
-  console.log('req.files', req.files);
-  console.log('Request Content-Type:', req.headers['content-type']);
-  console.log('Files received:', req.files?.length);
+    const { title, content, tags } = req.body
+    console.log('posts', req.body)
+    console.log('user', req.user)
 
-  const files = req.files as Array<Express.Multer.File>;
+    if (!title) {
+        return next(new ApiError(responseMessages.APP.POST.TITLE_REQUIRED, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT))
+    }
 
-  if (!files || files.length === 0) {
-    return ApiResponse(res, 400, 'no images');
-  }
+    const files = req.files as Array<Express.Multer.File>
 
-  const s3UploadUrl = process.env.AWS_IMAGE_UPLOAD_LAMBDA;
-  if (!s3UploadUrl) {
-    console.error('AWS_IMAGE_UPLOAD_LAMBDA is not defined');
-    return ApiResponse(res, 500, responseMessages.GENERAL.SERVER_ERROR);
-  }
+    let imageUploadResp
+    if (files && files.length) {
+        const filesData: ImageFileData[] = files.map(file => ({
+            filename: file.originalname,
+            mimeType: file.mimetype,
+            fileBase64: file.buffer.toString('base64'),
+        }))
 
-  const convertedFiles = files.map(file => ({
-    fileBase64: file.buffer.toString('base64'),
-    fileName: file.originalname,
-    mimeType: file.mimetype,
-    // Optional config per file
-    config: {
-      format: 'jpeg',
-      quality: 70,
-    },
-  }));
+        imageUploadResp = await ImageUpload({ files: filesData, username: req.user.username ?? 'auto' })
+        console.log('imageUploadResp', imageUploadResp)
+    }
 
-  const response = await axios.post(s3UploadUrl, {
-    username: req.user.username,
-    files: convertedFiles,
-  });
+    const allTags = [...tags, '#' + req.user.fullName]
+    const slug = title.replace(/\s+/g, '-').toLowerCase()
+    const authorType = PostAuthorType.Personal
+    const author = req.user._id
 
-  ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, response.data);
-});
+    const data = await Post.create({
+        title,
+        content,
+        slug,
+        authorType,
+        author,
+        tags: allTags,
+        mediaUrls: imageUploadResp?.uploaded.map(({ url }) => url)
+    })
+
+    ApiResponse(res, 201, responseMessages.GENERAL.SUCCESS, data);
+})

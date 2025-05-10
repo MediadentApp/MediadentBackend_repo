@@ -1,4 +1,4 @@
-import mongoose, { CallbackWithoutResultAndOptionalError, Document, Model, Schema } from 'mongoose';
+import mongoose, { CallbackWithoutResultAndOptionalError, Model, Schema } from 'mongoose';
 import validator from 'validator';
 
 import { ITempUser } from '#src/types/model.js';

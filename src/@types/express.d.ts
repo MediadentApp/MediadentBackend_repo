@@ -1,10 +1,10 @@
 // Augmenting Express `Request` type
-import { IUser } from '../models/userModel.ts';
+import { IUser } from '#src/types/model.ts';
 import { Request } from 'express';
 
 declare module 'express-serve-static-core' {
   interface Request {
-    user?: IUser;
+    user: IUser;
     requestTime?: string;
   }
 }

@@ -1,7 +1,9 @@
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
-import ApiError from '#src/utils/ApiError.js';
-import { PutObjectCommand, PutObjectCommandInput, S3Client } from '@aws-sdk/client-s3';
+// Direct upload to S3
+
+import { ErrorCodes } from "#src/config/constants/errorCodes.js";
+import responseMessages from "#src/config/constants/responseMessages.js";
+import ApiError from "#src/utils/ApiError.js";
+import { PutObjectCommand, PutObjectCommandInput, S3Client } from "@aws-sdk/client-s3";
 
 if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
   throw new Error('AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY is not set');

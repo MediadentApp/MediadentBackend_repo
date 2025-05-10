@@ -39,7 +39,6 @@ export const emailReg = catchAsync(async (req: AppRequestBody<EmailRegBody>, res
     return next(new ApiError(responseMessages.AUTH.INCOMPLETE_INFO, 400, ErrorCodes.SIGNUP.INCOMPLETE_CREDENTIALS));
 
   // Check if a user already exists with that email
-
   const user = await User.findOne({ email });
   if (user) {
     loginServiceErrorResponse(user);

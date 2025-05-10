@@ -5,6 +5,7 @@ import ApiError from '#src/utils/ApiError.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
+import { AxiosError } from 'axios';
 
 const handleCastErrorDB = (err: CastError): ApiError => {
   const message = `Invalid ${err.path}: ${err.value}.` as IResponseMessage;
@@ -15,7 +16,11 @@ const handleMulterError = (err: any): ApiError => {
   if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return new ApiError(responseMessages.CLIENT.MAX_IMAGE_SIZE, 400, ErrorCodes.CLIENT.IMAGE_TOO_LARGE);
   }
-  return new ApiError(err.message, 400, ErrorCodes.SERVER.UNKNOWN_ERROR)
+  return new ApiError(err.message, 400, ErrorCodes.SERVER.UNKNOWN_ERROR);
+};
+
+const handleAxiosError = (err: AxiosError): ApiError => {
+  return new ApiError(responseMessages.GENERAL.SERVER_ERROR, 400, ErrorCodes.SERVER.UNKNOWN_ERROR);
 };
 
 const handleDuplicateFieldsDB = (err: MongooseError): ApiError => {

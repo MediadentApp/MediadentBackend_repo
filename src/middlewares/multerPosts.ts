@@ -9,7 +9,7 @@ import path from 'path';
 // Allowed file types
 const allowedTypes = appConfig.app.post.allowedPostsImageType;
 
-const fileFilter = (req: Request, file: Express.Multer.File, cb: any) => {
+const postFileFilter = (req: Request, file: Express.Multer.File, cb: any) => {
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
   if (extname && mimetype) {
@@ -19,13 +19,23 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: any) => {
 };
 
 // Multer route
-const upload = multer({
+const postUploadSet = multer({
   storage: multer.memoryStorage(), // ← Store files in memory
   limits: {
     fileSize: appConfig.app.post.postsMaxImageSize,
   },
-  fileFilter,
+  fileFilter: postFileFilter,
 });
 
-const postUpload = upload.array('files', appConfig.app.post.allowedPostImagesPerPost);
-export default postUpload;
+export const postUpload = postUploadSet.array('files', appConfig.app.post.allowedPostImagesPerPost);
+
+const communityUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: appConfig.app.post.postsMaxImageSize },
+  fileFilter: postFileFilter,
+});
+
+export const communityCreationUpload = communityUpload.fields([
+  { name: 'avatar', maxCount: 1 },
+  { name: 'banner', maxCount: 1 },
+]);

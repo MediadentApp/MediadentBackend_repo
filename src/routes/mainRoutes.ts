@@ -1,5 +1,4 @@
-import { protect } from '#src/controllers/authController.js';
-import { posts } from '#src/controllers/postController.js';
+import { createCommunity, communityPosts } from '#src/controllers/postController.js';
 import {
   chats,
   getChatID,
@@ -9,7 +8,7 @@ import {
   subscribe,
 } from '#src/controllers/socketMessageController.js';
 import { userById, userNotifications } from '#src/controllers/userController.js';
-import postUpload from '#src/middlewares/multerPosts.js';
+import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
 import express from 'express';
 
 const router = express.Router();
@@ -18,7 +17,8 @@ router.post('/usersbyid', userById);
 router.get('/notifications', userNotifications);
 
 // Post APIs
-router.post('/communitypost', postUpload, posts)
+router.post('/community', communityCreationUpload, createCommunity);
+router.post('/communitypost', postUpload, communityPosts);
 
 // Communication System APIs
 router.post('/getSecondParticipants', getSecondParticipants);

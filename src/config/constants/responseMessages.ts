@@ -56,6 +56,7 @@ const responseMessages = {
   CLIENT: {
     MISSING_INVALID_INPUT: 'Missing or invalid input provided',
     MAX_IMAGE_SIZE: `Image size should be less than ${appConfig.app.post.postsMaxImageSize / 1024 / 1024} MB`,
+    INVALID_IMAGE_FORMAT_OR_SIZE: 'Invalid image format or size',
     INVALID_EMAIL: 'Invalid email format',
     INVALID_OTP: 'Invalid OTP format',
     SANITIZATION_FAILED: 'Sanitization failed',
@@ -82,6 +83,10 @@ const responseMessages = {
     INVALID_IMAGE_SIZE: `Image size should be less than ${appConfig.app.post.postsMaxImageSize / 1024 / 1024} MB`,
   },
   APP: {
+    CUMMUNITY: {
+      NAME_REQUIRED: 'Name is required',
+      PARENT_NOT_FOUND: 'Parent community not found',
+    },
     POST: {
       POST_NOT_FOUND: 'Post not found',
       POSTS_NOT_FOUND: 'Posts not found',
@@ -93,7 +98,7 @@ const responseMessages = {
       TITLE_REQUIRED: 'Title is required',
       CONTENT_REQUIRED: 'Content is required',
       TAGS_REQUIRED: 'Tags are required',
-    }
+    },
   },
   GENERAL: {
     FAIL: 'Failed',

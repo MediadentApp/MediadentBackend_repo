@@ -14,7 +14,7 @@ const handleCastErrorDB = (err: CastError): ApiError => {
 
 const handleMulterError = (err: any): ApiError => {
   if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-    return new ApiError(responseMessages.CLIENT.MAX_IMAGE_SIZE, 400, ErrorCodes.CLIENT.IMAGE_TOO_LARGE);
+    return new ApiError(responseMessages.CLIENT.INVALID_IMAGE_FORMAT_OR_SIZE, 400, ErrorCodes.CLIENT.IMAGE_TOO_LARGE);
   }
   return new ApiError(err.message, 400, ErrorCodes.SERVER.UNKNOWN_ERROR);
 };

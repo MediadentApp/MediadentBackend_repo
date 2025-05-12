@@ -27,6 +27,7 @@ const seedDatabase = async () => {
     {
       firstName: 'Vin',
       lastName: 'P',
+      fullName: 'vin p',
       email: 'v3p51435@gmail.com',
       username: 'vinp',
       password: pass,

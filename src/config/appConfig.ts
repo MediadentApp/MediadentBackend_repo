@@ -25,8 +25,9 @@ const appConfig = {
       allowedPostsPerUser: 5,
       allowedPostImagesPerPost: 5,
       allowedPostsImageType: /jpeg|jpg|png/,
+      allowedMimeTypes: ['image/jpeg', 'image/png'],
       postsMaxImageSize: 2 * 1024 * 1024, // 2MB
-    }
+    },
   },
   chat: {
     DEFAULT_MESSAGES_PER_PAGE: 25,

@@ -12,6 +12,25 @@ const handleCastErrorDB = (err: CastError): ApiError => {
   return new ApiError(message, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT);
 };
 
+export const handleMongoServerError = (
+  err: MongooseError & { code: number; keyPattern?: any; keyValue?: any }
+): ApiError => {
+  // Duplicate Key Error (E11000)
+  if (err.code === 11000) {
+    const fields = Object.keys(err.keyPattern || {});
+    const values = Object.values(err.keyValue || {});
+    const fieldList = fields.map((field, idx) => `${field}: "${values[idx]}"`).join(', ');
+
+    const message = `Duplicate value for field(s): ${fieldList}. Please use a different value.` as IResponseMessage;
+
+    return new ApiError(message, 400, ErrorCodes.DATA.ALREADY_EXISTS);
+  }
+
+  // Catch-all for other MongoServerErrors
+  const message = 'An unknown MongoDB server error occurred.' as IResponseMessage;
+  return new ApiError(message, 500, ErrorCodes.SERVER.UNKNOWN_ERROR);
+};
+
 const handleMulterError = (err: any): ApiError => {
   if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return new ApiError(responseMessages.CLIENT.INVALID_IMAGE_FORMAT_OR_SIZE, 400, ErrorCodes.CLIENT.IMAGE_TOO_LARGE);
@@ -77,9 +96,9 @@ const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFun
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'Internal Server Error';
 
-  // console.log(`\x1b[33m${err.stack.replace(/\n/g, '\n  ')}\x1b[0m`);
-  // console.log('error', err)
-  // console.log('errorName', err.name)
+  console.log(`\x1b[33m${err.stack.replace(/\n/g, '\n  ')}\x1b[0m`);
+  console.log('error', err);
+  console.log('errorName', err.name);
 
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') {
     let error: ApiError = err;
@@ -87,6 +106,7 @@ const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFun
     if (error.name === 'CastError') error = handleCastErrorDB(error as unknown as CastError);
     if (error.name === 'MulterError') error = handleMulterError(error as unknown as CastError);
     if (error.statusCode === 11000) error = handleDuplicateFieldsDB(error);
+    // if (error.name === 'MongoServerError') error = handleMongoServerError(error as unknown as MongooseError);
     if (error.name === 'ValidationError')
       error = handleValidationErrorDB(error as unknown as MongooseError.ValidationError);
     if (error.name === 'JsonWebTokenError') error = handleJwtError();

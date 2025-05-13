@@ -4,7 +4,7 @@ import { IUser } from '#src/types/model.js';
 import { Response } from 'express';
 
 export type AppResponse<ResponseType = IApiResponse, DataType = any> = Response<
-  ResponseType & { data: IResponseData<DataType> }
+  ResponseType & { data?: IResponseData<DataType> }
 >;
 // export type AppResponse = Response<IApiResponse<IResponseData<unknown>>>;
 
@@ -16,7 +16,7 @@ export interface IBaseApiResponse {
 }
 
 export interface IResponseExtra<T = any> {
-  data?: IResponseData<T>;
+  data?: IResponseData<T>; // For specific use cases
   authenticated?: boolean;
   redirectUrl?: string;
   token?: string;

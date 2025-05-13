@@ -60,6 +60,7 @@ const responseMessages = {
     INVALID_EMAIL: 'Invalid email format',
     INVALID_OTP: 'Invalid OTP format',
     SANITIZATION_FAILED: 'Sanitization failed',
+    MISSING_ALL_NECESSARY_REQUEST_DATA: 'Please provide all the necessary data, including slug, params query, etc.',
   },
   USER: {
     USER_NOT_VERIFIED: 'User is not verified yet',
@@ -83,9 +84,12 @@ const responseMessages = {
     INVALID_IMAGE_SIZE: `Image size should be less than ${appConfig.app.post.postsMaxImageSize / 1024 / 1024} MB`,
   },
   APP: {
-    CUMMUNITY: {
+    COMMUNITY: {
+      INVALID_ID: 'Invalid community id',
+      ALREADY_EXISTS: 'Community already exists with this name',
       NAME_REQUIRED: 'Name is required',
       PARENT_NOT_FOUND: 'Parent community not found',
+      NOT_FOUND: 'Community not found',
     },
     POST: {
       POST_NOT_FOUND: 'Post not found',

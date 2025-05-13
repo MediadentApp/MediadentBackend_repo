@@ -1,5 +1,6 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
+import unusedImports from 'eslint-plugin-unused-imports';
 import _import from "eslint-plugin-import";
 import { fixupPluginRules } from "@eslint/compat";
 import globals from "globals";
@@ -22,7 +23,7 @@ export default defineConfig([globalIgnores(["**/dist", "**/node_modules"]), {
 
     plugins: {
         "@typescript-eslint": typescriptEslint,
-        import: fixupPluginRules(_import),
+        "unused-imports": unusedImports,
     },
 
     languageOptions: {
@@ -35,13 +36,13 @@ export default defineConfig([globalIgnores(["**/dist", "**/node_modules"]), {
         sourceType: "module",
     },
 
-    settings: {
-        "import/resolver": {
-            typescript: {
-                alwaysTryTypes: true,
-            },
-        },
-    },
+    // settings: {
+    //     "import/resolver": {
+    //         typescript: {
+    //             alwaysTryTypes: true,
+    //         },
+    //     },
+    // },
 
     rules: {
         "@typescript-eslint/no-unused-vars": [
@@ -63,7 +64,18 @@ export default defineConfig([globalIgnores(["**/dist", "**/node_modules"]), {
         }],
 
         "import/no-unresolved": "off",
-        "@typescript-eslint/no-unused-vars": "warn",
+
+        // Warn or error for unused imports
+        "unused-imports/no-unused-imports": "error",
+        // Optionally also remove unused variables, unless prefixed with _
+        "unused-imports/no-unused-vars": [
+            "error",
+            { vars: "all", varsIgnorePattern: "^_", args: "after-used", argsIgnorePattern: "^_" }
+        ],
+        "@typescript-eslint/no-unused-vars": "off", // disable to avoid duplicate warnings
+
         "no-console": "warn",
+        "no-alert": "error"
+
     },
 }]);

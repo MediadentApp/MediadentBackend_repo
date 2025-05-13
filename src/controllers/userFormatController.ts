@@ -17,7 +17,7 @@ import responseMessages from '#src/config/constants/responseMessages.js';
 
 // Search Users
 export const getUsers = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse<IUser>, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse<IUser>, next: NextFunction) => {
     const defaultProjection: DefaultProjectionType = {
       firstName: '1',
       lastName: '1',
@@ -37,7 +37,7 @@ export const getUsers = catchAsync(
 
 // Fetch user types
 export const getUserTypes = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const fetchedData = await FetchPaginatedData(UserFormat, {
       defaultProjection: { userType: '1', _id: '0' },
     });
@@ -50,7 +50,7 @@ export const getUserTypes = catchAsync(
 
 // Fetch user genders
 export const getGenders = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const fetchedData = await FetchPaginatedData(UserFormat, {
       defaultProjection: { userGender: '1', _id: '0' },
     });
@@ -63,7 +63,7 @@ export const getGenders = catchAsync(
 
 // Fetch user interests
 export const getUserInterests = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const fetchedData = await FetchPaginatedData(UserFormat, {
       defaultProjection: { userInterest: '1', _id: '0' },
     });
@@ -76,7 +76,7 @@ export const getUserInterests = catchAsync(
 
 // Academic Details
 export const getAllBoards = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const fetchResponse = await FetchPaginatedData(UserFormat, {
       defaultProjection: { 'userAcademicDetails.boards': '1', _id: '0' },
     });
@@ -88,7 +88,7 @@ export const getAllBoards = catchAsync(
 );
 
 export const allStreams = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const fetchResponse = await FetchPaginatedData(UserFormat, {
       defaultProjection: { 'userAcademicDetails.streams': '1', _id: '0' },
     });
@@ -100,7 +100,7 @@ export const allStreams = catchAsync(
 );
 
 export const allGraduationCourses = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const fetchResponse = await FetchPaginatedData(UserFormat, {
       defaultProjection: { 'userAcademicDetails.graduation': '1', _id: '0' },
     });
@@ -114,7 +114,7 @@ export const allGraduationCourses = catchAsync(
 );
 
 export const allPostGraduationCourses = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const fetchResponse = await FetchPaginatedData(UserFormat, {
       defaultProjection: { 'userAcademicDetails.postGraduation': '1', _id: '0' },
     });
@@ -128,7 +128,7 @@ export const allPostGraduationCourses = catchAsync(
 );
 
 export const allProfessions = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const fetchResponse = await FetchPaginatedData(UserFormat, {
       defaultProjection: { 'userAcademicDetails.professions': '1', _id: '0' },
     });
@@ -143,7 +143,7 @@ export const allProfessions = catchAsync(
 
 // College, State, University APIs
 export const getTotalColleges = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const aggregation = [{ $count: 'total' }];
 
     const fetchedResponse = await FetchPaginatedDataWithAggregation(College, aggregation, {});
@@ -153,7 +153,7 @@ export const getTotalColleges = catchAsync(
 );
 
 export const getUniversities = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse<IUniversity>, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse<IUniversity>, next: NextFunction) => {
     const fetchedResponse = await FetchPaginatedData<IUniversity>(University, {
       ...req.query,
     });
@@ -164,7 +164,7 @@ export const getUniversities = catchAsync(
 
 // Search colleges by name
 export const getCollege = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse<ICollege>, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse<ICollege>, next: NextFunction) => {
     const fetchedResponse = await FetchPaginatedData<ICollege>(College, {
       ...req.query,
     });
@@ -175,7 +175,7 @@ export const getCollege = catchAsync(
 
 // Get all unique states
 export const getAllStates = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const states = await CityStates.distinct('state', {
       ...(req.query.searchValue && {
         state: { $regex: req.query.searchValue.trim(), $options: 'i' },
@@ -199,7 +199,7 @@ export const getAllStates = catchAsync(
 
 // Get all unique cities
 export const getAllCities = catchAsync(
-  async (req: AppPaginatedRequest<IPaginationOptions>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
     const searchValue = req.query.searchValue?.trim();
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 10;

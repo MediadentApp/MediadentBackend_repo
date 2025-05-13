@@ -2,31 +2,28 @@ import { Document, ObjectId } from 'mongoose';
 import { PostAuthorType, ReportStatus } from './enum.js';
 
 export interface IPost extends Document {
-  _id: ObjectId;
   slug: string; // URL-safe, unique (e.g., “computer-science”)
 
   title: string;
   content: string;
-  mediaUrls: string[];
+  mediaUrls?: string[];
   tags: string[];
 
-  parentId: ObjectId;
-  postAuthorType: PostAuthorType;
-  author: ObjectId;
+  communityId: ObjectId | null; // ID can be of Community
+  authorId: ObjectId;
 
-  views: number;
-  likes: ObjectId[];
-  likesCount: number;
-  commentsCount: number;
-  popularityScore: number;
-  isDeleted: boolean;
-  isFlagged: boolean;
-  isApproved: boolean;
-  flagReason: string;
+  views?: number;
+  likes?: ObjectId[];
+  likesCount?: number;
+  commentsCount?: number;
+  popularityScore?: number;
+  isDeleted?: boolean;
+  isFlagged?: boolean;
+  isApproved?: boolean;
+  flagReason?: string;
 }
 
 export interface IPostTag extends Document {
-  _id: ObjectId;
   name: string;
   description?: string;
   usageCount: number;

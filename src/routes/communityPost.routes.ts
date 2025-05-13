@@ -1,0 +1,85 @@
+import {
+  createCommunity,
+  communityPosts,
+  getCommunities,
+  getCommunityBySlug,
+  updateCommunity,
+  getCommunityPost,
+  getAllCommunitypost,
+} from '#src/controllers/communityPost.controller.js';
+import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
+import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
+import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
+import { AppResponse } from '#src/types/api.response.js';
+import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
+import { CommunityPostParam } from '#src/types/param.communityPost.js';
+import { IdParam, SlugParam } from '#src/types/param.js';
+import { QueryParam } from '#src/types/query.js';
+import { ICommunityBody } from '#src/types/request.community.js';
+import { PostBody } from '#src/types/request.post.js';
+import express, { NextFunction } from 'express';
+
+const router = express.Router();
+
+/**
+ * POST /community
+ * Creates a new community.
+ */
+router.post(
+  '/community',
+  communityCreationUpload,
+  (req: AppRequestBody<ICommunityBody>, res: AppResponse, next: NextFunction) => createCommunity(req, res, next)
+);
+
+/**
+ * GET /community
+ * Retrieves a list of communities based on query (search, pagination).
+ */
+router.get('/community', (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) =>
+  getCommunities(req, res, next)
+);
+
+/**
+ * PATCH /community/:id
+ * Updates an existing community.
+ */
+router.patch('/community/:id', (req: AppRequest<IdParam, ICommunityBody>, res: AppResponse, next: NextFunction) =>
+  updateCommunity(req, res, next)
+);
+
+/**
+ * GET /community/:slug
+ * Retrieves a single community by its unique slug.
+ */
+router.get('/community/:slug', (req: AppRequestParams<SlugParam>, res: AppResponse, next: NextFunction) =>
+  getCommunityBySlug(req, res, next)
+);
+
+/**
+ * POST /communitypost
+ * Creates a new post for a community.
+ */
+router.post(
+  '/communitypost/:id',
+  postUpload,
+  (req: AppRequestBody<PostBody, IdParam>, res: AppResponse, next: NextFunction) => communityPosts(req, res, next)
+);
+
+/**
+ * GET /communitypost/:communityId
+ * Retrieves a list of posts related to a specific community.
+ * It can also retrieve all posts made by a specific author in a community.
+ */
+router.get(
+  '/communitypost/:communityId',
+  (req: AppPaginatedRequest<CommunityPostParam>, res: AppPaginatedResponse, next: NextFunction) =>
+    getAllCommunitypost(req, res, next)
+);
+
+router.get(
+  '/communitypost/:communityId/:postId',
+  (req: AppRequestParams<CommunityPostParam, QueryParam>, res: AppResponse, next: NextFunction) =>
+    getCommunityPost(req, res, next)
+);
+
+export { router as communityPostRoutes };

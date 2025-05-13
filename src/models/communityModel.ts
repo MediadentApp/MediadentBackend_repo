@@ -4,8 +4,8 @@ import mongoose, { Schema } from 'mongoose';
 
 const communitySchema: Schema<ICommunity> = new Schema<ICommunity>(
   {
-    name: { type: String, required: true, trim: true, text: true },
-    slug: { type: String, required: true, trim: true, unique: true },
+    name: { type: String, required: true, trim: true, unique: true, immutable: true }, // declaring unique automaticallly indexes it
+    slug: { type: String, required: true, trim: true, index: true, immutable: true },
     description: { type: String, trim: true },
     parentId: { type: Schema.Types.ObjectId, ref: 'Community' },
     children: [{ type: Schema.Types.ObjectId, ref: 'Community' }],
@@ -15,7 +15,7 @@ const communitySchema: Schema<ICommunity> = new Schema<ICommunity>(
     verified: Boolean,
     type: { type: String, enum: CommunityType, default: CommunityType.Public },
 
-    owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, immutable: true },
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     membersCount: { type: Number, default: 0 },
     postCount: { type: Number, default: 0 },

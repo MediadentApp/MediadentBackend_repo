@@ -4,6 +4,19 @@ import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { AppPaginatedResponse, IPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { Response } from 'express';
 
+/**
+ * Returns a JSON response with the given status code, message, and data.
+ *
+ * @param {Response} res - The Express.js response object.
+ * @param {number} [statusCode=200] - The HTTP status code.
+ * @param {IResponseMessage} [message] - The response message. Defaults to the appropriate message
+ *   from the responseMessages object.
+ * @param {IResponseData} [data] - The response data.
+ * @param {IResponseExtra} [extra] - Additional fields to include in the response.
+ *
+ * @returns {Response<IApiResponse<IResponseData>>} - The response with the given status code, message,
+ *   and data.
+ */
 export default function ApiResponse<ResponseDataType = any>(
   res: Response,
   statusCode: number = 200,
@@ -30,6 +43,12 @@ export default function ApiResponse<ResponseDataType = any>(
   });
 }
 
+/**
+ * Helper function to return a paginated response
+ * @param res The express response object
+ * @param data The paginated data to be returned
+ * @returns The response object with the paginated data
+ */
 export function ApiPaginatedResponse<T = any>(
   res: Response<IPaginatedResponse<T>>,
   data: IPaginatedResponse<T>

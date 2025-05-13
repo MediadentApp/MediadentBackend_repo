@@ -1,4 +1,4 @@
-import { createCommunity, communityPosts } from '#src/controllers/postController.js';
+import { communityPosts, createCommunity } from '#src/controllers/communityPost.controller.js';
 import {
   chats,
   getChatID,
@@ -15,10 +15,6 @@ const router = express.Router();
 
 router.post('/usersbyid', userById);
 router.get('/notifications', userNotifications);
-
-// Post APIs
-router.post('/community', communityCreationUpload, createCommunity);
-router.post('/communitypost', postUpload, communityPosts);
 
 // Communication System APIs
 router.post('/getSecondParticipants', getSecondParticipants);

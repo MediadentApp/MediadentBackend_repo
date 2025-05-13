@@ -7,15 +7,20 @@ const postSchema: Schema<IPost> = new Schema(
     title: { type: String, required: true, trim: true, text: true },
     slug: { type: String, required: true, trim: true, unique: true },
     content: String,
-    mediaUrls: [String],
+    mediaUrls: { type: [String], default: [] },
     tags: [{ type: String, index: { type: 'text', exact: true } }], // !Array of tags, string or ObjecId
 
-    postAuthorType: { type: String, enum: Object.values(PostAuthorType), required: true },
-    author: {
+    communityId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Community',
+      index: true,
+    },
+    authorId: {
       type: Schema.Types.ObjectId,
       index: true,
       required: true,
     },
+
     views: Number,
     likes: [String],
     likesCount: Number,

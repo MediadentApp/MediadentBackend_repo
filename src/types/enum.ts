@@ -41,3 +41,18 @@ export enum VoteEnum {
   Upvote = 'upvote',
   Downvote = 'downvote',
 }
+
+export enum BooleanQuery {
+  True = '1',
+  False = '0',
+}
+
+export enum SortMethod {
+  Date = 'date',
+  Votes = 'votes',
+}
+
+export enum SortOrder {
+  Ascending = 'asc',
+  Descending = 'desc',
+}

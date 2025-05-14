@@ -31,8 +31,7 @@ export interface IPostTag extends Document {
   usageCount: number;
 }
 
-export interface IPostComment extends Document {
-  _id: ObjectId;
+export interface IPostComment extends Document<ObjectId> {
   postId: ObjectId;
   parentId: ObjectId;
   userId: ObjectId;
@@ -43,6 +42,9 @@ export interface IPostComment extends Document {
   children: IPostComment[];
   childrenCount: number;
   isDeleted: boolean;
+
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ICommentVote extends Document {

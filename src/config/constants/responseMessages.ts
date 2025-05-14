@@ -119,6 +119,7 @@ const responseMessages = {
     CONFLICT: 'Conflict',
     CANNOT_DELETE: 'Cannot delete resource',
     CANNOT_SENT_EMAIL: 'Cannot send email',
+    SOMETHING_WENT_WRONG: 'Something went wrong',
     EMAIL_SENT: 'Email sent successfully',
   },
 } as const;

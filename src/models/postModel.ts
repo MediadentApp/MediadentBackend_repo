@@ -5,7 +5,7 @@ import mongoose, { Schema } from 'mongoose';
 const postSchema: Schema<IPost> = new Schema(
   {
     title: { type: String, required: true, trim: true, text: true },
-    slug: { type: String, required: true, trim: true, unique: true },
+    slug: { type: String, required: true, trim: true, unique: true, immutable: true },
     content: String,
     mediaUrls: { type: [String], default: [] },
     tags: [{ type: String, index: { type: 'text', exact: true } }], // !Array of tags, string or ObjecId
@@ -21,10 +21,11 @@ const postSchema: Schema<IPost> = new Schema(
       required: true,
     },
 
-    views: Number,
-    likes: [String],
-    likesCount: Number,
-    commentsCount: Number,
+    views: { type: Number, default: 0 },
+    upvotesCount: { type: Number, default: 0 },
+    downvotesCount: { type: Number, default: 0 },
+    commentsCount: { type: Number, default: 0 },
+
     popularityScore: { type: Number, default: 0, index: true },
     isDeleted: Boolean,
     isFlagged: Boolean,

@@ -36,3 +36,8 @@ export enum ReportStatus {
   Resolved = 'Resolved',
   Rejected = 'Rejected',
 }
+
+export enum VoteEnum {
+  Upvote = 'upvote',
+  Downvote = 'downvote',
+}

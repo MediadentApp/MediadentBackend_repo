@@ -6,6 +6,9 @@ import {
   updateCommunity,
   getCommunityPost,
   getAllCommunitypost,
+  deleteCommunity,
+  deleteCommunityPost,
+  updateCommunityPost,
 } from '#src/controllers/communityPost.controller.js';
 import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
@@ -48,8 +51,16 @@ router.patch('/community/:id', (req: AppRequest<IdParam, ICommunityBody>, res: A
 );
 
 /**
+ * DELETE /community/:id
+ * Deletes a community by its ID.
+ */
+router.delete('/community/:id', (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) =>
+  deleteCommunity(req, res, next)
+);
+
+/**
  * GET /community/:slug
- * Retrieves a single community by its unique slug.
+ * Retrieves a single community by its unique slug/name.
  */
 router.get('/community/:slug', (req: AppRequestParams<SlugParam>, res: AppResponse, next: NextFunction) =>
   getCommunityBySlug(req, res, next)
@@ -60,9 +71,21 @@ router.get('/community/:slug', (req: AppRequestParams<SlugParam>, res: AppRespon
  * Creates a new post for a community.
  */
 router.post(
-  '/communitypost/:id',
+  '/communitypost/:communityId',
   postUpload,
-  (req: AppRequestBody<PostBody, IdParam>, res: AppResponse, next: NextFunction) => communityPosts(req, res, next)
+  (req: AppRequestBody<PostBody, CommunityPostParam>, res: AppResponse, next: NextFunction) =>
+    communityPosts(req, res, next)
+);
+
+/**
+ * PATCH /communitypost/:communityId/:postId
+ * Updates a post within a community.
+ */
+router.patch(
+  '/communitypost/:communityId/:postId',
+  postUpload,
+  (req: AppRequestBody<PostBody, CommunityPostParam>, res: AppResponse, next: NextFunction) =>
+    updateCommunityPost(req, res, next)
 );
 
 /**
@@ -76,10 +99,24 @@ router.get(
     getAllCommunitypost(req, res, next)
 );
 
+/**
+ * GET /communitypost/:communityId/:postId
+ * Fetches a specific post by its ID within a community.
+ */
 router.get(
   '/communitypost/:communityId/:postId',
   (req: AppRequestParams<CommunityPostParam, QueryParam>, res: AppResponse, next: NextFunction) =>
     getCommunityPost(req, res, next)
+);
+
+/**
+ * DELETE /communitypost/:communityId/:postId
+ * Deletes a post by its ID within a community.
+ */
+router.delete(
+  '/communitypost/:communityId/:postId',
+  (req: AppRequestParams<CommunityPostParam>, res: AppResponse, next: NextFunction) =>
+    deleteCommunityPost(req, res, next)
 );
 
 export { router as communityPostRoutes };

@@ -54,10 +54,13 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
   if (projection && typeof projection === 'string') {
     const fields = projection.split(',').map(field => field.trim());
     if (fields.length > 0) {
-      projectionObj = fields.reduce((acc, field) => {
-        if (field) acc[field] = '1';
-        return acc;
-      }, {} as Record<string, string>);
+      projectionObj = fields.reduce(
+        (acc, field) => {
+          if (field) acc[field] = '1';
+          return acc;
+        },
+        {} as Record<string, string>
+      );
     }
   }
 
@@ -85,8 +88,8 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
   const normalizedSearchFields = Array.isArray(searchFields)
     ? searchFields
     : typeof searchFields === 'string'
-    ? searchFields.split(',').map(field => field.trim())
-    : [];
+      ? searchFields.split(',').map(field => field.trim())
+      : [];
 
   // Apply search
   if (searchValue && normalizedSearchFields.length > 0) {
@@ -166,8 +169,8 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
   const normalizedSearchFields = Array.isArray(searchFields)
     ? searchFields
     : typeof searchFields === 'string'
-    ? searchFields.split(',').map(field => field.trim())
-    : [];
+      ? searchFields.split(',').map(field => field.trim())
+      : [];
 
   // Search handling
   if (searchValue && normalizedSearchFields.length > 0) {
@@ -191,10 +194,13 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
     const fields = projection.split(',').map(f => f.trim());
     if (fields.length > 0) {
       pipeline.push({
-        $project: fields.reduce((acc, field) => {
-          acc[field] = 1;
-          return acc;
-        }, {} as Record<string, number>),
+        $project: fields.reduce(
+          (acc, field) => {
+            acc[field] = 1;
+            return acc;
+          },
+          {} as Record<string, number>
+        ),
       });
     }
   }

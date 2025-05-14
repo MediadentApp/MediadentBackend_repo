@@ -1,5 +1,5 @@
 import { Document, ObjectId } from 'mongoose';
-import { PostAuthorType, ReportStatus } from './enum.js';
+import { PostAuthorType, ReportStatus, VoteEnum } from './enum.js';
 
 export interface IPost extends Document {
   slug: string; // URL-safe, unique (e.g., “computer-science”)
@@ -13,8 +13,10 @@ export interface IPost extends Document {
   authorId: ObjectId;
 
   views?: number;
-  likes?: ObjectId[];
-  likesCount?: number;
+  upvotes?: ObjectId[];
+  upvotesCount?: number;
+  downvotes?: ObjectId[];
+  downvotesCount?: number;
   commentsCount?: number;
   popularityScore?: number;
   isDeleted?: boolean;
@@ -36,11 +38,17 @@ export interface IPostComment extends Document {
   userId: ObjectId;
   content: string;
 
-  likes: ObjectId[];
-  likesCount: number;
+  upvotesCount: number;
+  downvotesCount: number;
   children: IPostComment[];
   childrenCount: number;
   isDeleted: boolean;
+}
+
+export interface ICommentVote extends Document {
+  commentId: ObjectId;
+  userId: ObjectId;
+  voteType: VoteEnum;
 }
 
 export interface IReportComment {

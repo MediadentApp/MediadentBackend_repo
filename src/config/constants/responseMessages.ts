@@ -84,6 +84,10 @@ const responseMessages = {
     INVALID_IMAGE_SIZE: `Image size should be less than ${appConfig.app.post.postsMaxImageSize / 1024 / 1024} MB`,
   },
   APP: {
+    USER: {},
+    COMMENT: {
+      NOT_FOUND: 'Comment not found',
+    },
     COMMUNITY: {
       INVALID_ID: 'Invalid community id',
       ALREADY_EXISTS: 'Community already exists with this name',

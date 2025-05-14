@@ -19,8 +19,9 @@ export const userById = catchAsync(async (req: Request, res: Response, next: Nex
     );
 
   const users = await User.find({ _id: { $in: idArr } });
-  if (users.length === 0)
+  if (users.length === 0) {
     return next(new ApiError(responseMessages.USER.USERS_NOT_FOUND, 404, ErrorCodes.GENERAL.USER_NOT_FOUND));
+  }
 
   const data = users;
   return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data);
@@ -70,7 +71,7 @@ export const updateAcademicDetails = catchAsync(async (req: Request, res: Respon
 
   if (!userDetails || !userDetails.education) {
     // Academic Details do not exist
-    return next(new ApiError(responseMessages.GENERAL.METHOD_NOT_ALLOWED, 405, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    return next(new ApiError(responseMessages.GENERAL.METHOD_NOT_ALLOWED, 405, ErrorCodes.DATA.NOT_FOUND));
   }
 
   Object.assign(userDetails.education, req.body);
@@ -89,7 +90,7 @@ export const getAcademicDetails = catchAsync(async (req: Request, res: Response,
 
   if (!userDetails || !userDetails.education) {
     // Academic Details do not exist
-    return next(new ApiError(responseMessages.GENERAL.METHOD_NOT_ALLOWED, 405, ErrorCodes.GENERAL.NO_DATA_FOUND));
+    return next(new ApiError(responseMessages.GENERAL.METHOD_NOT_ALLOWED, 405, ErrorCodes.DATA.NOT_FOUND));
   }
 
   const data = userDetails.education;

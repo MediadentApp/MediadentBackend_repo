@@ -25,6 +25,12 @@ export interface IPost extends Document {
   flagReason?: string;
 }
 
+export interface IPostVote extends Document {
+  postId: ObjectId;
+  userId: ObjectId;
+  voteType: VoteEnum;
+}
+
 export interface IPostTag extends Document {
   name: string;
   description?: string;

@@ -38,8 +38,8 @@ export enum ReportStatus {
 }
 
 export enum VoteEnum {
-  Upvote = 'upvote',
-  Downvote = 'downvote',
+  upVote = 'upvote',
+  downVote = 'downvote',
 }
 
 export enum BooleanQuery {

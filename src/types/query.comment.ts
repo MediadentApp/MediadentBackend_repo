@@ -6,9 +6,11 @@ export type ICommentQuery = {
   parentId: string;
   commentId: string;
   children: string;
-  sortMethod: SortMethod;
-  sortOrder: SortDirection;
+  childLimit: string;
+  childSkip: string;
+  limit: number;
   skip: string;
   page: number;
-  limit: number;
+  sortMethod: SortMethod;
+  sortOrder: SortDirection;
 };

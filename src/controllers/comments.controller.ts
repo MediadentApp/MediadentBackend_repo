@@ -4,11 +4,11 @@ import Comment from '#src/models/comment.model.js';
 import { CommentVote } from '#src/models/commentVote.model.js';
 import { AppRequestBody, AppRequestParams, AppRequestQuery } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
-import { SortMethod, SortOrder } from '#src/types/enum.js';
+import { SortMethod, SortOrder, VoteEnum } from '#src/types/enum.js';
 import { IPostComment } from '#src/types/model.post.js';
 import { CommentParam } from '#src/types/param.comment.js';
 import { ICommentQuery } from '#src/types/query.comment.js';
-import { ICommentBody } from '#src/types/request.comment.js';
+import { ICommentBody, ICommentVoteBody } from '#src/types/request.comment.js';
 import ApiError from '#src/utils/ApiError.js';
 import ApiResponse from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
@@ -121,195 +121,221 @@ export const deleteComment = catchAsync(
  * Controller to get comments with nested children using $graphLookup
  * Route: GET /comments?postId=... OR ?commentId=...
  */
-export const getComments = catchAsync(async (req, res, next) => {
-  const {
-    postId,
-    commentId,
-    children = '1', // Depth of children (1 = one level, 2 = two levels, etc.)
-    limit = '5', // Limit for the top-level comments
-    skip = '0', // Skip for pagination of the top-level comments
-    childLimit = '5', // Limit for the child comments at each level
-    childSkip = '0', // Skip for pagination of child comments
-    sortMethod = SortMethod.Date, // Sort method for top-level comments
-    sortOrder = SortOrder.Descending, // Sort order for top-level comments
-  } = req.query;
+export const getComments = catchAsync(
+  async (req: AppRequestQuery<ICommentQuery>, res: AppResponse, next: NextFunction) => {
+    const {
+      postId,
+      commentId,
+      limit = '5', // Limit for the top-level comments
+      skip = '0', // Skip for pagination of the top-level comments
+      page,
+      children = '1', // Depth of children (1 = one level, 2 = two levels, etc.)
+      childLimit = '5', // Limit for the child comments at each level
+      childSkip = '0', // Skip for pagination of child comments
+      sortMethod = SortMethod.Date, // Sort method for top-level comments
+      sortOrder = SortOrder.Descending, // Sort order for top-level comments
+    } = req.query;
 
-  const depth = Number(children);
-  const parsedLimit = Number(limit);
-  const parsedSkip = Number(skip);
-  const parsedChildLimit = Number(childLimit);
-  const parsedChildSkip = Number(childSkip);
+    const depth = Number(children);
+    const parsedLimit = Number(limit);
+    // const parsedSkip = Number(skip);
+    const parsedPage = Number(page ?? '1');
+    const parsedSkip = skip ? Number(skip) : (parsedPage - 1) * parsedLimit;
+    const parsedChildLimit = Number(childLimit);
+    const parsedChildSkip = Number(childSkip);
 
-  if (!postId && !commentId) {
-    return next(
-      new ApiError(
-        responseMessages.CLIENT.MISSING_ALL_NECESSARY_REQUEST_DATA,
-        400,
-        ErrorCodes.CLIENT.MISSING_INVALID_INPUT
-      )
-    );
-  }
+    if (!postId && !commentId) {
+      return next(
+        new ApiError(
+          responseMessages.CLIENT.MISSING_ALL_NECESSARY_REQUEST_DATA,
+          400,
+          ErrorCodes.CLIENT.MISSING_INVALID_INPUT
+        )
+      );
+    }
 
-  const matchStage = commentId
-    ? { _id: new mongoose.Types.ObjectId(commentId.toString()) }
-    : {
-        postId: new mongoose.Types.ObjectId(postId!.toString()),
-        parentId: null, // Top-level comments
-      };
+    const matchStage = commentId
+      ? { _id: new mongoose.Types.ObjectId(commentId.toString()) }
+      : {
+          postId: new mongoose.Types.ObjectId(postId!.toString()),
+          parentId: null, // Top-level comments
+        };
 
-  const order = sortOrder === SortOrder.Ascending ? 1 : -1;
+    const order = sortOrder === SortOrder.Ascending ? 1 : -1;
 
-  // Build sort object
-  const sort: Record<string, 1 | -1> = {};
-  if (sortMethod === SortMethod.Date) {
-    sort.createdAt = order;
-  } else if (sortMethod === SortMethod.Votes) {
-    sort.voteScore = order; // We'll compute this in the pipeline
-  } else {
-    sort.createdAt = order; // Default fallback to date sorting
-  }
+    // Build sort object
+    const sort: Record<string, 1 | -1> = {};
+    if (sortMethod === SortMethod.Date) {
+      sort.createdAt = order;
+    } else if (sortMethod === SortMethod.Votes) {
+      sort.voteScore = order; // We'll compute this in the pipeline
+    } else {
+      sort.createdAt = order; // Default fallback to date sorting
+    }
 
-  const aggregation: any[] = [
-    {
-      $match: matchStage,
-    },
-    ...(postId
-      ? [
-          {
-            $addFields:
-              sortMethod === SortMethod.Votes ? { voteScore: { $subtract: ['$upvotesCount', '$downvotesCount'] } } : {},
-          },
-          { $sort: sort },
-          { $skip: parsedSkip },
-          { $limit: parsedLimit },
-        ]
-      : []),
-    {
-      $graphLookup: {
-        from: 'comments',
-        startWith: '$_id',
-        connectFromField: '_id',
-        connectToField: 'parentId',
-        as: 'children',
-        maxDepth: depth,
-        depthField: 'level',
+    const aggregation: any[] = [
+      {
+        $match: matchStage,
       },
-    },
-    {
-      $addFields: {
-        // Handling the pagination for children
-        children: {
-          $map: {
-            input: '$children',
-            as: 'child',
-            in: {
-              $mergeObjects: [
-                '$$child',
-                {
-                  voteScore: {
-                    $subtract: ['$$child.upvotesCount', '$$child.downvotesCount'],
+      ...(postId
+        ? [
+            {
+              $addFields:
+                sortMethod === SortMethod.Votes
+                  ? { voteScore: { $subtract: ['$upvotesCount', '$downvotesCount'] } }
+                  : {},
+            },
+            { $sort: sort },
+            { $skip: parsedSkip },
+            { $limit: parsedLimit },
+          ]
+        : []),
+      {
+        $graphLookup: {
+          from: 'comments',
+          startWith: '$_id',
+          connectFromField: '_id',
+          connectToField: 'parentId',
+          as: 'children',
+          maxDepth: depth,
+          depthField: 'level',
+        },
+      },
+      {
+        $addFields: {
+          // Handling the pagination for children
+          children: {
+            $map: {
+              input: '$children',
+              as: 'child',
+              in: {
+                $mergeObjects: [
+                  '$$child',
+                  {
+                    voteScore: {
+                      $subtract: ['$$child.upvotesCount', '$$child.downvotesCount'],
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
           },
         },
       },
-    },
-  ];
+    ];
 
-  // Execute aggregation
-  const results = await Comment.aggregate(aggregation);
+    // Execute aggregation
+    const results = await Comment.aggregate(aggregation);
 
-  // Rebuild tree from flat structure and apply sorting and pagination per level
-  const buildTree = (comment: IPostComment, childrenMap: Map<string, IPostComment[]>): IPostComment => {
-    const children = childrenMap.get(comment._id.toString()) || [];
+    // Rebuild tree from flat structure and apply sorting and pagination per level
+    const buildTree = (comment: IPostComment, childrenMap: Map<string, IPostComment[]>): IPostComment => {
+      const children = childrenMap.get(comment._id.toString()) || [];
 
-    // Pagination logic for each level of children
-    const paginatedChildren = children.slice(parsedChildSkip, parsedChildSkip + parsedChildLimit);
+      // Pagination logic for each level of children
+      const paginatedChildren = children.slice(parsedChildSkip, parsedChildSkip + parsedChildLimit);
 
-    // Sorting for child comments based on votes or date
-    const sortedChildren = paginatedChildren.sort((a: IPostComment, b: IPostComment) => {
-      if (sortMethod === SortMethod.Votes) {
-        const voteA = (a.upvotesCount || 0) - (a.downvotesCount || 0);
-        const voteB = (b.upvotesCount || 0) - (b.downvotesCount || 0);
-        return order * (voteB - voteA);
+      // Sorting for child comments based on votes or date
+      const sortedChildren = paginatedChildren.sort((a: IPostComment, b: IPostComment) => {
+        if (sortMethod === SortMethod.Votes) {
+          const voteA = (a.upvotesCount || 0) - (a.downvotesCount || 0);
+          const voteB = (b.upvotesCount || 0) - (b.downvotesCount || 0);
+          return order * (voteB - voteA);
+        }
+        return order * (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      });
+
+      return {
+        ...comment,
+        children: sortedChildren.map((child: IPostComment) => buildTree(child, childrenMap)),
+      } as IPostComment;
+    };
+
+    const structured = results.map(base => {
+      const all = [base, ...(base.children || [])];
+      const byParent = new Map();
+      for (const c of all) {
+        const pid = c.parentId?.toString();
+        if (!byParent.has(pid)) byParent.set(pid, []);
+        byParent.get(pid).push(c);
       }
-      return order * (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      return buildTree(base, byParent);
     });
 
-    return {
-      ...comment,
-      children: sortedChildren.map((child: IPostComment) => buildTree(child, childrenMap)),
-    } as IPostComment;
-  };
-
-  const structured = results.map(base => {
-    const all = [base, ...(base.children || [])];
-    const byParent = new Map();
-    for (const c of all) {
-      const pid = c.parentId?.toString();
-      if (!byParent.has(pid)) byParent.set(pid, []);
-      byParent.get(pid).push(c);
-    }
-
-    return buildTree(base, byParent);
-  });
-
-  return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, commentId ? structured[0] : structured);
-});
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, commentId ? structured[0] : structured);
+  }
+);
 
 /**
  * Controller for voting on a comment.
  *
- * Route: PATCH /comments/:commentId/vote
+ * Route: PATCH /comments/:commentId/vote/:voteType
+ *
+ * Optimization: Add a Redis cache for votes per user/comment to prevent excessive DB lookups.
+ * Optionally use MongoDB transactions for safety in edge cases, but for most use cases this is performant and safe enough.
+ * maybe no need to wait for any of the transaction to finish before sending a response
  */
-export const voteComment = catchAsync(async (req, res, next) => {
-  const { commentId } = req.params;
-  const { voteType } = req.body; // 'upvote' or 'downvote'
-  const userId = req.user._id;
+export const voteComment = catchAsync(
+  async (req: AppRequestParams<CommentParam>, res: AppResponse, next: NextFunction) => {
+    const { commentId, voteType } = req.params;
+    const userId = req.user._id;
 
-  if (!['upvote', 'downvote'].includes(voteType)) {
-    return next(
-      new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+    if (!Object.values(VoteEnum).includes(voteType)) {
+      return next(
+        new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+      );
+    }
+
+    const comment = await Comment.exists({ _id: commentId }).lean();
+    if (!comment) {
+      return next(new ApiError(responseMessages.APP.COMMENT.NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
+    }
+
+    const existingVote = await CommentVote.findOne({ commentId, userId });
+
+    let voteOp: Promise<any>;
+    let updateOp: Promise<any>;
+
+    if (!existingVote) {
+      // New vote
+      voteOp = CommentVote.create({ commentId, userId, voteType });
+      updateOp = Comment.updateOne(
+        { _id: commentId },
+        { $inc: voteType === VoteEnum.upVote ? { upvotesCount: 1 } : { downvotesCount: 1 } }
+      );
+    } else if (existingVote.voteType === voteType) {
+      // Toggle vote off
+      voteOp = CommentVote.deleteOne({ _id: existingVote._id });
+      updateOp = Comment.updateOne(
+        { _id: commentId },
+        { $inc: voteType === VoteEnum.upVote ? { upvotesCount: -1 } : { downvotesCount: -1 } }
+      );
+    } else {
+      // Switch vote
+      voteOp = CommentVote.updateOne({ _id: existingVote._id }, { voteType });
+      updateOp = Comment.updateOne(
+        { _id: commentId },
+        voteType === VoteEnum.upVote
+          ? { $inc: { upvotesCount: 1, downvotesCount: -1 } }
+          : { $inc: { downvotesCount: 1, upvotesCount: -1 } }
+      );
+    }
+
+    // Execute in parallel without blocking
+    // await
+    Promise.all([voteOp, updateOp]);
+
+    // Optionally return fresh counts if needed (only if needed on frontend)
+    // const updated = await Comment.findById(commentId).select('upvotesCount downvotesCount');
+
+    return ApiResponse(
+      res,
+      200,
+      responseMessages.GENERAL.SUCCESS
+      // , {
+      // upvotesCount: updated?.upvotesCount || 0,
+      // downvotesCount: updated?.downvotesCount || 0,
+      // }
     );
   }
-
-  const comment = await Comment.findById(commentId);
-  // const comment = await Comment.findById(commentId).populate('children');
-  if (!comment) {
-    return next(new ApiError(responseMessages.APP.COMMENT.NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
-  }
-
-  const existingVote = await CommentVote.findOne({ commentId, userId });
-
-  // Determine vote action
-  if (!existingVote) {
-    await CommentVote.create({ commentId, userId, voteType });
-    if (voteType === 'upvote') comment.upvotesCount += 1;
-    else comment.downvotesCount += 1;
-  } else if (existingVote.voteType === voteType) {
-    // Remove the vote (toggle off)
-    await CommentVote.deleteOne({ _id: existingVote._id });
-    if (voteType === 'upvote') comment.upvotesCount -= 1;
-    else comment.downvotesCount -= 1;
-  } else {
-    // Switch vote
-    existingVote.voteType = voteType;
-    await existingVote.save();
-    if (voteType === 'upvote') {
-      comment.upvotesCount += 1;
-      comment.downvotesCount -= 1;
-    } else {
-      comment.downvotesCount += 1;
-      comment.upvotesCount -= 1;
-    }
-  }
-
-  await comment.save();
-
-  return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, {
-    upvotesCount: comment.upvotesCount,
-    downvotesCount: comment.downvotesCount,
-  });
-});
+);

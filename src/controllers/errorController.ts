@@ -96,9 +96,9 @@ const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFun
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'Internal Server Error';
 
-  console.log(`\x1b[33m${err.stack.replace(/\n/g, '\n  ')}\x1b[0m`);
-  console.log('error', err);
-  console.log('errorName', err.name);
+  // console.log(`\x1b[33m${err.stack.replace(/\n/g, '\n  ')}\x1b[0m`);
+  // console.log('error', err);
+  // console.log('errorName', err.name);
 
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') {
     let error: ApiError = err;

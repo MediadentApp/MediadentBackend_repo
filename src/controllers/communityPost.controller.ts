@@ -1,12 +1,14 @@
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
-import Community, { CommunityInvite } from '#src/models/communityModel.js';
-import Post from '#src/models/postModel.js';
+import Community, { CommunityInvite } from '#src/models/community.model.js';
+import Post from '#src/models/post.model.js';
+import { PostVote } from '#src/models/postVote.model.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
+import { VoteEnum } from '#src/types/enum.js';
 import { ICommunity } from '#src/types/model.community.js';
 import { IPost } from '#src/types/model.post.js';
 import { CommunityPostParam } from '#src/types/param.communityPost.js';
@@ -304,6 +306,11 @@ export const deleteCommunityPost = catchAsync(
   }
 );
 
+/**
+ * Controller to update a community post by ID.
+ *
+ * Route: PATCH /communitypost/:communityId/:postId
+ */
 export const updateCommunityPost = catchAsync(
   async (req: AppRequestBody<PostBody, CommunityPostParam>, res: AppResponse, next: NextFunction) => {
     const { communityId, postId } = req.params;
@@ -336,6 +343,77 @@ export const updateCommunityPost = catchAsync(
     }
 
     ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, post);
+  }
+);
+
+/**
+ * Controller to vote on a community post by ID.
+ *
+ * Route: POST /communitypost/:communityId/:postId/vote/:voteType
+ */
+export const votePost = catchAsync(
+  async (req: AppRequestParams<CommunityPostParam>, res: AppResponse, next: NextFunction) => {
+    const { communityId, postId } = req.params;
+    const { voteType } = req.params;
+    const userId = req.user._id;
+
+    if (!Object.values(VoteEnum).includes(voteType)) {
+      return next(
+        new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+      );
+    }
+
+    const post = await Post.exists({ _id: postId }).lean();
+    if (!post) {
+      return next(new ApiError(responseMessages.APP.POST.POST_NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
+    }
+
+    const existingVote = await PostVote.findOne({ postId, userId });
+
+    let voteOp: Promise<any>;
+    let updateOp: Promise<any>;
+
+    if (!existingVote) {
+      // New vote
+      voteOp = PostVote.create({ postId, userId, voteType });
+      updateOp = Post.updateOne(
+        { _id: postId },
+        { $inc: voteType === VoteEnum.upVote ? { upvotesCount: 1 } : { downvotesCount: 1 } }
+      );
+    } else if (existingVote.voteType === voteType) {
+      // Toggle vote off
+      voteOp = PostVote.deleteOne({ _id: existingVote._id });
+      updateOp = Post.updateOne(
+        { _id: postId },
+        { $inc: voteType === VoteEnum.upVote ? { upvotesCount: -1 } : { downvotesCount: -1 } }
+      );
+    } else {
+      // Switch vote
+      voteOp = PostVote.updateOne({ _id: existingVote._id }, { voteType });
+      updateOp = Post.updateOne(
+        { _id: postId },
+        voteType === VoteEnum.upVote
+          ? { $inc: { upvotesCount: 1, downvotesCount: -1 } }
+          : { $inc: { downvotesCount: 1, upvotesCount: -1 } }
+      );
+    }
+
+    // Execute in parallel without blocking
+    // await
+    Promise.all([voteOp, updateOp]);
+
+    // Optionally return fresh counts if needed (only if needed on frontend)
+    // const updated = await Post.findById(postId).select('upvotesCount downvotesCount');
+
+    return ApiResponse(
+      res,
+      200,
+      responseMessages.GENERAL.SUCCESS
+      // , {
+      // upvotesCount: updated?.upvotesCount || 0,
+      // downvotesCount: updated?.downvotesCount || 0,
+      // }
+    );
   }
 );
 

@@ -12,12 +12,12 @@ export interface IPost extends Document {
   communityId: ObjectId | null; // ID can be of Community
   authorId: ObjectId;
 
-  views?: number;
-  upvotes?: ObjectId[];
-  upvotesCount?: number;
-  downvotes?: ObjectId[];
-  downvotesCount?: number;
-  commentsCount?: number;
+  views: number;
+  upvotesCount: number;
+  downvotesCount: number;
+  commentsCount: number;
+  netVotes?: number; // virtual mongoose field
+
   popularityScore?: number;
   isDeleted?: boolean;
   isFlagged?: boolean;

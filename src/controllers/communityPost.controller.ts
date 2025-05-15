@@ -17,12 +17,12 @@ import { QueryParam } from '#src/types/query.js';
 import { ICommunityBody } from '#src/types/request.community.js';
 import { PostBody } from '#src/types/request.post.js';
 import ApiError from '#src/utils/ApiError.js';
-import { FetchPaginatedData } from '#src/utils/ApiPaginatedResponse.js';
+import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
 import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { getUpdateObj } from '#src/utils/dataManipulation.js';
 import { NextFunction } from 'express';
-import { ObjectId } from 'mongoose';
+import mongoose, { ObjectId } from 'mongoose';
 
 /**
  * Controller to create a new community.
@@ -189,11 +189,21 @@ export const getAllCommunitypost = catchAsync(
   async (req: AppPaginatedRequest<CommunityPostParam>, res: AppPaginatedResponse, next: NextFunction) => {
     const { communityId } = req.params;
 
-    const fetchedData = await FetchPaginatedData<IPost>(Post, {
-      ...req.query,
-      searchFields: req.query.searchFields ?? ['name'],
-      communityId,
-    });
+    const fetchedData = await FetchPaginatedDataWithAggregation<IPost>(
+      Post,
+      [
+        { $match: { communityId: new mongoose.Types.ObjectId(communityId) } },
+        {
+          $addFields: {
+            netVotes: { $subtract: ['$upvotesCount', '$downvotesCount'] },
+          },
+        },
+      ],
+      {
+        ...req.query,
+        searchFields: req.query.searchFields ?? ['title', 'content'],
+      }
+    );
 
     return ApiPaginatedResponse(res, fetchedData);
   }
@@ -219,7 +229,7 @@ export const getCommunityPost = catchAsync(
       _id: postId,
     };
 
-    const posts = await Post.findOne(searchCriteria).lean();
+    const posts = await Post.findOne(searchCriteria).lean({ virtuals: true });
 
     if (!posts) {
       return next(new ApiError(responseMessages.APP.POST.POST_NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));

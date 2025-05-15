@@ -1,5 +1,5 @@
-import { PostAuthorType } from '#src/types/enum.js';
 import { IPost, IPostTag } from '#src/types/model.post.js';
+import mongooseLeanVirtuals from 'mongoose-lean-virtuals';
 import mongoose, { Schema } from 'mongoose';
 
 const postSchema: Schema<IPost> = new Schema(
@@ -34,6 +34,13 @@ const postSchema: Schema<IPost> = new Schema(
   },
   { timestamps: true }
 );
+
+postSchema.virtual('netVotes').get(function () {
+  return this.upvotesCount - this.downvotesCount;
+});
+
+// Plugin for virtual fields with lean
+postSchema.plugin(mongooseLeanVirtuals);
 
 postSchema.pre<IPost>('save', async function (next: any) {
   if (this.tags) {

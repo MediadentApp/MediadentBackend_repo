@@ -113,7 +113,12 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
     ? { [sortField]: sortOrder === 'desc' ? -1 : 1 }
     : { createdAt: -1 };
 
-  const data = (await model.find(filter, cleanProjection).sort(sort).skip(skip).limit(Number(pageSize)).lean()) as T[];
+  const data = (await model
+    .find(filter, cleanProjection)
+    .sort(sort)
+    .skip(skip)
+    .limit(Number(pageSize))
+    .lean({ virtuals: true })) as T[];
 
   const returnData: IPaginatedResponse<T> = {
     data,

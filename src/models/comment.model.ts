@@ -1,5 +1,6 @@
 import { IPostComment } from '#src/types/model.post.js';
 import mongoose, { Schema } from 'mongoose';
+import mongooseLeanVirtuals from 'mongoose-lean-virtuals';
 
 const commentSchema = new Schema<IPostComment>(
   {
@@ -9,12 +10,20 @@ const commentSchema = new Schema<IPostComment>(
     content: { type: String, required: true },
     // imageUrls: [{ type: String }],
     children: [{ type: Schema.Types.ObjectId, ref: 'Comment' }],
+
     childrenCount: { type: Number, default: 0 },
     upvotesCount: { type: Number, default: 0 },
     downvotesCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
+
+commentSchema.virtual('netVotes').get(function () {
+  return this.upvotesCount - this.downvotesCount;
+});
+
+// Plugin for virtual fields with lean
+commentSchema.plugin(mongooseLeanVirtuals);
 
 const Comment = mongoose.model('Comment', commentSchema);
 export default Comment;

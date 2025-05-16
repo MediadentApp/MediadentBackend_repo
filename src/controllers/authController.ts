@@ -30,7 +30,7 @@ import { generateOTP } from '#src/utils/index.js';
 import crypto from 'crypto';
 import { NextFunction } from 'express';
 import { AppRequest, AppRequestBody } from '#src/types/api.request.js';
-import { IResponseMessage } from '#src/types/api.response.messages.js';
+import { UserRole } from '#src/types/enum.js';
 
 export const emailReg = catchAsync(async (req: AppRequestBody<EmailRegBody>, res: AppResponse, next: NextFunction) => {
   const { email } = req.body;
@@ -336,13 +336,13 @@ export const protect = catchAsync(async (req: AppRequest, res: AppResponse, next
 
 // A restrict function for roles, it will run after protect middleware
 export const restrict =
-  (...roles: string[]) =>
-    (req: AppRequest, res: AppResponse, next: NextFunction) => {
-      if (!req.user || !roles.includes(req.user.role)) {
-        return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 403, ErrorCodes.CLIENT.UNAUTHORIZED));
-      }
-      next();
-    };
+  (...roles: UserRole[]) =>
+  (req: AppRequest, res: AppResponse, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 403, ErrorCodes.CLIENT.UNAUTHORIZED));
+    }
+    next();
+  };
 
 export const forgotPassword = catchAsync(
   async (req: AppRequestBody<ForgotPasswordBody>, res: AppResponse, next: NextFunction) => {

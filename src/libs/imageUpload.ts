@@ -1,9 +1,6 @@
 import aws4 from 'aws4';
 import axios from 'axios';
 import awsConfig from '#src/config/awsConfig.js';
-import ApiError from '#src/utils/ApiError.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
 
 type ImageUploadConfig = {
   format: string;
@@ -40,7 +37,7 @@ export interface IUploadedImage {
   format: string;
 }
 
-async function ImageUpload(body: IImageUploadBody): Promise<IImageUploadResponse> {
+async function ImageUpload(body: IImageUploadBody): Promise<IImageUploadResponse | null> {
   const opts = {
     host: new URL(awsConfig.imageCompressUpload.host!).host,
     path: awsConfig.imageCompressUpload.path,
@@ -69,7 +66,8 @@ async function ImageUpload(body: IImageUploadBody): Promise<IImageUploadResponse
     return res.data;
   } catch (err: any) {
     console.error('ImageUpload error:', err?.response?.data || err);
-    throw new ApiError(responseMessages.GENERAL.SERVER_ERROR, 500, ErrorCodes.GENERAL.FAIL);
+    return null;
+    // throw new ApiError(responseMessages.GENERAL.SERVER_ERROR, 500, ErrorCodes.GENERAL.FAIL);
   }
 }
 

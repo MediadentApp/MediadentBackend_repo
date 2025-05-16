@@ -1,6 +1,9 @@
 # Dependency directories
 node_modules/
 
+# Misc
+*.txt
+
 # Environment variables file (if using .env)
 config.env
 

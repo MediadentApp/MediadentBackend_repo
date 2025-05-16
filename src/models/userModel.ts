@@ -12,6 +12,7 @@ import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
+import { UserRole } from '#src/types/enum.js';
 
 // User schema definition
 const userSchema: Schema<IUser> = new Schema(
@@ -176,8 +177,8 @@ const userSchema: Schema<IUser> = new Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'moderator', 'admin'],
-      default: 'user',
+      enum: UserRole,
+      default: UserRole.User,
     },
     createdAt: {
       type: Date,
@@ -281,13 +282,17 @@ userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOpti
   next();
 });
 
+/**
+ * Adds admin role to the owner
+ * Connects new Users to all admins
+ */
 userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOptionalError) {
   try {
     if (this.email === process.env.OWNER_EMAIL) {
-      this.role = 'admin';
+      this.role = UserRole.Admin;
     }
 
-    const admins = await User.find({ role: 'admin', _id: { $ne: this._id } });
+    const admins = await User.find({ role: UserRole.Admin, _id: { $ne: this._id } });
 
     if (admins.length > 0) {
       const newChats = admins.map(admin => ({
@@ -299,7 +304,7 @@ userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOpti
 
       this.chats.chatIds = [...new Set([...this.chats?.chatIds, ...chatIds])] as ObjectId[];
 
-      await User.updateMany({ role: 'admin' }, { $addToSet: { 'chats.chatIds': { $each: chatIds } } });
+      await User.updateMany({ role: UserRole.Admin }, { $addToSet: { 'chats.chatIds': { $each: chatIds } } });
     }
 
     next();
@@ -326,10 +331,10 @@ userSchema.methods.isAdditionalInfoFilled = function (): {
 
   return this.interests && this.interests.length < appConfig.app.signup.numOfSignupInterests
     ? {
-      redirectUrl: appConfig.urls.signupInterestUrl,
-      message: responseMessages.AUTH.REDIRECT_TO_INTERESTS,
-      errorCode: ErrorCodes.SIGNUP.REDIRECT_TO_INTERESTS,
-    }
+        redirectUrl: appConfig.urls.signupInterestUrl,
+        message: responseMessages.AUTH.REDIRECT_TO_INTERESTS,
+        errorCode: ErrorCodes.SIGNUP.REDIRECT_TO_INTERESTS,
+      }
     : null;
 };
 

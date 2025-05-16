@@ -10,6 +10,7 @@ import {
   deleteCommunityPost,
   updateCommunityPost,
   votePost,
+  trackPostView,
 } from '#src/controllers/communityPost.controller.js';
 import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
@@ -127,6 +128,15 @@ router.delete(
 router.post(
   '/communitypost/:communityId/:postId/vote/:voteType',
   (req: AppRequestParams<CommunityPostParam>, res: AppResponse, next: NextFunction) => votePost(req, res, next)
+);
+
+/**
+ * POST /communitypost/:communityId/:postId/view
+ * Views a post within a community.
+ */
+router.post(
+  '/communitypost/:communityId/:postId/view',
+  (req: AppRequestParams<CommunityPostParam>, res: AppResponse, next: NextFunction) => trackPostView(req, res, next)
 );
 
 export { router as communityPostRoutes };

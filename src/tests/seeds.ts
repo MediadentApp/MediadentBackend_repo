@@ -1,5 +1,6 @@
 import appConfig from '#src/config/appConfig.js';
 import User from '#src/models/userModel.js';
+import { UserRole } from '#src/types/enum.js';
 import { IUser } from '#src/types/model.js';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
@@ -33,7 +34,7 @@ const seedDatabase = async () => {
       password: pass,
       passwordConfirm: pass,
       manualSignup: true,
-      role: 'admin',
+      role: UserRole.Admin,
       accountStatus: 'active',
       additionalInfo: generateUserDetails(),
       interests: ['coding', 'reading', 'sleeping'],
@@ -51,7 +52,7 @@ const generateUniqueUser = (
   password: `Test@1234`,
   passwordConfirm: `Test@1234`,
   manualSignup: true,
-  role: 'user',
+  role: UserRole.User,
   accountStatus: 'active',
   additionalInfo: generateUserDetails(),
   interests: ['coding', 'reading', 'sleeping'],

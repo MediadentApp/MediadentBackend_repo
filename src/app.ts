@@ -1,6 +1,12 @@
 import '#src/../loadenv.js';
 
-import express, { Request, Response, NextFunction } from 'express';
+// Workers
+import '#src/jobs/workers/index.js';
+
+// Scheduled jobs
+import '#src/jobs/scheduled/index.js';
+
+import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 
@@ -10,6 +16,7 @@ import middlewares from '#src/middlewares/index.js';
 import { routes } from '#src/routes/index.js';
 import socketRoutes from '#src/routes/socketRoutes.js';
 import { unknownRoute } from '#src/controllers/serverHealthController.js';
+import serverAdapter from '#src/jobs/admin.js';
 
 const app = express();
 
@@ -18,6 +25,10 @@ app.use(middlewares);
 
 // Routes
 app.use('/', routes);
+
+// BullMQ Admin Dashboard
+// app.use('/admin/queues', restrict(UserRole.Admin), serverAdapter.getRouter()); // Make a middleware to acquire auth token from param
+app.use('/admin/queues', serverAdapter.getRouter());
 
 // Handle unknown routes
 app.all('/*name', unknownRoute);

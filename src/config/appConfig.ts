@@ -27,6 +27,8 @@ const appConfig = {
       allowedPostsImageType: /jpeg|jpg|png/,
       allowedMimeTypes: ['image/jpeg', 'image/png'],
       postsMaxImageSize: 2 * 1024 * 1024, // 2MB
+      postViewExpiry: 24 * 60 * 60 * 1000, // 24 hours
+      PostViewCleanupInterval: 86400000, // 24 hours, must be in milliseconds
     },
   },
   chat: {

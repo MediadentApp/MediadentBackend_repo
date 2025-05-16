@@ -4,6 +4,7 @@ import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
 import Community, { CommunityInvite } from '#src/models/community.model.js';
 import Post from '#src/models/post.model.js';
 import { PostVote } from '#src/models/postVote.model.js';
+import postViewServiceExecutor from '#src/services/postView.service.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse } from '#src/types/api.response.js';
@@ -21,6 +22,7 @@ import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '#src/util
 import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { getUpdateObj } from '#src/utils/dataManipulation.js';
+import { DebouncedExecutor } from '#src/utils/DebouncedMongoExecutor.js';
 import { NextFunction } from 'express';
 import mongoose, { ObjectId } from 'mongoose';
 
@@ -348,7 +350,7 @@ export const updateCommunityPost = catchAsync(
         files: filesData,
         username: req.user.username ?? 'auto',
       });
-      post.mediaUrls = imageUploadResp.uploaded.map(({ url }) => url);
+      post.mediaUrls = imageUploadResp?.uploaded.map(({ url }) => url);
       await post.save(); // Save the post after updating mediaUrls
     }
 
@@ -356,6 +358,7 @@ export const updateCommunityPost = catchAsync(
   }
 );
 
+const votePostExecutor = new DebouncedExecutor(5000, 100);
 /**
  * Controller to vote on a community post by ID.
  *
@@ -366,6 +369,7 @@ export const votePost = catchAsync(
     const { communityId, postId } = req.params;
     const { voteType } = req.params;
     const userId = req.user._id;
+    const voteId = `${userId}-${postId}`;
 
     if (!Object.values(VoteEnum).includes(voteType)) {
       return next(
@@ -380,37 +384,42 @@ export const votePost = catchAsync(
 
     const existingVote = await PostVote.findOne({ postId, userId });
 
-    let voteOp: Promise<any>;
-    let updateOp: Promise<any>;
+    votePostExecutor.addOperation({
+      id: voteId,
+      query: async () => {
+        let voteOp: Promise<any>;
+        let updateOp: Promise<any>;
 
-    if (!existingVote) {
-      // New vote
-      voteOp = PostVote.create({ postId, userId, voteType });
-      updateOp = Post.updateOne(
-        { _id: postId },
-        { $inc: voteType === VoteEnum.upVote ? { upvotesCount: 1 } : { downvotesCount: 1 } }
-      );
-    } else if (existingVote.voteType === voteType) {
-      // Toggle vote off
-      voteOp = PostVote.deleteOne({ _id: existingVote._id });
-      updateOp = Post.updateOne(
-        { _id: postId },
-        { $inc: voteType === VoteEnum.upVote ? { upvotesCount: -1 } : { downvotesCount: -1 } }
-      );
-    } else {
-      // Switch vote
-      voteOp = PostVote.updateOne({ _id: existingVote._id }, { voteType });
-      updateOp = Post.updateOne(
-        { _id: postId },
-        voteType === VoteEnum.upVote
-          ? { $inc: { upvotesCount: 1, downvotesCount: -1 } }
-          : { $inc: { downvotesCount: 1, upvotesCount: -1 } }
-      );
-    }
+        if (!existingVote) {
+          // New vote
+          voteOp = PostVote.create({ postId, userId, voteType });
+          updateOp = Post.updateOne(
+            { _id: postId },
+            { $inc: voteType === VoteEnum.upVote ? { upvotesCount: 1 } : { downvotesCount: 1 } }
+          );
+        } else if (existingVote.voteType === voteType) {
+          // Toggle vote off
+          voteOp = PostVote.deleteOne({ _id: existingVote._id });
+          updateOp = Post.updateOne(
+            { _id: postId },
+            { $inc: voteType === VoteEnum.upVote ? { upvotesCount: -1 } : { downvotesCount: -1 } }
+          );
+        } else {
+          // Switch vote
+          voteOp = PostVote.updateOne({ _id: existingVote._id }, { voteType });
+          updateOp = Post.updateOne(
+            { _id: postId },
+            voteType === VoteEnum.upVote
+              ? { $inc: { upvotesCount: 1, downvotesCount: -1 } }
+              : { $inc: { downvotesCount: 1, upvotesCount: -1 } }
+          );
+        }
 
-    // Execute in parallel without blocking
-    // await
-    Promise.all([voteOp, updateOp]);
+        // Execute in parallel without blocking
+        // await
+        Promise.all([voteOp, updateOp]);
+      },
+    });
 
     // Optionally return fresh counts if needed (only if needed on frontend)
     // const updated = await Post.findById(postId).select('upvotesCount downvotesCount');
@@ -424,6 +433,27 @@ export const votePost = catchAsync(
       // downvotesCount: updated?.downvotesCount || 0,
       // }
     );
+  }
+);
+
+/**
+ * Controller to track a community post view by ID.
+ *
+ * Route: POST /communitypost/:communityId/:postId/view
+ */
+export const trackPostView = catchAsync(
+  async (req: AppRequestParams<CommunityPostParam>, res: AppResponse, next: NextFunction) => {
+    const { postId } = req.params;
+    const { _id: userId } = req.user;
+
+    postViewServiceExecutor.add({
+      type: 'create',
+      collectionName: 'PostView',
+      id: `${userId}-${postId}`,
+      data: { postId, userId },
+    });
+
+    ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
   }
 );
 

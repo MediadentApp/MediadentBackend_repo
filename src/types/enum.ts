@@ -1,3 +1,8 @@
+export enum UserRole {
+  Admin = 'admin',
+  User = 'user',
+}
+
 export enum PostAuthorType {
   Personal = 'Personal',
   Community = 'Community',

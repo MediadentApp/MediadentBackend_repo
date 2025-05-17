@@ -21,7 +21,7 @@ import {
   SignupInterestsBody,
   UpdatePasswordBody,
 } from '#src/types/request.auth.js';
-import { AppResponse, IResponseExtra } from '#src/types/api.response.js';
+import { AppResponse, IResponseData, IResponseExtra } from '#src/types/api.response.js';
 import ApiError from '#src/utils/ApiError.js';
 import ApiResponse from '#src/utils/ApiResponse.js';
 import { createSendToken } from '#src/utils/authUtils.js';
@@ -321,7 +321,7 @@ export const protect = catchAsync(async (req: AppRequest, res: AppResponse, next
   const result = freshUser?.isAdditionalInfoFilled();
   if (result && result.redirectUrl) {
     const { redirectUrl, message, errorCode } = result;
-    const data = {
+    const data: IResponseData = {
       user: freshUser,
     };
     const extra = { authenticated: true, errorCode, redirectUrl };

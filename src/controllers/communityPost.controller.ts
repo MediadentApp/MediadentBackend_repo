@@ -3,8 +3,10 @@ import responseMessages from '#src/config/constants/responseMessages.js';
 import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
 import Community, { CommunityInvite } from '#src/models/community.model.js';
 import Post from '#src/models/post.model.js';
+import { PostSave } from '#src/models/postSave.model.js';
 import { PostVote } from '#src/models/postVote.model.js';
-import postViewServiceExecutor from '#src/services/postView.service.js';
+import postSaveServiceHandler from '#src/services/postSave.service.js';
+import postViewServiceHandler from '#src/services/postView.service.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse } from '#src/types/api.response.js';
@@ -22,7 +24,7 @@ import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '#src/util
 import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { getUpdateObj } from '#src/utils/dataManipulation.js';
-import { DebouncedExecutor } from '#src/utils/DebouncedMongoExecutor.js';
+import { DebouncedExecutor } from '#src/utils/DebouncedExecutor.js';
 import { NextFunction } from 'express';
 import mongoose, { ObjectId } from 'mongoose';
 
@@ -187,17 +189,47 @@ export const getCommunities = catchAsync(async (req: AppPaginatedRequest, res: A
   return ApiPaginatedResponse(res, fetchedData);
 });
 
+/**
+ * Controller to fetch a paginated list of community posts.
+ *
+ * Route: GET /communitypost/:communityId
+ */
 export const getAllCommunitypost = catchAsync(
   async (req: AppPaginatedRequest<CommunityPostParam>, res: AppPaginatedResponse, next: NextFunction) => {
     const { communityId } = req.params;
+    const userId = req.user._id;
 
     const fetchedData = await FetchPaginatedDataWithAggregation<IPost>(
       Post,
       [
         { $match: { communityId: new mongoose.Types.ObjectId(communityId) } },
+
+        {
+          $lookup: {
+            from: 'postsaves', // collection name (lowercase & plural of model)
+            let: { postId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+                  },
+                },
+              },
+              { $limit: 1 },
+            ],
+            as: 'savedByUser',
+          },
+        },
         {
           $addFields: {
+            isSaved: { $gt: [{ $size: '$savedByUser' }, 0] },
             netVotes: { $subtract: ['$upvotesCount', '$downvotesCount'] },
+          },
+        },
+        {
+          $project: {
+            savedByUser: 0, // remove the raw join result
           },
         },
       ],
@@ -220,6 +252,7 @@ export const getCommunityPost = catchAsync(
   async (req: AppRequestParams<CommunityPostParam, QueryParam>, res: AppResponse, next: NextFunction) => {
     const { communityId, postId } = req.params;
     const { searchByUserId } = req.query;
+    const { _id: userId } = req.user;
 
     const community = await Community.exists({ _id: communityId }).lean();
     if (!community) {
@@ -231,13 +264,22 @@ export const getCommunityPost = catchAsync(
       _id: postId,
     };
 
-    const posts = await Post.findOne(searchCriteria).lean({ virtuals: true });
+    const post = await Post.findOne(searchCriteria).lean({ virtuals: true });
 
-    if (!posts) {
+    if (!post) {
       return next(new ApiError(responseMessages.APP.POST.POST_NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
     }
 
-    ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, posts);
+    if (post) {
+      const saved = await PostSave.exists({
+        postId: post._id,
+        userId: userId,
+      });
+
+      post.isSaved = !!saved; // add field dynamically
+    }
+
+    ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, post);
   }
 );
 
@@ -446,13 +488,57 @@ export const trackPostView = catchAsync(
     const { postId } = req.params;
     const { _id: userId } = req.user;
 
-    postViewServiceExecutor.add({
+    postViewServiceHandler.add({
       type: 'create',
       collectionName: 'PostView',
       id: `${userId}-${postId}`,
       data: { postId, userId },
     });
 
+    ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+  }
+);
+
+const savePostExecutor = new DebouncedExecutor();
+/**
+ * Controller to save a community post by ID.
+ *
+ * Route: POST /communitypost/:communityId/:postId/save
+ */
+export const savePost = catchAsync(
+  async (req: AppRequestParams<CommunityPostParam>, res: AppResponse, next: NextFunction) => {
+    const { postId } = req.params;
+    const { _id: userId } = req.user;
+
+    if (!postId) {
+      return next(
+        new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+      );
+    }
+
+    const savePostId = `${userId}-${postId}`;
+
+    savePostExecutor.addOperation({
+      id: savePostId,
+      query: async () => {
+        const savedPost = await PostSave.exists({ postId, userId }).lean();
+        if (savedPost) {
+          postSaveServiceHandler.add({
+            type: 'delete',
+            collectionName: 'SavedPost',
+            id: savePostId,
+            data: { postId, userId },
+          });
+        } else {
+          postSaveServiceHandler.add({
+            type: 'create',
+            collectionName: 'SavedPost',
+            id: savePostId,
+            data: { postId, userId },
+          });
+        }
+      },
+    });
     ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
   }
 );

@@ -57,6 +57,7 @@ postSchema.pre<IPost>('save', async function (next: any) {
 
 const Post = mongoose.model<IPost>('Post', postSchema);
 
+// Tags Schema
 const postTagsSchema: Schema<IPostTag> = new Schema(
   {
     name: { type: String, required: true, unique: true, text: { exact: true } },

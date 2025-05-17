@@ -6,8 +6,8 @@ import { Worker } from 'bullmq';
 export const cleanupWorker = new Worker(
   'cleanup-postviews',
   async () => {
-    const thirtyDaysAgo = new Date(Date.now() - appConfig.app.post.postViewExpiry);
-    const result = await PostView.deleteMany({ viewedAt: { $lt: thirtyDaysAgo } });
+    const expire = new Date(Date.now() - appConfig.app.post.postViewExpiry);
+    const result = await PostView.deleteMany({ viewedAt: { $lt: expire } });
     console.log(`[BullMQ] Deleted ${result.deletedCount} old PostView entries`);
   },
   { connection: redisConnection }

@@ -1,3 +1,5 @@
+import appConfig from '#src/config/appConfig.js';
+
 export type WriteOperation = {
   id?: string; // optional identifier (e.g., user+post) for deduplication
   query: () => Promise<any>; // function that returns a MongoDB operation
@@ -18,13 +20,15 @@ export class DebouncedExecutor {
   private timeoutId: NodeJS.Timeout | null = null;
 
   constructor(
-    private flushDelay: number = 5000, // ms
-    private maxOperations: number = 100
+    private flushDelay: number = appConfig.defaultDebounceExecutionFlushDelay, // ms
+    private maxOperations: number = appConfig.defaultDebounceExecutionMaxOperations
   ) {}
 
   addOperation(op: WriteOperation) {
     const id = op.id || crypto.randomUUID();
     this.buffer.set(id, op);
+
+    console.log(`Added operation to buffer: ${id}`);
 
     if (this.buffer.size >= this.maxOperations) {
       this.flush();
@@ -38,6 +42,8 @@ export class DebouncedExecutor {
     this.buffer.clear();
     if (this.timeoutId) clearTimeout(this.timeoutId);
     this.timeoutId = null;
+
+    console.log(`Flushing ${ops.length} operations...`);
 
     // Execute all queries in parallel
     await Promise.allSettled(ops.map(op => op.query())).then(results => {

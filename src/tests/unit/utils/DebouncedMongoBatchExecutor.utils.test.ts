@@ -10,11 +10,15 @@ describe.only('DebouncedMongoBatchExecutor', () => {
   beforeEach(() => {
     mockCreateHandler = vi.fn().mockResolvedValue(undefined);
 
-    executor = new DebouncedMongoBatchExecutor(1000, 3, {
-      TestCollection: {
-        create: mockCreateHandler,
+    executor = new DebouncedMongoBatchExecutor(
+      {
+        TestCollection: {
+          create: mockCreateHandler,
+        },
       },
-    });
+      1000,
+      3
+    );
 
     vi.clearAllTimers();
     mockCreateHandler.mockClear();
@@ -96,14 +100,18 @@ describe.only('DebouncedMongoBatchExecutor', () => {
 
   it('should handle multiple types and collections', async () => {
     const anotherHandler = vi.fn().mockResolvedValue(undefined);
-    executor = new DebouncedMongoBatchExecutor(1000, 10, {
-      TestCollection: {
-        create: mockCreateHandler,
+    executor = new DebouncedMongoBatchExecutor(
+      {
+        TestCollection: {
+          create: mockCreateHandler,
+        },
+        OtherCollection: {
+          create: anotherHandler,
+        },
       },
-      OtherCollection: {
-        create: anotherHandler,
-      },
-    });
+      1000,
+      10
+    );
 
     executor.add({
       type: 'create',

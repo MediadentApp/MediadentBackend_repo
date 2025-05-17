@@ -1,3 +1,5 @@
+import appConfig from '#src/config/appConfig.js';
+
 type DebouncedOperationType = 'create' | 'update' | 'delete';
 
 type GenericOperation = {
@@ -20,15 +22,18 @@ export class DebouncedMongoBatchExecutor {
   private timeoutId: NodeJS.Timeout | null = null;
 
   constructor(
-    private flushDelay: number = 5000,
-    private maxOperations: number = 100,
-    private handlers: OperationHandlers
+    private handlers: OperationHandlers,
+    private flushDelay: number = appConfig.defaultDebounceMongoBatchExecutionFlushDelay,
+    private maxOperations: number = appConfig.defaultDebounceMongoBatchExecutionMaxOperations
   ) {}
 
   add(op: GenericOperation) {
     const key = `${op.type}:${op.collectionName}:${op.id}`;
     this.buffer.set(key, op);
 
+    console.log(`Added mongo op to buffer: ${key}`);
+
+    // Flush if max limit reached or if there is no timeout
     if (this.buffer.size >= this.maxOperations) {
       this.flush();
     } else if (!this.timeoutId) {
@@ -52,6 +57,8 @@ export class DebouncedMongoBatchExecutor {
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(op.data);
     }
+
+    console.log(`Flushing mongo batch ${Object.keys(grouped).length} operations...`);
 
     // Execute batched handlers
     await Promise.allSettled(

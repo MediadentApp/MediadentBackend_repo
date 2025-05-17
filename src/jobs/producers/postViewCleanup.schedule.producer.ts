@@ -6,6 +6,7 @@ export const schedulePostViewCleanup = async () => {
     'delete-old-postviews',
     {}, // no data needed
     {
+      jobId: 'unique-delete-old-postviews', // ✅ ensures only one repeat job
       repeat: { every: appConfig.app.post.PostViewCleanupInterval }, // every day (in seconds)
       removeOnComplete: true,
     }

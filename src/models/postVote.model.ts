@@ -4,8 +4,8 @@ import mongoose, { Schema } from 'mongoose';
 
 const postVoteSchema = new Schema<IPostVote>(
   {
-    postId: { type: Schema.Types.ObjectId, ref: 'Post', required: true, index: true },
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    postId: { type: Schema.Types.ObjectId, ref: 'Post', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     voteType: { type: String, enum: VoteEnum, required: true },
   },
   { timestamps: true }
@@ -13,4 +13,4 @@ const postVoteSchema = new Schema<IPostVote>(
 
 postVoteSchema.index({ postId: 1, userId: 1 }, { unique: true });
 
-export const PostVote = mongoose.model('PostVote', postVoteSchema);
+export const PostVote = mongoose.model<IPostVote>('PostVote', postVoteSchema);

@@ -26,7 +26,7 @@ export interface IResponseExtra<T = any> {
   message?: IResponseMessage;
 }
 
-export interface IResponseData<T> {
+export interface IResponseData<T = any> {
   user?: IUser;
   email?: string;
   [key: string]: T | any;

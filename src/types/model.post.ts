@@ -17,6 +17,7 @@ export interface IPost extends Document {
   downvotesCount: number;
   commentsCount: number;
   netVotes?: number; // virtual mongoose field
+  isSaved?: boolean; // would not be in schema
 
   popularityScore?: number;
   isDeleted?: boolean;
@@ -29,6 +30,11 @@ export interface IPostVote extends Document {
   postId: ObjectId;
   userId: ObjectId;
   voteType: VoteEnum;
+}
+
+export interface IPostSave extends Document {
+  userId: ObjectId; // reference to User
+  postId: ObjectId; // reference to Post
 }
 
 export interface IPostTag extends Document {

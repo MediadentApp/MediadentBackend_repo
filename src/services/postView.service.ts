@@ -3,7 +3,7 @@ import { PostView } from '#src/models/postView.model.js';
 import { DebouncedMongoBatchExecutor } from '#src/utils/DebounceMongoBatchExecutor.js';
 import mongoose from 'mongoose';
 
-const postViewServiceExecutor = new DebouncedMongoBatchExecutor(10000, 100, {
+const postViewServiceHandler = new DebouncedMongoBatchExecutor({
   PostView: {
     create: async (views: any[]) => {
       // const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -56,4 +56,4 @@ const postViewServiceExecutor = new DebouncedMongoBatchExecutor(10000, 100, {
   },
 });
 
-export default postViewServiceExecutor;
+export default postViewServiceHandler;

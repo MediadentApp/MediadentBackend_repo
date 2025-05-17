@@ -31,6 +31,10 @@ const appConfig = {
       PostViewCleanupInterval: 86400000, // 24 hours, must be in milliseconds
     },
   },
+  defaultDebounceExecutionFlushDelay: 3000, // ms
+  defaultDebounceExecutionMaxOperations: 200,
+  defaultDebounceMongoBatchExecutionFlushDelay: 1500, // ms
+  defaultDebounceMongoBatchExecutionMaxOperations: 100,
   chat: {
     DEFAULT_MESSAGES_PER_PAGE: 25,
   },

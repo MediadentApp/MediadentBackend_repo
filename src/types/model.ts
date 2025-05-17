@@ -5,7 +5,6 @@ import { IUserAcademicDetails, IUserInterest } from '#src/types/request.userForm
 import { Document, Model, ObjectId } from 'mongoose';
 
 interface IUser extends Document {
-  _id: ObjectId;
   firstName: string;
   lastName: string;
   fullName?: string;

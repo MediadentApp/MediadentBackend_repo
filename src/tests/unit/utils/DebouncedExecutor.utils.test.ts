@@ -1,4 +1,4 @@
-import { DebouncedExecutor } from '#src/utils/DebouncedMongoExecutor.js';
+import { DebouncedExecutor } from '#src/utils/DebouncedExecutor.js';
 import { describe, expect, it, vi } from 'vitest';
 
 describe.skip('DebouncedExecutor', () => {

@@ -6,6 +6,9 @@ import '#src/jobs/workers/index.js';
 // Scheduled jobs
 import '#src/jobs/scheduled/index.js';
 
+// Cleanup Queues
+import '#src/jobs/queueCleanup/index.js';
+
 import express from 'express';
 import { createServer } from 'node:http';
 import { Server } from 'socket.io';

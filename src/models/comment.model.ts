@@ -1,4 +1,4 @@
-import { IPostComment } from '#src/types/model.post.js';
+import { IPostComment } from '#src/types/model.post.type.js';
 import mongoose, { Schema } from 'mongoose';
 import mongooseLeanVirtuals from 'mongoose-lean-virtuals';
 

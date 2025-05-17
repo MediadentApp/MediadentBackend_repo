@@ -1,4 +1,4 @@
-import { IPostSave } from '#src/types/model.post.js';
+import { IPostSave } from '#src/types/model.post.type.js';
 import mongoose, { Schema } from 'mongoose';
 
 const postSaveSchema = new Schema<IPostSave>(

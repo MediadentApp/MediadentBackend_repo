@@ -1,5 +1,5 @@
 import { VoteEnum } from '#src/types/enum.js';
-import { IPostVote } from '#src/types/model.post.js';
+import { IPostVote } from '#src/types/model.post.type.js';
 import mongoose, { Schema } from 'mongoose';
 
 const postVoteSchema = new Schema<IPostVote>(

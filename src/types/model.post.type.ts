@@ -17,7 +17,9 @@ export interface IPost extends Document {
   downvotesCount: number;
   commentsCount: number;
   netVotes?: number; // virtual mongoose field
+
   isSaved?: boolean; // would not be in schema
+  isViewed?: boolean;
 
   popularityScore?: number;
   isDeleted?: boolean;

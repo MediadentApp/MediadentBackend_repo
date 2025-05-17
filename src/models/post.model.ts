@@ -1,4 +1,4 @@
-import { IPost, IPostTag } from '#src/types/model.post.js';
+import { IPost, IPostTag } from '#src/types/model.post.type.js';
 import mongooseLeanVirtuals from 'mongoose-lean-virtuals';
 import mongoose, { Schema } from 'mongoose';
 

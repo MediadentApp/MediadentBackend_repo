@@ -1,5 +1,5 @@
 import { PostSave } from '#src/models/postSave.model.js';
-import { IPostSave } from '#src/types/model.post.js';
+import { IPostSave } from '#src/types/model.post.type.js';
 import { DebouncedMongoBatchExecutor } from '#src/utils/DebounceMongoBatchExecutor.js';
 
 const postSaveServiceHandler = new DebouncedMongoBatchExecutor({

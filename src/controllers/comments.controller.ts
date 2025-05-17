@@ -5,7 +5,7 @@ import { CommentVote } from '#src/models/commentVote.model.js';
 import { AppRequestBody, AppRequestParams, AppRequestQuery } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { SortMethod, SortOrder, VoteEnum } from '#src/types/enum.js';
-import { IPostComment } from '#src/types/model.post.js';
+import { IPostComment } from '#src/types/model.post.type.js';
 import { CommentParam } from '#src/types/param.comment.js';
 import { ICommentQuery } from '#src/types/query.comment.js';
 import { ICommentBody, ICommentVoteBody } from '#src/types/request.comment.js';

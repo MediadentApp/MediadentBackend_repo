@@ -13,7 +13,7 @@ import { AppResponse } from '#src/types/api.response.js';
 import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { VoteEnum } from '#src/types/enum.js';
 import { ICommunity } from '#src/types/model.community.js';
-import { IPost } from '#src/types/model.post.js';
+import { IPost } from '#src/types/model.post.type.js';
 import { CommunityPostParam } from '#src/types/param.communityPost.js';
 import { IdParam, SlugParam } from '#src/types/param.js';
 import { QueryParam } from '#src/types/query.js';
@@ -222,14 +222,54 @@ export const getAllCommunitypost = catchAsync(
           },
         },
         {
+          $lookup: {
+            from: 'postviews',
+            let: { postId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+                  },
+                },
+              },
+              { $limit: 1 },
+            ],
+            as: 'viewedByUser',
+          },
+        },
+        {
+          $lookup: {
+            from: 'postvotes',
+            let: { postId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+                  },
+                },
+              },
+              { $limit: 1 },
+            ],
+            as: 'votedByUser',
+          },
+        },
+        {
           $addFields: {
             isSaved: { $gt: [{ $size: '$savedByUser' }, 0] },
             netVotes: { $subtract: ['$upvotesCount', '$downvotesCount'] },
+            isViewed: { $gt: [{ $size: '$viewedByUser' }, 0] },
+            voteType: {
+              $cond: [{ $gt: [{ $size: '$votedByUser' }, 0] }, { $arrayElemAt: ['$votedByUser.voteType', 0] }, null],
+            },
           },
         },
         {
           $project: {
             savedByUser: 0, // remove the raw join result
+            viewedByUser: 0,
+            votedByUser: 0,
           },
         },
       ],

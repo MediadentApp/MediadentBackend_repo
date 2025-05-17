@@ -4,7 +4,7 @@ import { Queue } from 'bullmq';
 
 type Status = 'completed' | 'wait' | 'active' | 'paused' | 'prioritized' | 'delayed' | 'failed';
 const defaultGraceTime = 3600 * 1000;
-const defaultStatus: Status[] = ['completed', 'failed', 'delayed'];
+const defaultStatus: Status[] = ['completed', 'failed', 'delayed', 'failed', 'active'];
 
 async function cleanQueue(queue: Queue, time: number = defaultGraceTime, type: Status[] = defaultStatus) {
   for (const status of type) {

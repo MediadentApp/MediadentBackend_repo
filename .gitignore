@@ -4,6 +4,7 @@ package-lock.json
 
 # Misc
 *.txt
+.vscode/
 
 # Environment variables file (if using .env)
 config.env

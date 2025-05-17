@@ -1,5 +1,3 @@
-import '#src/../loadenv.js';
-
 // Workers
 import '#src/jobs/workers/index.js';
 

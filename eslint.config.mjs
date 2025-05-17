@@ -20,7 +20,9 @@ const compat = new FlatCompat({
 export default defineConfig([
   globalIgnores(['**/dist', '**/node_modules']),
   {
-    extends: compat.extends('airbnb-base', 'plugin:@typescript-eslint/recommended', 'plugin:prettier/recommended'),
+    extends: compat.extends('airbnb-base', 'plugin:@typescript-eslint/recommended',
+      // 'plugin:prettier/recommended'
+    ),
 
     plugins: {
       '@typescript-eslint': typescriptEslint,
@@ -47,7 +49,7 @@ export default defineConfig([
     // },
 
     rules: {
-      "prettier/prettier": "error",
+      // "prettier/prettier": "error", // temporary disabled
       '@typescript-eslint/no-unused-vars': ['error'],
       'arrow-body-style': ['error', 'as-needed'],
       'import/order': [

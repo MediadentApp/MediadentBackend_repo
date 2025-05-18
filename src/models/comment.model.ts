@@ -11,9 +11,12 @@ const commentSchema = new Schema<IPostComment>(
     // imageUrls: [{ type: String }],
     children: [{ type: Schema.Types.ObjectId, ref: 'Comment' }],
 
-    childrenCount: { type: Number, default: 0 },
-    upvotesCount: { type: Number, default: 0 },
-    downvotesCount: { type: Number, default: 0 },
+    childrenCount: { type: Number, default: 0, min: 0 },
+    upvotesCount: { type: Number, default: 0, min: 0 },
+    downvotesCount: { type: Number, default: 0, min: 0 },
+    commentsCount: { type: Number, default: 0, min: 0 },
+
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

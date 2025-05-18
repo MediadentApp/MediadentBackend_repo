@@ -2,6 +2,7 @@ import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import Comment from '#src/models/comment.model.js';
 import { CommentVote } from '#src/models/commentVote.model.js';
+import CommunityCommentCountsServiceHandler from '#src/services/communityCommentCount.service.js';
 import { AppRequestBody, AppRequestParams, AppRequestQuery } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { SortMethod, SortOrder, VoteEnum } from '#src/types/enum.js';
@@ -51,6 +52,13 @@ export const createComment = catchAsync(
       userId: req.user._id,
       content: content.trim(),
       imageUrl,
+    });
+
+    CommunityCommentCountsServiceHandler.add({
+      collectionName: 'communityCommentCount',
+      type: 'create',
+      id: `CommunityCommentCountsServiceHandler-create-${comment._id.toString()}`,
+      data: { postId: comment.postId },
     });
 
     // Increment parent comment's childrenCount and push child id if applicable
@@ -108,10 +116,18 @@ export const deleteComment = catchAsync(
   async (req: AppRequestParams<CommentParam>, res: AppResponse, next: NextFunction) => {
     const { commentId } = req.params;
 
-    const comment = await Comment.findByIdAndDelete(commentId);
+    // const comment = await Comment.findByIdAndDelete(commentId);
+    const comment = await Comment.findByIdAndUpdate(commentId, { isDeleted: true }, { new: true, lean: true });
     if (!comment) {
       return next(new ApiError(responseMessages.APP.COMMENT.NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
     }
+
+    // CommunityCommentCountsServiceHandler.add({
+    //   collectionName: 'communityCommentCount',
+    //   type: 'delete',
+    //   id: `CommunityCommentCountsServiceHandler-delete-${comment._id.toString()}`,
+    //   data: { postId: comment.postId },
+    // });
 
     return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
   }

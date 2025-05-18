@@ -53,6 +53,7 @@ export interface IPostComment extends Document<ObjectId> {
   userId: ObjectId;
   content: string;
 
+  commentsCount: number;
   upvotesCount: number;
   downvotesCount: number;
   children: IPostComment[];

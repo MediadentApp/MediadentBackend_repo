@@ -17,8 +17,8 @@ const communitySchema: Schema<ICommunity> = new Schema<ICommunity>(
 
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, immutable: true },
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-    membersCount: { type: Number, default: 0 },
-    postCount: { type: Number, default: 0 },
+    membersCount: { type: Number, default: 0, min: 0 },
+    followersCount: { type: Number, default: 0, min: 0 },
 
     moderators: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     bannedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],

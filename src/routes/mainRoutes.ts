@@ -1,4 +1,3 @@
-import { communityPosts, createCommunity } from '#src/controllers/communityPost.controller.js';
 import {
   chats,
   getChatID,
@@ -7,14 +6,19 @@ import {
   sendPushNotification,
   subscribe,
 } from '#src/controllers/socketMessageController.js';
-import { userById, userNotifications } from '#src/controllers/userController.js';
-import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
-import express from 'express';
+import { followUserToggle, userById, userNotifications } from '#src/controllers/userController.js';
+import { AppRequestParams } from '#src/types/api.request.js';
+import { AppResponse } from '#src/types/api.response.js';
+import { IdParam } from '#src/types/param.js';
+import express, { NextFunction } from 'express';
 
 const router = express.Router();
 
 router.post('/usersbyid', userById);
 router.get('/notifications', userNotifications);
+router.patch('/:id/follow/toggle', (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) =>
+  followUserToggle(req, res, next)
+);
 
 // Communication System APIs
 router.post('/getSecondParticipants', getSecondParticipants);

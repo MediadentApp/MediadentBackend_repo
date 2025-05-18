@@ -5,6 +5,8 @@ package-lock.json
 # Misc
 *.txt
 .vscode/
+*.md
+!README.md
 
 # Environment variables file (if using .env)
 config.env

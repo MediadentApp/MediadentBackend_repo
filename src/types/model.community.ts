@@ -20,6 +20,8 @@ export interface ICommunity extends Document {
   postCount: number;
   isDeleted: boolean;
 
+  followersCount: number;
+
   moderators: ObjectId[];
   bannedUsers: ObjectId[];
   blockedUsers: ObjectId[];
@@ -29,6 +31,11 @@ export interface ICommunity extends Document {
   //     userId: ObjectId;
   //     role: CommunityRole;
   // }[]
+}
+
+export interface IFollowsCommunity {
+  userId: ObjectId;
+  communityId: ObjectId;
 }
 
 export interface ICommunityInvite {

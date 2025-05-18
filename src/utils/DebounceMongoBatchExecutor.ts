@@ -11,9 +11,9 @@ type GenericOperation = {
 
 type OperationHandlers = {
   [collectionName: string]: {
-    create?: (items: any[]) => Promise<void>;
-    update?: (items: any[]) => Promise<void>;
-    delete?: (items: any[]) => Promise<void>;
+    create?: (items: any[]) => Promise<any | void>;
+    update?: (items: any[]) => Promise<any | void>;
+    delete?: (items: any[]) => Promise<any | void>;
   };
 };
 
@@ -66,7 +66,9 @@ export class DebouncedMongoBatchExecutor {
         const [type, collectionName] = key.split(':') as [DebouncedOperationType, string];
         const handler = this.handlers[collectionName]?.[type];
         if (handler) {
-          await handler(data);
+          const res = await handler(data);
+          if (res && process.env.NODE_ENV === 'development')
+            console.log(`Mongo batch execution result of ${key}:\n${JSON.stringify(res, null, 2)}`);
         }
       })
     );

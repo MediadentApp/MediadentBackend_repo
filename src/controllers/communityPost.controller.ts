@@ -2,9 +2,11 @@ import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
 import Community, { CommunityInvite } from '#src/models/community.model.js';
+import { CommunityFollowedBy } from '#src/models/communityFollowedBy.model.js';
 import Post from '#src/models/post.model.js';
 import { PostSave } from '#src/models/postSave.model.js';
 import { PostVote } from '#src/models/postVote.model.js';
+import followCommunityServiceHandler from '#src/services/communityFollow.service.js';
 import postSaveServiceHandler from '#src/services/postSave.service.js';
 import postViewServiceHandler from '#src/services/postView.service.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
@@ -188,6 +190,54 @@ export const getCommunities = catchAsync(async (req: AppPaginatedRequest, res: A
 
   return ApiPaginatedResponse(res, fetchedData);
 });
+
+const followCommunityExecutor = new DebouncedExecutor();
+/**
+ * Controller to follow/unfollow a community.
+ *
+ * Route: POST /community/:id/follow/toggle
+ */
+export const toggleFollowCommunity = catchAsync(
+  async (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) => {
+    const { id: communityId } = req.params;
+    const userId = req.user._id;
+
+    if (!communityId || !mongoose.Types.ObjectId.isValid(communityId)) {
+      return next(new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400));
+    }
+
+    const community = await Community.exists({ _id: communityId }).lean();
+    if (!community) {
+      return next(new ApiError(responseMessages.APP.COMMUNITY.NOT_FOUND, 404));
+    }
+
+    const followCommunityId = `${communityId}-${userId}`;
+
+    followCommunityExecutor.addOperation({
+      id: followCommunityId,
+      query: async () => {
+        const follows = await CommunityFollowedBy.exists({ communityId, userId }).lean();
+        if (follows) {
+          followCommunityServiceHandler.add({
+            type: 'delete',
+            collectionName: 'CommunityFollowedBy',
+            id: followCommunityId,
+            data: { communityId, userId },
+          });
+        } else {
+          followCommunityServiceHandler.add({
+            type: 'create',
+            collectionName: 'CommunityFollowedBy',
+            id: followCommunityId,
+            data: { communityId, userId },
+          });
+        }
+      },
+    });
+
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+  }
+);
 
 /**
  * Controller to fetch a paginated list of community posts.
@@ -550,10 +600,15 @@ export const savePost = catchAsync(
     const { postId } = req.params;
     const { _id: userId } = req.user;
 
-    if (!postId) {
+    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
       return next(
         new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
       );
+    }
+
+    const post = await Post.exists({ _id: postId }).lean();
+    if (!post) {
+      return next(new ApiError(responseMessages.APP.POST.POST_NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
     }
 
     const savePostId = `${userId}-${postId}`;

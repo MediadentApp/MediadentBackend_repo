@@ -9,6 +9,12 @@ import Education from '#src/models/userEducationDetailModel.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import ApiResponse from '#src/utils/ApiResponse.js';
+import { AppRequestParams } from '#src/types/api.request.js';
+import { AppResponse } from '#src/types/api.response.js';
+import { IdParam } from '#src/types/param.js';
+import { DebouncedExecutor } from '#src/utils/DebouncedExecutor.js';
+import { UserFollows } from '#src/models/userFollows.model.js';
+import followUserServiceHandler from '#src/services/userFollow.service.js';
 
 // User by ID
 export const userById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -96,3 +102,63 @@ export const getAcademicDetails = catchAsync(async (req: Request, res: Response,
   const data = userDetails.education;
   return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data);
 });
+
+const followUserExecutor = new DebouncedExecutor();
+/**
+ * Controller to follow a user
+ *
+ * Route: PATCH /user/:id/follow/toggle
+ */
+export const followUserToggle = catchAsync(
+  async (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) => {
+    const { id: followUserId } = req.params;
+    const userId = req.user._id as mongoose.Types.ObjectId;
+
+    if (
+      !followUserId ||
+      !mongoose.Types.ObjectId.isValid(followUserId) ||
+      userId.equals(new Types.ObjectId(followUserId))
+    ) {
+      return next(
+        new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+      );
+    }
+
+    const followUserExists = await User.exists({ _id: followUserId }).lean();
+    if (!followUserExists) {
+      return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.GENERAL.USER_NOT_FOUND));
+    }
+
+    const key = `${followUserId}-${req.user._id}`;
+
+    followUserExecutor.addOperation({
+      id: key,
+      query: async () => {
+        const userExists = await UserFollows.exists({ followingUserId: followUserId, userId }).lean();
+
+        if (userExists) {
+          followUserServiceHandler.add({
+            type: 'delete',
+            collectionName: 'followUserToggle',
+            id: key,
+            data: {
+              followingUserId: followUserId,
+              userId,
+            },
+          });
+        } else {
+          followUserServiceHandler.add({
+            type: 'create',
+            collectionName: 'followUserToggle',
+            id: key,
+            data: {
+              followingUserId: followUserId,
+              userId,
+            },
+          });
+        }
+      },
+    });
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+  }
+);

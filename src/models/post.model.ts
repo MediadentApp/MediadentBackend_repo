@@ -21,10 +21,11 @@ const postSchema: Schema<IPost> = new Schema(
       required: true,
     },
 
-    views: { type: Number, default: 0 },
-    upvotesCount: { type: Number, default: 0 },
-    downvotesCount: { type: Number, default: 0 },
-    commentsCount: { type: Number, default: 0 },
+    views: { type: Number, default: 0, min: 0 },
+    upvotesCount: { type: Number, default: 0, min: 0 },
+    downvotesCount: { type: Number, default: 0, min: 0 },
+    commentsCount: { type: Number, default: 0, min: 0 },
+    savesCount: { type: Number, default: 0, min: 0 },
 
     popularityScore: { type: Number, default: 0, index: true },
     isDeleted: Boolean,

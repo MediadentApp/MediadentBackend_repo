@@ -214,31 +214,26 @@ const userSchema: Schema<IUser> = new Schema(
         default: [],
       },
     },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
+    followingCommunitiesCount: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
-    followingCommunities: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Community',
-        default: [],
-      },
-    ],
-    followingUsers: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: [],
-      },
-    ],
-    followers: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: [],
-      },
-    ],
+    followingsCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    followersCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    savesCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true, // Automatically manages createdAt fields

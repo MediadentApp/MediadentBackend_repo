@@ -12,6 +12,7 @@ import {
   votePost,
   trackPostView,
   savePost,
+  toggleFollowCommunity,
 } from '#src/controllers/communityPost.controller.js';
 import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
@@ -67,6 +68,14 @@ router.delete('/community/:id', (req: AppRequestParams<IdParam>, res: AppRespons
  */
 router.get('/community/:slug', (req: AppRequestParams<SlugParam>, res: AppResponse, next: NextFunction) =>
   getCommunityBySlug(req, res, next)
+);
+
+/**
+ * POST /community/:id/follow/toggle
+ * Toggle following a community.
+ */
+router.patch('/community/:id/follow/toggle', (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) =>
+  toggleFollowCommunity(req, res, next)
 );
 
 /**
@@ -144,7 +153,7 @@ router.post(
  * POST /communitypost/:communityId/:postId/save
  * Saves a post within a community.
  */
-router.post(
+router.patch(
   '/communitypost/:communityId/:postId/save',
   (req: AppRequestParams<CommunityPostParam>, res: AppResponse, next: NextFunction) => savePost(req, res, next)
 );

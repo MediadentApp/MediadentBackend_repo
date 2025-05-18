@@ -83,7 +83,7 @@ export const updateComment = catchAsync(
     const { content } = req.body;
 
     // Validate inputs
-    if (!commentId || !content?.trim()) {
+    if (!commentId || !mongoose.Types.ObjectId.isValid(commentId) || !content?.trim()) {
       return next(
         new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
       );

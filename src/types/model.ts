@@ -4,7 +4,7 @@ import { UserRole } from '#src/types/enum.js';
 import { IUserAcademicDetails, IUserInterest } from '#src/types/request.userFormat.js';
 import { Document, Model, ObjectId } from 'mongoose';
 
-interface IUser extends Document {
+export interface IUser extends Document {
   firstName: string;
   lastName: string;
   fullName?: string;
@@ -45,10 +45,12 @@ interface IUser extends Document {
     chatIds: ObjectId[];
     groupChatIds: ObjectId[];
   };
-  updatedAt: Date;
-  followingCommunities: ObjectId[];
-  followingUsers: ObjectId[];
-  followers: ObjectId[];
+
+  followingCommunitiesCount: number;
+  followingsCount: number;
+  followersCount: number;
+  savesCount: number;
+
   isAdditionalInfoFilled(): {
     message: IResponseMessage;
     redirectUrl: string;
@@ -59,12 +61,17 @@ interface IUser extends Document {
   createPasswordResetToken(): string;
 }
 
-interface IUserModel extends Model<IUser> {
+export interface IUserModel extends Model<IUser> {
   findFullUser(query: object, additionalSelects?: string): Promise<IUser | null>;
   protectApi(token: string | null | undefined, selectFields?: string, populateFields?: string): Promise<IUser>;
 }
 
-interface IUserActivity extends Document {
+export interface IUserFollows extends Document {
+  userId: ObjectId; // user who follows
+  followingUserId: ObjectId; // user being followed
+}
+
+export interface IUserActivity extends Document {
   userId: ObjectId;
   likedPosts: ObjectId[];
   onlineStatus: boolean;
@@ -78,7 +85,7 @@ interface IUserActivity extends Document {
   lastSuggestedAt: Date;
 }
 
-interface ITempUser extends Document {
+export interface ITempUser extends Document {
   email: string;
   otp?: number;
   otpSendAt?: Date;
@@ -89,7 +96,7 @@ interface ITempUser extends Document {
   checkOtpExpiration(): boolean;
 }
 
-interface IEducation extends Document {
+export interface IEducation extends Document {
   country: string;
   state: string;
   city: string;
@@ -127,7 +134,7 @@ interface IEducation extends Document {
   user: ObjectId;
 }
 
-interface ICollege {
+export interface ICollege {
   id?: ObjectId;
   state: string;
   name: string;
@@ -138,7 +145,7 @@ interface ICollege {
   pin_code: string;
 }
 
-interface IUniversity {
+export interface IUniversity {
   name: string;
   address: string;
   website: string;
@@ -149,12 +156,12 @@ interface IUniversity {
   regPhone: string;
 }
 
-interface ICityStates {
+export interface ICityStates {
   city: string;
   state: string;
 }
 
-interface IMessage extends Document {
+export interface IMessage extends Document {
   chatId?: ObjectId;
   groupChatId?: ObjectId;
   senderId: ObjectId;
@@ -184,7 +191,7 @@ interface IMessage extends Document {
   updatedAt: Date;
 }
 
-interface IChat extends Document {
+export interface IChat extends Document {
   participants: ObjectId[];
   active: boolean;
   lastMessage: {
@@ -198,7 +205,7 @@ interface IChat extends Document {
   }[];
 }
 
-interface IGroupChat extends Document {
+export interface IGroupChat extends Document {
   groupName: string;
   groupPicture: string | null;
   participants: ObjectId[];
@@ -211,7 +218,7 @@ interface IGroupChat extends Document {
   } | null;
 }
 
-interface IWebPushSubscription extends Document {
+export interface IWebPushSubscription extends Document {
   userId: ObjectId;
   subscription: {
     endpoint: string;
@@ -222,7 +229,7 @@ interface IWebPushSubscription extends Document {
   };
 }
 
-interface INotification extends Document {
+export interface INotification extends Document {
   userId: ObjectId;
   senderId: ObjectId;
   senderName: string;
@@ -238,26 +245,9 @@ interface INotification extends Document {
   updatedAt?: Date;
 }
 
-interface IUserFormat extends Document {
+export interface IUserFormat extends Document {
   userType: string[];
   userAcademicDetails: IUserAcademicDetails;
   userGender: string[];
   userInterest: IUserInterest[];
 }
-
-export type {
-  IUser,
-  IUserModel,
-  IUserActivity,
-  ITempUser,
-  IEducation,
-  ICollege,
-  IUniversity,
-  ICityStates,
-  IMessage,
-  IChat,
-  IGroupChat,
-  IWebPushSubscription,
-  INotification,
-  IUserFormat,
-};

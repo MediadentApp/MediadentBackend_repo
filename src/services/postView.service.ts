@@ -26,7 +26,7 @@ const postViewServiceHandler = new DebouncedMongoBatchExecutor({
 
       if (filteredViews.length) {
         // No need to await
-        PostView.insertMany(filteredViews, { ordered: false }).catch(err => {
+        const postViews = PostView.insertMany(filteredViews, { ordered: false }).catch(err => {
           console.error('create post views error', err);
         });
         const countByPostId = filteredViews.reduce<Record<string, number>>((acc, { postId }) => {
@@ -44,13 +44,9 @@ const postViewServiceHandler = new DebouncedMongoBatchExecutor({
         // console.log('bulkViewUpdates', JSON.stringify(bulkViewUpdates, null, 2));
 
         // No need to await
-        Post.bulkWrite(bulkViewUpdates)
-          .then(res => {
-            // console.log('bulkWrite result:', res);
-          })
-          .catch(err => {
-            console.error('bulk update post views error', err);
-          });
+        const updatePostViews = Post.bulkWrite(bulkViewUpdates);
+
+        await Promise.all([postViews, updatePostViews]);
       }
     },
   },

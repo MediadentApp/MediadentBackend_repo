@@ -2,13 +2,15 @@ import appConfig from '#src/config/appConfig.js';
 import { postViewCleanupQueue } from '#src/jobs/queues/postView.queue.js';
 
 export const schedulePostViewCleanup = async () => {
-  await postViewCleanupQueue.add(
-    'delete-old-postviews',
-    {}, // no data needed
+  await postViewCleanupQueue.upsertJobScheduler(
+    `delete-old-postviews`,
+    { pattern: appConfig.app.algoRecommendation.postViewCleanup.dailyCleanTimePattern },
     {
-      jobId: 'unique-delete-old-postviews', // ✅ ensures only one repeat job
-      repeat: { every: appConfig.app.post.PostViewCleanupInterval }, // every day (in seconds)
-      removeOnComplete: true,
+      name: 'delete-old-postviews',
+      opts: {
+        keepLogs: 2,
+        removeOnComplete: true,
+      },
     }
   );
 };

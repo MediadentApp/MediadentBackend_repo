@@ -1,7 +1,7 @@
-import { Document, ObjectId } from 'mongoose';
-import { PostAuthorType, ReportStatus, VoteEnum } from './enum.js';
+import { Document, ObjectId, Types } from 'mongoose';
+import { ReportStatus, VoteEnum } from './enum.js';
 
-export interface IPost extends Document {
+export interface IPost extends Document<ObjectId> {
   slug: string; // URL-safe, unique (e.g., “computer-science”)
 
   title: string;
@@ -28,6 +28,10 @@ export interface IPost extends Document {
   isFlagged?: boolean;
   isApproved?: boolean;
   flagReason?: string;
+
+  createdAt: Date;
+  updatedAt: Date;
+  popularityUpdatedAt?: Date;
 }
 
 export interface IPostVote extends Document {
@@ -62,6 +66,12 @@ export interface IPostComment extends Document<ObjectId> {
 
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface IPostView extends Document<ObjectId> {
+  userId: ObjectId;
+  postId: ObjectId;
+  viewedAt: Date;
 }
 
 export interface ICommentVote extends Document {

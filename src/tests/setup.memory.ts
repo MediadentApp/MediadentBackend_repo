@@ -1,10 +1,10 @@
 import '#src/../loadenv.js';
+import './setup.redis.js';
 
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { beforeAll, afterEach, afterAll, beforeEach } from 'vitest';
 import seedDatabase from '#src/tests/seeds.js';
-import { app } from '#src/app.js';
 
 let mongo: MongoMemoryServer | null = null;
 process.env.DEBUG = 'mongodb-memory-server*';

@@ -1,7 +1,7 @@
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
-import Comment from '#src/models/comment.model.js';
-import { CommentVote } from '#src/models/commentVote.model.js';
+import Comment from '#src/models/postComment.model.js';
+import { CommentVote } from '#src/models/postCommentVote.model.js';
 import CommunityCommentCountsServiceHandler from '#src/services/communityCommentCount.service.js';
 import { AppRequestBody, AppRequestParams, AppRequestQuery } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';

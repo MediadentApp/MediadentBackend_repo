@@ -5,9 +5,6 @@ if (!process.env.REDIS_URL) {
 }
 
 const redisConnection = new Redis(process.env.REDIS_URL, {
-  // tls: {
-  //   servername: 'redis-13788.c305.ap-south-1-1.ec2.redns.redis-cloud.com',
-  // },
   maxRetriesPerRequest: null,
 });
 

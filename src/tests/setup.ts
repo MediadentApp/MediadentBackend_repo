@@ -1,4 +1,5 @@
 import '#src/../loadenv.js';
+import './setup.redis.js';
 import seedDatabase from '#src/tests/seeds.js';
 
 import mongoose from 'mongoose';

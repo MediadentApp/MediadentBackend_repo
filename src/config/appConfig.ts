@@ -21,6 +21,14 @@ const appConfig = {
       minPasswordLength: 8,
       numOfSignupInterests: 3,
     },
+    algoRecommendation: {
+      postPopularity: {
+        dailyCalcTimePattern: '0 0 13 * * *', // At second 0, minute 0, hour 13 (1 PM), every day, every month, every day of the week
+      },
+      postViewCleanup: {
+        dailyCleanTimePattern: '0 0 16 * * *',
+      },
+    },
     post: {
       allowedPostsPerUser: 5,
       allowedPostImagesPerPost: 5,

@@ -28,6 +28,7 @@ const postSchema: Schema<IPost> = new Schema(
     savesCount: { type: Number, default: 0, min: 0 },
 
     popularityScore: { type: Number, default: 0, index: true },
+    popularityUpdatedAt: Date,
     isDeleted: Boolean,
     isFlagged: Boolean,
     isApproved: Boolean,

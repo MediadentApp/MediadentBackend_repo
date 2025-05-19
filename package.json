@@ -15,7 +15,10 @@
     "test:coverage": "vitest --coverage",
     "test:bench": "vitest bench",
     "test:unit": "vitest unit",
-    "test:integration": "vitest integration"
+    "test:integration": "vitest integration",
+    "test:check-mongo-memory": "vitest run check-mongo-memory.test.ts",
+    "test:algo": "vitest watch algo",
+    "test:algo-memory": "npm run test:check-mongo-memory && npm run test:algo:watch"
   },
   "author": "Vinay Poojary",
   "license": "ISC",
@@ -44,6 +47,7 @@
     "@bull-board/api": "^6.9.6",
     "@bull-board/express": "^6.9.6",
     "@eslint/compat": "^1.2.8",
+    "@faker-js/faker": "^9.8.0",
     "@types/aws4": "^1.11.6",
     "@types/axios": "^0.9.36",
     "@types/bcryptjs": "^2.4.6",

@@ -28,5 +28,5 @@ commentSchema.virtual('netVotes').get(function () {
 // Plugin for virtual fields with lean
 commentSchema.plugin(mongooseLeanVirtuals);
 
-const Comment = mongoose.model('Comment', commentSchema);
+const Comment = mongoose.model('Comment', commentSchema, 'postcomments');
 export default Comment;

@@ -13,4 +13,4 @@ const commentVoteSchema = new Schema<ICommentVote>(
 
 commentVoteSchema.index({ commentId: 1, userId: 1 }, { unique: true });
 
-export const CommentVote = mongoose.model('CommentVote', commentVoteSchema);
+export const CommentVote = mongoose.model('CommentVote', commentVoteSchema, 'postcommentvotes');

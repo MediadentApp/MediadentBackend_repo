@@ -35,7 +35,7 @@ const router = express.Router();
 router.post(
   '/community',
   communityCreationUpload,
-  (req: AppRequestBody<ICommunityBody>, res: AppResponse, next: NextFunction) => createCommunity(req, res, next)
+  (req: AppRequest<IdParam, ICommunityBody>, res: AppResponse, next: NextFunction) => createCommunity(req, res, next)
 );
 
 /**
@@ -44,6 +44,16 @@ router.post(
  */
 router.get('/community', (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) =>
   getCommunities(req, res, next)
+);
+
+/**
+ * POST /community/:id
+ * Creates a new sub-community under a parent community.
+ */
+router.post(
+  '/community/:id',
+  communityCreationUpload,
+  (req: AppRequest<IdParam, ICommunityBody>, res: AppResponse, next: NextFunction) => createCommunity(req, res, next)
 );
 
 /**

@@ -31,6 +31,16 @@ const communitySchema: Schema<ICommunity> = new Schema<ICommunity>(
   { timestamps: true }
 );
 
+communitySchema.post('save', async function (doc) {
+  if (doc.parentId) {
+    const parent = await Community.findById(doc.parentId);
+    if (parent) {
+      parent.children.push(doc._id);
+      await parent.save();
+    }
+  }
+});
+
 const Community = mongoose.model<ICommunity>('Community', communitySchema);
 
 const communityInviteSchema: Schema<ICommunityInvite> = new Schema<ICommunityInvite>(

@@ -38,9 +38,11 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
   const {
     page: rawPage = '1',
     pageSize: rawPageSize = '10',
+    selectFields,
     searchValue,
     searchFields = [],
     projection,
+    populateFields,
     defaultProjection = {},
     sortField,
     sortOrder,
@@ -53,6 +55,25 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
   const pageSize = Number(rawPageSize);
 
   const filter: any = { ...rawFilter };
+
+  // Parse and apply selectFields (overrides projection if used)
+  let selectFieldsObj: Record<string, number> | undefined = undefined;
+  if (selectFields && typeof selectFields === 'string') {
+    const fields = selectFields.split(',').map(field => field.trim());
+    if (fields.length > 0) {
+      selectFieldsObj = fields.reduce(
+        (acc, field) => {
+          if (field.startsWith('-')) {
+            acc[field.substring(1)] = 0;
+          } else {
+            acc[field] = 1;
+          }
+          return acc;
+        },
+        {} as Record<string, number>
+      );
+    }
+  }
 
   let projectionObj: Record<string, string> = defaultProjection;
   // If projection is passed in the query, as comma separated, override defaults
@@ -118,12 +139,34 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
     ? { [sortField]: sortOrder === 'desc' ? -1 : 1 }
     : { createdAt: -1 };
 
-  const data = (await model
+  // Create query
+  const query = model
     .find(filter, cleanProjection)
     .sort(sort)
     .skip(skip)
     .limit(Number(pageSize))
-    .lean({ virtuals: true })) as T[];
+    .lean({ virtuals: true });
+
+  // Apply selectFields if provided
+  if (selectFieldsObj) {
+    query.select(selectFieldsObj);
+  }
+
+  // Apply population
+  if (populateFields) {
+    const fieldsToPopulate = Array.isArray(populateFields)
+      ? populateFields
+      : typeof populateFields === 'string'
+        ? populateFields.split(',').map(field => field.trim())
+        : [];
+
+    const nestedPopulate = buildNestedPopulate(fieldsToPopulate);
+    nestedPopulate.forEach(populateObj => {
+      query.populate(populateObj);
+    });
+  }
+
+  const data = (await query.exec()) as T[];
 
   const returnData: IPaginatedResponse<T> = {
     data,
@@ -245,4 +288,26 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
     pageSize: Number(pageSize),
     hasMore: data.length === Number(pageSize),
   };
+}
+
+function buildNestedPopulate(fields: string[]): any[] {
+  const tree: Record<string, any> = {};
+
+  for (const field of fields) {
+    const parts = field.split('.');
+    let current = tree;
+
+    for (const part of parts) {
+      if (!current[part]) current[part] = {};
+      current = current[part];
+    }
+  }
+
+  const buildPopulate = (obj: Record<string, any>): any[] =>
+    Object.entries(obj).map(([path, sub]) => ({
+      path,
+      ...(Object.keys(sub).length > 0 ? { populate: buildPopulate(sub) } : {}),
+    }));
+
+  return buildPopulate(tree);
 }

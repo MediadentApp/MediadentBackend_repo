@@ -49,69 +49,72 @@ import mongoose, { ObjectId } from 'mongoose';
  *
  * Route: POST /community
  */
-export const createCommunity = catchAsync(async (req, res, next) => {
-  const { name, description, parentId, type, moderators } = req.body;
-  const files = req.files as {
-    avatar?: Express.Multer.File[];
-    banner?: Express.Multer.File[];
-  };
+export const createCommunity = catchAsync(
+  async (req: AppRequest<IdParam, ICommunityBody>, res: AppResponse, next: NextFunction) => {
+    const { name, description, type, moderators } = req.body;
+    const { id: parentId } = req.params;
+    const files = req.files as {
+      avatar?: Express.Multer.File[];
+      banner?: Express.Multer.File[];
+    };
 
-  if (!name) {
-    return next(
-      new ApiError(responseMessages.APP.COMMUNITY.NAME_REQUIRED, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
-    );
-  }
-
-  // No need, as mongodb will throw an error
-  // 🛑 Check for duplicate name (case-sensitive)
-  // const existingCommunity = await Community.findOne({ name }).lean();
-  // if (existingCommunity) {
-  //   return next(new ApiError(responseMessages.APP.COMMUNITY.ALREADY_EXISTS, 400, ErrorCodes.DATA.ALREADY_EXISTS));
-  // }
-
-  // ✅ Check if parent exists (if provided)
-  if (parentId) {
-    const parentCommunityExists = await Community.exists({ _id: parentId }).lean();
-    if (!parentCommunityExists) {
+    if (!name) {
       return next(
-        new ApiError(responseMessages.APP.COMMUNITY.PARENT_NOT_FOUND, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+        new ApiError(responseMessages.APP.COMMUNITY.NAME_REQUIRED, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
       );
     }
-  }
 
-  // 🖼️ Upload images only after validation
-  let imageUploadResp;
-  if (files) {
-    const filesData: ImageFileData[] = [];
-    Object.entries(files).forEach(([key, value]) => {
-      value.forEach(file => {
-        filesData.push({
-          fileName: file.fieldname ?? file.originalname,
-          mimeType: file.mimetype,
-          fileBase64: file.buffer.toString('base64'),
+    // No need, as mongodb will throw an error
+    // 🛑 Check for duplicate name (case-sensitive)
+    // const existingCommunity = await Community.findOne({ name }).lean();
+    // if (existingCommunity) {
+    //   return next(new ApiError(responseMessages.APP.COMMUNITY.ALREADY_EXISTS, 400, ErrorCodes.DATA.ALREADY_EXISTS));
+    // }
+
+    // ✅ Check if parent exists (if provided)
+    if (parentId) {
+      const parentCommunityExists = await Community.exists({ _id: parentId }).lean();
+      if (!parentCommunityExists) {
+        return next(
+          new ApiError(responseMessages.APP.COMMUNITY.PARENT_NOT_FOUND, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+        );
+      }
+    }
+
+    // 🖼️ Upload images only after validation
+    let imageUploadResp;
+    if (files) {
+      const filesData: ImageFileData[] = [];
+      Object.entries(files).forEach(([key, value]) => {
+        value.forEach(file => {
+          filesData.push({
+            fileName: file.fieldname ?? file.originalname,
+            mimeType: file.mimetype,
+            fileBase64: file.buffer.toString('base64'),
+          });
         });
       });
+
+      imageUploadResp = await ImageUpload({ files: filesData, username: req.user.username ?? 'auto' });
+    }
+
+    const slug = name.replace(/\s+/g, '-');
+
+    const data = await Community.create({
+      name,
+      description,
+      parentId,
+      type,
+      slug,
+      moderators,
+      owner: req.user._id,
+      avatarUrl: imageUploadResp?.uploaded.find(file => file.fileName === 'avatar')?.url,
+      bannerUrl: imageUploadResp?.uploaded.find(file => file.fileName === 'banner')?.url,
     });
 
-    imageUploadResp = await ImageUpload({ files: filesData, username: req.user.username ?? 'auto' });
+    return ApiResponse(res, 201, responseMessages.GENERAL.SUCCESS, data);
   }
-
-  const slug = name.replace(/\s+/g, '-');
-
-  const data = await Community.create({
-    name,
-    description,
-    parentId,
-    type,
-    slug,
-    moderators,
-    owner: req.user._id,
-    avatarUrl: imageUploadResp?.uploaded.find(file => file.fileName === 'avatar')?.url,
-    bannerUrl: imageUploadResp?.uploaded.find(file => file.fileName === 'banner')?.url,
-  });
-
-  return ApiResponse(res, 201, responseMessages.GENERAL.SUCCESS, data);
-});
+);
 
 /**
  * Update a community by its ID (slug).

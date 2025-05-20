@@ -20,9 +20,11 @@ export interface IPaginationOptions<T = any> extends ParsedQs {
   page?: string;
   pageSize?: string;
   filter?: Record<string, any>;
+  selectFields?: string;
   sortOrder?: SortOrder;
   sortField?: string;
   projection?: string;
+  populateFields?: string;
   defaultProjection?: DefaultProjectionType;
   searchValue?: string;
   searchFields?: string[] | string;

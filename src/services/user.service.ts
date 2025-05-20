@@ -1,10 +1,15 @@
 import { UserFollows } from '#src/models/userFollows.model.js';
 import User from '#src/models/userModel.js';
 import { IUserFollows } from '#src/types/model.js';
-import { DebouncedMongoBatchExecutor } from '#src/utils/DebounceMongoBatchExecutor.js';
+import { DebouncedExecutorHandler, DebouncedMongoBatchExecutor } from '#src/utils/DebounceMongoBatchExecutor.js';
 import mongoose from 'mongoose';
 
-const followUserServiceHandler = new DebouncedMongoBatchExecutor({
+type UserServiceHandlerType = {
+  followUserToggle: DebouncedExecutorHandler<IUserFollows>;
+  postCount: DebouncedExecutorHandler<string>;
+};
+
+const userServiceHandler = new DebouncedMongoBatchExecutor({
   followUserToggle: {
     create: async (data: IUserFollows[]) => {
       if (!data.length) return;
@@ -45,7 +50,7 @@ const followUserServiceHandler = new DebouncedMongoBatchExecutor({
 
       const updateUser = User.bulkWrite([...bulkFollowersOps, ...bulkFollowingsOps]);
 
-      return await Promise.all([createFollows, updateUser]);
+      await Promise.all([createFollows, updateUser]);
     },
     delete: async (data: IUserFollows[]) => {
       if (!data.length) return;
@@ -94,6 +99,26 @@ const followUserServiceHandler = new DebouncedMongoBatchExecutor({
       return await Promise.all([deleteFollows, updateUser]);
     },
   },
+  postCount: {
+    create: async (data: string[]) => {
+      if (!data.length) return;
+
+      const operations = [{ updateMany: { filter: { _id: { $in: data } }, update: { $inc: { postsCount: 1 } } } }];
+
+      const update = User.bulkWrite(operations);
+
+      await Promise.all([update]);
+    },
+    delete: async (data: string[]) => {
+      if (!data.length) return;
+
+      const operations = [{ updateMany: { filter: { _id: { $in: data } }, update: { $inc: { postsCount: -1 } } } }];
+
+      const update = User.bulkWrite(operations);
+
+      await Promise.all([update]);
+    },
+  },
 });
 
-export default followUserServiceHandler;
+export default userServiceHandler;

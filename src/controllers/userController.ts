@@ -8,13 +8,20 @@ import User from '#src/models/userModel.js';
 import Education from '#src/models/userEducationDetailModel.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
-import ApiResponse from '#src/utils/ApiResponse.js';
+import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
 import { AppRequestParams } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { IdParam } from '#src/types/param.js';
 import { DebouncedExecutor } from '#src/utils/DebouncedExecutor.js';
 import { UserFollows } from '#src/models/userFollows.model.js';
-import followUserServiceHandler from '#src/services/userFollow.service.js';
+import redisConnection from '#src/redis.js';
+import Post from '#src/models/post.model.js';
+import { computeHomeFeed } from '#src/recommendations/strategies/home.strategy.js';
+import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
+import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
+import { CommunityPostParam } from '#src/types/param.communityPost.js';
+import { FetchPaginatedData } from '#src/utils/ApiPaginatedResponse.js';
+import userServiceHandler from '#src/services/user.service.js';
 
 // User by ID
 export const userById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -137,7 +144,7 @@ export const followUserToggle = catchAsync(
         const userExists = await UserFollows.exists({ followingUserId: followUserId, userId }).lean();
 
         if (userExists) {
-          followUserServiceHandler.add({
+          userServiceHandler.add({
             type: 'delete',
             collectionName: 'followUserToggle',
             id: key,
@@ -147,7 +154,7 @@ export const followUserToggle = catchAsync(
             },
           });
         } else {
-          followUserServiceHandler.add({
+          userServiceHandler.add({
             type: 'create',
             collectionName: 'followUserToggle',
             id: key,
@@ -160,5 +167,39 @@ export const followUserToggle = catchAsync(
       },
     });
     return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+  }
+);
+
+export const getHomeFeed = catchAsync(
+  async (req: AppPaginatedRequest<CommunityPostParam>, res: AppPaginatedResponse, next: NextFunction) => {
+    const userId = (req.user._id as mongoose.Types.ObjectId).toString();
+    const redisKey = `home:feed:${userId}`;
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const start = (page - 1) * limit;
+    const end = start + limit - 1;
+
+    let postIds = await redisConnection.lrange(redisKey, start, end);
+
+    // If Redis is empty, compute it once
+    if (postIds.length === 0 && page === 1) {
+      await computeHomeFeed(userId);
+      postIds = await redisConnection.lrange(redisKey, start, end);
+    }
+
+    // If still empty after computation, return empty with message
+    // if (postIds.length === 0) {
+    //   return next(ApiResponse(res, 200, responseMessages.APP.POST.NO_MORE_POSTS, []));
+    // }
+
+    const posts = await FetchPaginatedData(Post, {
+      ids: postIds,
+      page: page.toString(),
+      sortField: req.query?.sortField ?? 'popularity',
+      sortOrder: req.query?.sortOrder ?? 'asc',
+    });
+
+    return ApiPaginatedResponse(res, posts);
   }
 );

@@ -1,6 +1,8 @@
 import { IPost, IPostTag } from '#src/types/model.post.type.js';
 import mongooseLeanVirtuals from 'mongoose-lean-virtuals';
 import mongoose, { Schema } from 'mongoose';
+import User from '#src/models/userModel.js';
+import userServiceHandler from '#src/services/user.service.js';
 
 const postSchema: Schema<IPost> = new Schema(
   {
@@ -57,19 +59,82 @@ postSchema.pre<IPost>('save', async function (next: any) {
   next();
 });
 
+// Increment postsCount on post creation
+postSchema.post('save', async function (doc) {
+  if (doc.authorId) {
+    userServiceHandler.add({
+      type: 'create',
+      collectionName: 'postCount',
+      id: `${doc.authorId}-${doc._id}`,
+      data: doc.authorId,
+    });
+  }
+});
+
+// Decrement postsCount on findOneAndDelete
+postSchema.post('findOneAndDelete', function (doc) {
+  if (doc?.authorId) {
+    userServiceHandler.add({
+      type: 'delete',
+      collectionName: 'postCount',
+      id: `${doc.authorId}-${doc._id}`,
+      data: doc.authorId,
+    });
+  }
+});
+
+// Decrement on document-based deleteOne
+postSchema.post('deleteOne', { document: true, query: false }, function (doc) {
+  if (doc?.authorId) {
+    userServiceHandler.add({
+      type: 'delete',
+      collectionName: 'postCount',
+      id: `${doc.authorId}-${doc._id}`,
+      data: doc.authorId,
+    });
+  }
+});
+
+// Handle query-based deleteOne
+// postSchema.pre('deleteOne', { document: false, query: true }, async function () {
+//   const docs = await this.model.find(this.getFilter());
+//   this.set('docsToDelete', docs);
+// });
+
+postSchema.post('deleteOne', { document: false, query: true }, async function () {
+  const docs: any[] = this.get('docsToDelete') || [];
+  for (const doc of docs) {
+    if (doc?.authorId) {
+      userServiceHandler.add({
+        type: 'delete',
+        collectionName: 'postCount',
+        id: `${doc.authorId}-${doc._id}`,
+        data: doc.authorId,
+      });
+    }
+  }
+});
+
+// Handle deleteMany
+// postSchema.pre('deleteMany', async function () {
+//   const docs = await this.model.find(this.getFilter());
+//   this.set('docsToDelete', docs);
+// });
+
+postSchema.post('deleteMany', async function () {
+  const docs: any[] = this.get('docsToDelete') || [];
+  for (const doc of docs) {
+    if (doc?.authorId) {
+      userServiceHandler.add({
+        type: 'delete',
+        collectionName: 'postCount',
+        id: `${doc.authorId}-${doc._id}`,
+        data: doc.authorId,
+      });
+    }
+  }
+});
+
 const Post = mongoose.model<IPost>('Post', postSchema);
 
-// Tags Schema
-const postTagsSchema: Schema<IPostTag> = new Schema(
-  {
-    name: { type: String, required: true, unique: true, text: { exact: true } },
-    description: String,
-    usageCount: { type: Number, default: 0, index: true },
-  },
-  { timestamps: true }
-);
-
-const PostTags = mongoose.model<IPostTag>('PostTags', postTagsSchema);
-
 export default Post;
-export { PostTags };

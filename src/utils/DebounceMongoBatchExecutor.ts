@@ -22,20 +22,22 @@ type GenericOperation = {
   collectionName: string;
 };
 
+export type DebouncedExecutorHandler<T = any> = {
+  /** Handler for batched `create` operations */
+  create?: (items: T[]) => Promise<T | void>;
+
+  /** Handler for batched `update` operations */
+  update?: (items: T[]) => Promise<T | void>;
+
+  /** Handler for batched `delete` operations */
+  delete?: (items: T[]) => Promise<T | void>;
+};
+
 /**
  * Structure for operation handlers per collection.
  */
 type OperationHandlers = {
-  [collectionName: string]: {
-    /** Handler for batched `create` operations */
-    create?: (items: any[]) => Promise<any | void>;
-
-    /** Handler for batched `update` operations */
-    update?: (items: any[]) => Promise<any | void>;
-
-    /** Handler for batched `delete` operations */
-    delete?: (items: any[]) => Promise<any | void>;
-  };
+  [collectionName: string]: DebouncedExecutorHandler;
 };
 
 /**

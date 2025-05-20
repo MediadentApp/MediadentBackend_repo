@@ -46,6 +46,7 @@ export interface IUser extends Document {
     groupChatIds: ObjectId[];
   };
 
+  postsCount: number;
   followingCommunitiesCount: number;
   followingsCount: number;
   followersCount: number;

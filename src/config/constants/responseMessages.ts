@@ -96,6 +96,8 @@ const responseMessages = {
       NOT_FOUND: 'Community not found',
     },
     POST: {
+      POST_LIMIT_EXCEEDED: 'You have reached the maximum limit of posts',
+      NO_MORE_POSTS: 'No more posts to show',
       POST_NOT_FOUND: 'Post not found',
       POSTS_NOT_FOUND: 'Posts not found',
       COULD_NOT_DELETE: 'Could not delete post',

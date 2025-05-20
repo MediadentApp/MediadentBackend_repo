@@ -6,7 +6,7 @@ import {
   sendPushNotification,
   subscribe,
 } from '#src/controllers/socketMessageController.js';
-import { followUserToggle, userById, userNotifications } from '#src/controllers/userController.js';
+import { followUserToggle, getHomeFeed, userById, userNotifications } from '#src/controllers/userController.js';
 import { AppRequestParams } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { IdParam } from '#src/types/param.js';
@@ -19,6 +19,7 @@ router.get('/notifications', userNotifications);
 router.patch('/:id/follow/toggle', (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) =>
   followUserToggle(req, res, next)
 );
+router.get('/home/feed', getHomeFeed);
 
 // Communication System APIs
 router.post('/getSecondParticipants', getSecondParticipants);

@@ -2,6 +2,8 @@ import { Types, Model, PipelineStage, SortOrder } from 'mongoose';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { IPaginatedResponse, IPaginationOptions } from '#src/types/api.response.paginated.js';
 
+// !!! TODO: Move rawFilter to its own field
+
 /**
  * Fetches paginated data from the database.
  *
@@ -31,11 +33,11 @@ import { IPaginatedResponse, IPaginationOptions } from '#src/types/api.response.
  */
 export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>(
   model: M,
-  rawOptions: Partial<IPaginationOptions> & Record<string, any>
+  rawOptions: IPaginationOptions<T> & Record<string, any>
 ): Promise<IPaginatedResponse<T>> {
   const {
-    page = 1,
-    pageSize = 10,
+    page: rawPage = '1',
+    pageSize: rawPageSize = '10',
     searchValue,
     searchFields = [],
     projection,
@@ -46,6 +48,9 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
     ids,
     ...rawFilter
   } = rawOptions;
+
+  const page = Number(rawPage);
+  const pageSize = Number(rawPageSize);
 
   const filter: any = { ...rawFilter };
 
@@ -128,6 +133,7 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
     pageSize: Number(pageSize),
     status: 'success',
     message: responseMessages.GENERAL.SUCCESS,
+    hasMore: data.length === Number(pageSize),
   };
 
   return returnData;
@@ -136,11 +142,11 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
 export async function FetchPaginatedDataWithAggregation<T = any>(
   model: Model<any>,
   basePipeline: PipelineStage[] = [],
-  rawOptions: Partial<IPaginationOptions> & Record<string, any>
+  rawOptions: IPaginationOptions & Record<string, any>
 ): Promise<IPaginatedResponse<T>> {
   const {
-    page = 1,
-    pageSize = 10,
+    page: rawPage = '1',
+    pageSize: rawPageSize = '10',
     searchValue,
     searchFields = [],
     sortField,
@@ -151,6 +157,8 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
     ...rawFilter
   } = rawOptions;
 
+  const page = Number(rawPage);
+  const pageSize = Number(rawPageSize);
   const skip = (Number(page) - 1) * Number(pageSize);
 
   // Build $match stage from filters
@@ -235,5 +243,6 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
     totalPages,
     currentPage: Number(page),
     pageSize: Number(pageSize),
+    hasMore: data.length === Number(pageSize),
   };
 }

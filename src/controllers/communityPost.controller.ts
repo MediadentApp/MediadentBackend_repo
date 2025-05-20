@@ -1,3 +1,4 @@
+import appConfig from '#src/config/appConfig.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
@@ -383,50 +384,62 @@ export const communityPosts = catchAsync(
     const { title, content = '', tags = [] } = req.body;
     const { communityId } = req.params;
     const files = req.files as Array<Express.Multer.File>;
+    const user = req.user!;
 
-    if (!title) {
+    // 1. Post limit check
+    if (user.postsCount >= appConfig.app.post.allowedPostsPerUser) {
+      return next(new ApiError(responseMessages.APP.POST.POST_LIMIT_EXCEEDED, 400, ErrorCodes.APP.POST.LIMIT_EXCEEDED));
+    }
+
+    // 2. Validate required inputs
+    if (!title?.trim()) {
       return next(new ApiError(responseMessages.APP.POST.TITLE_REQUIRED, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
     }
 
-    if (!communityId) {
+    if (!communityId?.trim()) {
       return next(
         new ApiError(responseMessages.APP.COMMUNITY.INVALID_ID, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
       );
     }
 
-    const community = await Community.exists({ _id: communityId }).lean();
-    if (!community) {
+    // 3. Validate community existence
+    const communityExists = await Community.exists({ _id: communityId }).lean();
+    if (!communityExists) {
       return next(new ApiError(responseMessages.APP.COMMUNITY.NOT_FOUND, 404, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
     }
 
-    let imageUploadResp;
-    if (files && files.length) {
+    // 4. Process file uploads if any
+    let mediaUrls: string[] = [];
+    if (files?.length) {
       const filesData: ImageFileData[] = files.map(file => ({
-        fileName:
-          `${file.originalname ? `${file.originalname.split('.')[0]}-` : ''}` + `${req.user.username}-` + 'post',
+        fileName: `${file.originalname?.split('.')[0] || 'image'}-${user.username}-post`,
         mimeType: file.mimetype,
         fileBase64: file.buffer.toString('base64'),
       }));
 
-      imageUploadResp = await ImageUpload({ files: filesData, username: req.user.username ?? 'auto' });
+      const uploadResult = await ImageUpload({ files: filesData, username: user.username ?? 'auto' });
+      mediaUrls = uploadResult?.uploaded?.map(f => f.url) ?? [];
     }
 
-    const allTags = [...tags, '#' + req.user.fullName];
-    const slug = title.replace(/\s+/g, '-').toLowerCase() + `-${Date.now()}`;
-    const authorId = req.user._id;
+    // 5. Construct post data
+    const allTags = Array.from(new Set([...tags, `#${user.fullName}`]));
+    const slug = `${title.trim().replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
 
     const postData = {
-      title,
-      content,
+      title: title.trim(),
+      content: content.trim(),
       slug,
-      authorId,
-      communityId: community._id as ObjectId,
+      authorId: user._id,
+      communityId,
       tags: allTags,
-      mediaUrls: imageUploadResp?.uploaded.map(({ url }) => url),
+      mediaUrls,
     };
-    const data = await Post.create(postData);
 
-    ApiResponse(res, 201, responseMessages.GENERAL.SUCCESS, data);
+    // 6. Create post
+    const createdPost = await Post.create(postData);
+
+    // 7. Respond
+    ApiResponse(res, 201, responseMessages.GENERAL.SUCCESS, createdPost);
   }
 );
 

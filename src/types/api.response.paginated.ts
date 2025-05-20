@@ -10,12 +10,13 @@ export interface IPaginatedResponse<T = any> extends IBaseApiResponse {
   totalPages: number;
   currentPage: number;
   pageSize: number;
+  hasMore?: boolean;
 }
 
 export type DefaultProjectionType = Record<string, '0' | '1'>;
 export type SortOrder = 'asc' | 'desc';
 
-export interface IPaginationOptions extends ParsedQs {
+export interface IPaginationOptions<T = any> extends ParsedQs {
   page?: string;
   pageSize?: string;
   filter?: Record<string, any>;

@@ -214,6 +214,12 @@ const userSchema: Schema<IUser> = new Schema(
         default: [],
       },
     },
+
+    postsCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     followingCommunitiesCount: {
       type: Number,
       default: 0,

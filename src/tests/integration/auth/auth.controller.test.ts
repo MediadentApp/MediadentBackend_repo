@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import * as emailService from '#src/services/email.js';
 import User from '#src/models/userModel.js';
 import { generateUniqueUser, generateUserDetails } from '#src/tests/seeds.js';
-import { authRequest } from '#src/tests/utils.js';
+import { authRequest, extractCookieFromRes } from '#src/tests/utils.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import appConfig from '#src/config/appConfig.js';
 
@@ -17,7 +17,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe.skip('Authentication Tests:', () => {
+describe('Authentication Tests:', () => {
   describe('Email Registration', () => {
     describe('✅ Success Cases', () => {
       it('should send an OTP when a valid email is provided', async () => {
@@ -262,7 +262,6 @@ describe.skip('Authentication Tests:', () => {
 
         expect(res.statusCode).toBe(201);
         expect(res.body.status).toBe('success');
-        expect(res.body.token).toBeDefined();
         expect(res.body.redirectUrl).toBe('/userdetails');
         expect(res.body.data.user).toBeTypeOf('object');
 
@@ -341,7 +340,7 @@ describe.skip('Authentication Tests:', () => {
         });
 
       expect(res.statusCode).toBe(201);
-      token = res.body.token;
+      token = extractCookieFromRes(res);
     });
     describe.sequential('More Details', () => {
       describe.sequential('✅ Success Cases', () => {
@@ -393,13 +392,13 @@ describe.skip('Authentication Tests:', () => {
         });
 
         it('should return 401, if invalid auth token', async () => {
-          const invalidToken = 'DED';
-          const { put } = authRequest(invalidToken);
+          const invalidCookie = 'token=DED; HttpOnly';
+          const { put } = authRequest(invalidCookie);
 
           const res = await put('/api/v1/auth/signupdetails').send(generateUserDetails());
           expect(res.statusCode).toBe(401);
-          expect(res.body.errorCode).toBe(ErrorCodes.CLIENT.UNAUTHENTICATED);
-          expect(res.body.message).toBe(responseMessages.AUTH.INVALID_TOKEN);
+          expect(res.body.errorCode).toBe(ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN);
+          expect(res.body.message).toBe(responseMessages.AUTH.NO_TOKEN);
         });
 
         it('should return 400, if data is not provided/incomplete', async () => {
@@ -427,7 +426,7 @@ describe.skip('Authentication Tests:', () => {
           });
 
         expect(res.statusCode).toBe(201);
-        token2 = res.body.token;
+        token2 = extractCookieFromRes(res);
       });
       describe.sequential('✅ Success Cases', () => {
         it('should return 200 & redirectUrl, if valid interests are provided, without add Info', async () => {
@@ -470,13 +469,13 @@ describe.skip('Authentication Tests:', () => {
         });
 
         it('should return 401, if invalid auth token', async () => {
-          const invalidToken = 'ded';
+          const invalidToken = 'token=DED; HttpOnly';
           const { put } = authRequest(invalidToken);
 
           const res = await put('/api/v1/auth/signupinterest').send({ interests: ['filled'] });
           expect(res.statusCode).toBe(401);
-          expect(res.body.errorCode).toBe(ErrorCodes.CLIENT.UNAUTHENTICATED);
-          expect(res.body.message).toBe(responseMessages.AUTH.INVALID_TOKEN);
+          expect(res.body.errorCode).toBe(ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN);
+          expect(res.body.message).toBe(responseMessages.AUTH.NO_TOKEN);
         });
 
         it('should return 406, if required interests is not provided', async () => {
@@ -499,7 +498,6 @@ describe.skip('Authentication Tests:', () => {
         const res = await request(app).post('/api/v1/auth/login').send({ email, password });
 
         expect(res.statusCode).toBe(200);
-        expect(res.body.token).toBeDefined();
         expect(res.body.message).toBe(responseMessages.GENERAL.SUCCESS);
         expect(res.body.authenticated).toBe(true);
         expect(res.body.data.user).toBeDefined();

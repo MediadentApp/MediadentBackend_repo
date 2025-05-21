@@ -19,7 +19,6 @@ export interface IResponseExtra<T = any> {
   data?: IResponseData<T>; // For specific use cases
   authenticated?: boolean;
   redirectUrl?: string;
-  token?: string;
   errorCode?: ErrorCodeType;
 
   // For exceptions, like createSendToken

@@ -397,7 +397,7 @@ userSchema.methods.createPasswordResetToken = function (): string {
 
   this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 mins
+  this.passwordResetExpires = Date.now() + appConfig.app.signup.passwordResetTokenExpiration;
   return resetToken;
 };
 

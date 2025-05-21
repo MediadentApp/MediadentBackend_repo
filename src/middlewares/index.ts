@@ -1,4 +1,5 @@
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import logger from './logger.js';
 import corsMiddleware from './cors.js';
 import rateLimiter from './rateLimiter.js';
@@ -12,6 +13,7 @@ const middlewares = express();
 middlewares.use(logger);
 middlewares.use(corsMiddleware);
 middlewares.use(rateLimiter);
+middlewares.use(cookieParser(process.env.COOKIE_SECRET));
 middlewares.use(parser);
 // middlewares.use(multerMiddleware);
 middlewares.use(requestInfo);

@@ -188,11 +188,7 @@ export const signup = catchAsync(async (req: AppRequestBody<SignupBody>, res: Ap
 export const signupDetails = catchAsync(
   async (req: AppRequestBody<SignupDetailsBody>, res: AppResponse, next: NextFunction) => {
     const { userType, gender, institute, currentCity } = req.body;
-    let token: string | undefined;
-
-    if (req.headers.authorization?.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
+    const token = req.signedCookies?.token;
 
     const { _id } = await User.protectApi(token);
 
@@ -229,11 +225,7 @@ export const signupDetails = catchAsync(
 export const signupInterests = catchAsync(
   async (req: AppRequestBody<SignupInterestsBody>, res: AppResponse, next: NextFunction) => {
     const { interests } = req.body;
-    let token: string | undefined;
-
-    if (req.headers.authorization?.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
+    const token = req.signedCookies?.token;
 
     const { _id } = await User.protectApi(token);
 
@@ -303,16 +295,8 @@ export const fetchUser = catchAsync(async (req: AppRequest, res: AppResponse, ne
 });
 
 export const protect = catchAsync(async (req: AppRequest, res: AppResponse, next: NextFunction) => {
-  let token: string | undefined;
-
-  // 1) Extract token from the headers
-  if (req.headers.authorization?.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  }
-
-  if (!token) {
-    return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 401, ErrorCodes.LOGIN.REDIRECT, '/login'));
-  }
+  // 1) Extract the token
+  const token = req.signedCookies?.token;
 
   // 2) Use the schema method to protect the route
   const freshUser = await User.protectApi(token); // Calls the static method on User model

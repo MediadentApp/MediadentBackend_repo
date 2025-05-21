@@ -3,7 +3,7 @@ import './setup.redis.js';
 import seedDatabase from '#src/tests/seeds.js';
 
 import mongoose from 'mongoose';
-import { beforeAll, beforeEach, afterAll } from 'vitest';
+import { beforeAll, afterAll } from 'vitest';
 
 const DB_URI = process.env.TEST_DATABASE1?.replace('<PASSWORD>', process.env.DATABASE_PASSWORD || '') as string;
 // const DB_URI = process.env.TEST_DATABASE2 as string;

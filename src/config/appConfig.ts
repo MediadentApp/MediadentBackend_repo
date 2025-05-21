@@ -20,6 +20,8 @@ const appConfig = {
     signup: {
       minPasswordLength: 8,
       numOfSignupInterests: 3,
+      passwordResetTokenExpiration: 10 * 60 * 1000, // 10 mins
+      cookieExpiresIn: 5 * 24 * 60 * 60 * 1000, // 5 days
     },
     algoRecommendation: {
       postPopularity: {

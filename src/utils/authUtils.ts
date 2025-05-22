@@ -36,7 +36,6 @@ const createSendToken = (user: IUser, statusCode: number, res: Response, options
     // 'none' allows the cookie to be sent with cross-site requests
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: appConfig.app.signup.cookieExpiresIn,
-    path: '/',
   });
 
   const extraData: IResponseExtra = {

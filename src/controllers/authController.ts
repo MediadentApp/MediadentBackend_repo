@@ -24,7 +24,7 @@ import {
 import { AppResponse, IResponseData, IResponseExtra } from '#src/types/api.response.js';
 import ApiError from '#src/utils/ApiError.js';
 import ApiResponse from '#src/utils/ApiResponse.js';
-import { createSendToken } from '#src/utils/authUtils.js';
+import { createSendToken, sendDeleteToken } from '#src/utils/authUtils.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { generateOTP } from '#src/utils/index.js';
 import crypto from 'crypto';
@@ -496,11 +496,6 @@ export const updatePassword = catchAsync(
   }
 );
 
-// export const logout = (req: AppRequest, res: AppResponse, next: NextFunction) => {
-//   req.logout((err) => {
-//     if (err) {
-//       return next(err);
-//     }
-//     res.redirect('/');
-//   });
-// };
+export const logout = (req: AppRequest, res: AppResponse, next: NextFunction) => {
+  sendDeleteToken(res);
+};

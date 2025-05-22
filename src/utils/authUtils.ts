@@ -16,6 +16,17 @@ const signToken = (id: string): string => {
   });
 };
 
+const cookieConfig = {
+  signed: true,
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production', // Only HTTPS in production
+  // 'lax' allows the cookie to be sent with same-site requests and top-level navigation
+  // 'strict' ensures the cookie is only sent to the same site
+  // 'none' allows the cookie to be sent with cross-site requests
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  maxAge: appConfig.app.signup.cookieExpiresIn,
+};
+
 const createSendToken = (user: IUser, statusCode: number, res: Response, options: IResponseExtra = {}) => {
   if (!user || !user?._id) {
     throw new ApiError(responseMessages.GENERAL.SERVER_ERROR, 404, ErrorCodes.GENERAL.FAIL);
@@ -50,4 +61,16 @@ const createSendToken = (user: IUser, statusCode: number, res: Response, options
   return ApiResponse(res, statusCode, options?.message ?? responseMessages.GENERAL.SUCCESS, { user }, extraData);
 };
 
-export { signToken, createSendToken };
+const sendDeleteToken = (res: Response) => {
+  res.cookie('token', '', {
+    signed: true,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Only HTTPS in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 0,
+  });
+
+  return ApiResponse(res, 200, responseMessages.AUTH.LOGOUT_SUCCESS);
+};
+
+export { signToken, createSendToken, sendDeleteToken };

@@ -4,6 +4,7 @@ import {
   fetchUser,
   forgotPassword,
   login,
+  logout,
   protect,
   resetPassword,
   signup,
@@ -23,8 +24,7 @@ router.post('/signup', signup);
 router.put('/signupdetails', signupDetails);
 router.put('/signupinterest', signupInterests);
 router.post('/login', login);
-// router.get('/logout', logout);
-// router.post('/logout', logout); // ! Use POST instead of GET for logout
+router.post('/logout', logout);
 router.get('/info', protect, fetchUser);
 
 // Password-related routes

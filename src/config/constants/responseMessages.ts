@@ -57,6 +57,7 @@ const responseMessages = {
     MISSING_INVALID_INPUT: 'Missing or invalid input provided',
     MAX_IMAGE_SIZE: `Image size should be less than ${appConfig.app.post.postsMaxImageSize / 1024 / 1024} MB`,
     INVALID_IMAGE_FORMAT_OR_SIZE: 'Invalid image format or size',
+    IMAGE_NOT_PROVIDED: 'Image is required',
     INVALID_EMAIL: 'Invalid email format',
     INVALID_OTP: 'Invalid OTP format',
     SANITIZATION_FAILED: 'Sanitization failed',

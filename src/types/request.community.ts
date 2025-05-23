@@ -1,6 +1,6 @@
 import { ICommunity } from '#src/types/model.community.js';
 
-export interface ICommunityBody
+export interface ICommunityBodyDTO
   extends Pick<
     ICommunity,
     | 'name'

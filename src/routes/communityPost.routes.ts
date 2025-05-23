@@ -22,7 +22,7 @@ import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { CommunityPostParam } from '#src/types/param.communityPost.js';
 import { IdParam, SlugParam } from '#src/types/param.js';
 import { QueryParam } from '#src/types/query.js';
-import { ICommunityBody } from '#src/types/request.community.js';
+import { ICommunityBodyDTO } from '#src/types/request.community.js';
 import { PostBody } from '#src/types/request.post.js';
 import express, { NextFunction } from 'express';
 
@@ -35,7 +35,7 @@ const router = express.Router();
 router.post(
   '/community',
   communityCreationUpload,
-  (req: AppRequest<IdParam, ICommunityBody>, res: AppResponse, next: NextFunction) => createCommunity(req, res, next)
+  (req: AppRequest<IdParam, ICommunityBodyDTO>, res: AppResponse, next: NextFunction) => createCommunity(req, res, next)
 );
 
 /**
@@ -53,15 +53,17 @@ router.get('/community', (req: AppPaginatedRequest, res: AppPaginatedResponse, n
 router.post(
   '/community/:id',
   communityCreationUpload,
-  (req: AppRequest<IdParam, ICommunityBody>, res: AppResponse, next: NextFunction) => createCommunity(req, res, next)
+  (req: AppRequest<IdParam, ICommunityBodyDTO>, res: AppResponse, next: NextFunction) => createCommunity(req, res, next)
 );
 
 /**
  * PATCH /community/:id
  * Updates an existing community.
  */
-router.patch('/community/:id', (req: AppRequest<IdParam, ICommunityBody>, res: AppResponse, next: NextFunction) =>
-  updateCommunity(req, res, next)
+router.patch(
+  '/community/:id',
+  communityCreationUpload,
+  (req: AppRequest<IdParam, ICommunityBodyDTO>, res: AppResponse, next: NextFunction) => updateCommunity(req, res, next)
 );
 
 /**

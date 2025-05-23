@@ -1,7 +1,6 @@
 import {
   emailReg,
   emailVerify,
-  fetchUser,
   forgotPassword,
   login,
   logout,
@@ -25,7 +24,6 @@ router.put('/signupdetails', signupDetails);
 router.put('/signupinterest', signupInterests);
 router.post('/login', login);
 router.post('/logout', logout);
-router.get('/info', protect, fetchUser);
 
 // Password-related routes
 router.post('/forgotPassword', forgotPassword);

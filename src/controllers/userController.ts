@@ -9,7 +9,7 @@ import Education from '#src/models/userEducationDetailModel.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
-import { AppRequestParams } from '#src/types/api.request.js';
+import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { IdParam } from '#src/types/param.js';
 import { DebouncedExecutor } from '#src/utils/DebouncedExecutor.js';
@@ -22,6 +22,123 @@ import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { CommunityPostParam } from '#src/types/param.communityPost.js';
 import { FetchPaginatedData } from '#src/utils/ApiPaginatedResponse.js';
 import userServiceHandler from '#src/services/user.service.js';
+import { IUser, UpdateUserDTO } from '#src/types/model.js';
+import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
+import { deleteImagesFromS3 } from '#src/libs/s3.js';
+
+/**
+ * Get the user's profile
+ *
+ * Route: GET /
+ */
+export const fetchUser = catchAsync(async (req: AppRequest, res: AppResponse, next: NextFunction) => {
+  const { user } = req;
+
+  if (!user || !(user instanceof User)) {
+    return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.LOGIN.USER_NOT_FOUND));
+  }
+
+  const data = { user };
+  return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data, { authenticated: true });
+});
+
+/**
+ * Update the user's profile
+ *
+ * Route: PATCH /
+ */
+export const updateUser = catchAsync(
+  async (req: AppRequestBody<UpdateUserDTO>, res: AppResponse, next: NextFunction) => {
+    const { _id: userId, username, profilePicture: oldProfilePicture } = req.user;
+    let updateData = req.body;
+    const file = req.file as Express.Multer.File;
+
+    // const updateData = getUpdateObj(['description', 'type', 'moderators'], req.body);
+
+    let imageUploadResp;
+    if (file) {
+      if (oldProfilePicture) {
+        // a delete queue can be used
+        void deleteImagesFromS3([oldProfilePicture]);
+      }
+      const filesData: ImageFileData[] = [];
+      const key = `${username}-avatar`;
+
+      const fileData = {
+        fileName: key,
+        mimeType: file.mimetype,
+        fileBase64: file.buffer.toString('base64'),
+      };
+      filesData.push(fileData);
+
+      imageUploadResp = await ImageUpload({ files: filesData, username: req.user.username ?? 'auto' });
+
+      updateData = {
+        ...updateData,
+        profilePicture: imageUploadResp?.uploaded.find(file => file.fileName === key)?.url,
+      };
+    }
+
+    const user = await User.findOneAndUpdate({ _id: userId }, updateData, { new: true });
+    if (!user) {
+      return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.GENERAL.USER_NOT_FOUND));
+    }
+
+    const data = user;
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data);
+  }
+);
+
+/**
+ * Update the user's profile avatar
+ *
+ * Route: PATCH /picture
+ */
+export const updateUserPicture = catchAsync(
+  async (req: AppRequestBody<{ deletePicture: string }>, res: AppResponse, next: NextFunction) => {
+    const { _id: userId, username, profilePicture: oldProfilePicture } = req.user;
+    const { deletePicture } = req.body;
+    const file = req.file as Express.Multer.File;
+
+    if (deletePicture && oldProfilePicture) {
+      void deleteImagesFromS3([oldProfilePicture]);
+    }
+
+    if (!file) {
+      return next();
+      // Delete old avatar if it exists (asynchronously)
+      // return next(new ApiError(responseMessages.CLIENT.IMAGE_NOT_PROVIDED, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
+    }
+
+    if (oldProfilePicture) {
+      void deleteImagesFromS3([oldProfilePicture]);
+    }
+
+    const key = `${username}-avatar`;
+    const fileData = {
+      fileName: key,
+      mimeType: file.mimetype,
+      fileBase64: file.buffer.toString('base64'),
+    };
+
+    const imageUploadResp = await ImageUpload({ files: [fileData], username: username ?? 'auto' });
+    const avatarUrl = imageUploadResp?.uploaded.find(file => file.fileName === key)?.url;
+
+    if (!avatarUrl) {
+      return next(new ApiError(responseMessages.GENERAL.SERVER_ERROR, 500, ErrorCodes.SERVER.UNKNOWN_ERROR));
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, { profilePicture: avatarUrl }, { new: true });
+
+    if (!updatedUser) {
+      return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.GENERAL.USER_NOT_FOUND));
+    }
+
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, {
+      profilePicture: updatedUser.profilePicture,
+    });
+  }
+);
 
 // User by ID
 export const userById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -170,6 +287,11 @@ export const followUserToggle = catchAsync(
   }
 );
 
+/**
+ * Controller to get home feed
+ *
+ * Route: GET /user/home/feed
+ */
 export const getHomeFeed = catchAsync(
   async (req: AppPaginatedRequest<CommunityPostParam>, res: AppPaginatedResponse, next: NextFunction) => {
     const userId = (req.user._id as mongoose.Types.ObjectId).toString();

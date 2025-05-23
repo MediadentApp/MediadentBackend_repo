@@ -1,3 +1,4 @@
+import { deleteImagesFromS3 } from '#src/libs/s3.js';
 import { CommunityInviteStatus, CommunityRole, CommunityType, PostAuthorType, ReportStatus } from '#src/types/enum.js';
 import { ICommunity, ICommunityInvite, IReportCommunity } from '#src/types/model.community.js';
 import mongoose, { Schema } from 'mongoose';
@@ -31,17 +32,31 @@ const communitySchema: Schema<ICommunity> = new Schema<ICommunity>(
   { timestamps: true }
 );
 
-communitySchema.post('save', async function (doc) {
-  if (doc.parentId) {
-    const parent = await Community.findById(doc.parentId);
-    if (parent) {
-      parent.children.push(doc._id);
-      await parent.save();
-    }
+function deleteImages(doc: ICommunity) {
+  const deleteImages: string[] = [];
+  if (doc.avatarUrl) {
+    deleteImages.push(doc.avatarUrl);
   }
+  if (doc.bannerUrl) {
+    deleteImages.push(doc.bannerUrl);
+  }
+  if (deleteImages.length) {
+    // can be debounced
+    void deleteImagesFromS3(deleteImages);
+  }
+}
+
+communitySchema.post('findOneAndDelete', async function (doc) {
+  deleteImages(doc);
+});
+
+communitySchema.post('deleteOne', async function (doc) {
+  deleteImages(doc);
 });
 
 const Community = mongoose.model<ICommunity>('Community', communitySchema);
+
+// CommunityInvite Model
 
 const communityInviteSchema: Schema<ICommunityInvite> = new Schema<ICommunityInvite>(
   {

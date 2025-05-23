@@ -2,6 +2,7 @@ import appConfig from '#src/config/appConfig.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
+import { deleteImagesFromS3 } from '#src/libs/s3.js';
 import Community, { CommunityInvite } from '#src/models/community.model.js';
 import { CommunityFollowedBy } from '#src/models/communityFollowedBy.model.js';
 import Post from '#src/models/post.model.js';
@@ -20,7 +21,7 @@ import { IPost } from '#src/types/model.post.type.js';
 import { CommunityPostParam } from '#src/types/param.communityPost.js';
 import { IdParam, SlugParam } from '#src/types/param.js';
 import { QueryParam } from '#src/types/query.js';
-import { ICommunityBody } from '#src/types/request.community.js';
+import { ICommunityBodyDTO } from '#src/types/request.community.js';
 import { PostBody } from '#src/types/request.post.js';
 import ApiError from '#src/utils/ApiError.js';
 import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
@@ -50,7 +51,7 @@ import mongoose, { ObjectId } from 'mongoose';
  * Route: POST /community
  */
 export const createCommunity = catchAsync(
-  async (req: AppRequest<IdParam, ICommunityBody>, res: AppResponse, next: NextFunction) => {
+  async (req: AppRequest<IdParam, ICommunityBodyDTO>, res: AppResponse, next: NextFunction) => {
     const { name, description, type, moderators } = req.body;
     const { id: parentId } = req.params;
     const files = req.files as {
@@ -122,14 +123,57 @@ export const createCommunity = catchAsync(
  * Route: PATCH /community/:id
  */
 export const updateCommunity = catchAsync(
-  async (req: AppRequest<IdParam, ICommunityBody>, res: AppResponse, next: NextFunction) => {
+  async (req: AppRequest<IdParam, ICommunityBodyDTO>, res: AppResponse, next: NextFunction) => {
     const { id } = req.params;
+    const files = req.files as {
+      avatar?: Express.Multer.File[];
+      banner?: Express.Multer.File[];
+    };
+
     const updateData = getUpdateObj(['description', 'type', 'moderators'], req.body);
 
-    const community = await Community.findByIdAndUpdate(id, updateData, { new: true });
+    const community = await Community.findById(id);
     if (!community) {
       return next(new ApiError(responseMessages.APP.COMMUNITY.NOT_FOUND, 404));
     }
+
+    const { avatarUrl: oldAvatarUrl, bannerUrl: oldBannerUrl } = community;
+
+    let imageUploadResp;
+    if (files) {
+      const deleteImages: string[] = [];
+      if (files.avatar?.length) deleteImages.push(oldAvatarUrl);
+      if (files.banner?.length) deleteImages.push(oldBannerUrl);
+
+      if (deleteImages.length) {
+        void deleteImagesFromS3(deleteImages); // non-blocking
+      }
+
+      const filesData: ImageFileData[] = [];
+      Object.entries(files).forEach(([key, value]) => {
+        value.forEach(file => {
+          filesData.push({
+            fileName: file.fieldname ?? file.originalname,
+            mimeType: file.mimetype,
+            fileBase64: file.buffer.toString('base64'),
+          });
+        });
+      });
+
+      imageUploadResp = await ImageUpload({ files: filesData, username: req.user.username ?? 'auto' });
+    }
+
+    if (imageUploadResp) {
+      if (imageUploadResp?.uploaded.length) {
+        for (const file of imageUploadResp.uploaded) {
+          if (file.fileName === 'avatar') updateData.avatarUrl = file.url;
+          if (file.fileName === 'banner') updateData.bannerUrl = file.url;
+        }
+      }
+    }
+
+    Object.assign(community, updateData);
+    await community.save();
 
     ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, community);
   }

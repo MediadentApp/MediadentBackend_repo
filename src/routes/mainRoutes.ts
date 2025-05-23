@@ -6,13 +6,48 @@ import {
   sendPushNotification,
   subscribe,
 } from '#src/controllers/socketMessageController.js';
-import { followUserToggle, getHomeFeed, userById, userNotifications } from '#src/controllers/userController.js';
-import { AppRequestParams } from '#src/types/api.request.js';
+import {
+  fetchUser,
+  followUserToggle,
+  getHomeFeed,
+  updateUser,
+  updateUserPicture,
+  userById,
+  userNotifications,
+} from '#src/controllers/userController.js';
+import { profileImageUpload } from '#src/middlewares/multerPosts.js';
+import { AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
+import { UpdateUserDTO } from '#src/types/model.js';
 import { IdParam } from '#src/types/param.js';
 import express, { NextFunction } from 'express';
 
 const router = express.Router();
+
+/**
+ * GET /
+ * Returns the user's profile.
+ */
+router.get('/', fetchUser);
+
+/**
+ * PATCH /
+ * Updates user's profile.
+ */
+router.patch('/', profileImageUpload, (req: AppRequestBody<UpdateUserDTO>, res: AppResponse, next: NextFunction) =>
+  updateUser(req, res, next)
+);
+
+/**
+ * PATCH /picture
+ * Update user's profile picture
+ */
+router.patch(
+  '/picture',
+  profileImageUpload,
+  (req: AppRequestBody<{ deletePicture: string }>, res: AppResponse, next: NextFunction) =>
+    updateUserPicture(req, res, next)
+);
 
 router.post('/usersbyid', userById);
 router.get('/notifications', userNotifications);

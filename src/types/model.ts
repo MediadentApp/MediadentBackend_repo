@@ -67,6 +67,26 @@ export interface IUserModel extends Model<IUser> {
   protectApi(token: string | null | undefined, selectFields?: string, populateFields?: string): Promise<IUser>;
 }
 
+export type UpdateUserDTO = {
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  profilePicture?: string | null;
+  bio?: string;
+  additionalInfo?: {
+    userType?: string;
+    gender?: string;
+    institute?: string;
+    currentCity?: string;
+  };
+  settings?: {
+    notifications?: boolean;
+    theme?: 'light' | 'dark';
+  };
+  blockedUsers?: ObjectId[];
+  contacts?: string[];
+};
+
 export interface IUserFollows extends Document {
   userId: ObjectId; // user who follows
   followingUserId: ObjectId; // user being followed

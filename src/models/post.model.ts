@@ -3,6 +3,7 @@ import mongooseLeanVirtuals from 'mongoose-lean-virtuals';
 import mongoose, { Schema } from 'mongoose';
 import User from '#src/models/userModel.js';
 import userServiceHandler from '#src/services/user.service.js';
+import { deleteImagesFromS3 } from '#src/libs/s3.js';
 
 const postSchema: Schema<IPost> = new Schema(
   {
@@ -59,40 +60,49 @@ postSchema.pre<IPost>('save', async function (next: any) {
   next();
 });
 
-// Increment postsCount on post creation
-postSchema.post('save', async function (doc) {
-  if (doc.authorId) {
+function deleteMediaUrls(post: IPost) {
+  if (post.mediaUrls) {
+    deleteImagesFromS3(post.mediaUrls);
+  }
+}
+
+function incUserPostCount(post: IPost) {
+  if (post?.authorId) {
     userServiceHandler.add({
       type: 'create',
       collectionName: 'postCount',
-      id: `${doc.authorId}-${doc._id}`,
-      data: doc.authorId,
+      id: `${post.authorId}-${post._id}`,
+      data: post.authorId,
     });
   }
+}
+
+function decUserPostCount(post: IPost) {
+  if (post?.authorId) {
+    userServiceHandler.add({
+      type: 'delete',
+      collectionName: 'postCount',
+      id: `${post.authorId}-${post._id}`,
+      data: post.authorId,
+    });
+  }
+}
+
+// Increment postsCount on post creation
+postSchema.post('save', async function (doc) {
+  incUserPostCount(doc);
 });
 
 // Decrement postsCount on findOneAndDelete
 postSchema.post('findOneAndDelete', function (doc) {
-  if (doc?.authorId) {
-    userServiceHandler.add({
-      type: 'delete',
-      collectionName: 'postCount',
-      id: `${doc.authorId}-${doc._id}`,
-      data: doc.authorId,
-    });
-  }
+  decUserPostCount(doc);
+  deleteMediaUrls(doc);
 });
 
 // Decrement on document-based deleteOne
 postSchema.post('deleteOne', { document: true, query: false }, function (doc) {
-  if (doc?.authorId) {
-    userServiceHandler.add({
-      type: 'delete',
-      collectionName: 'postCount',
-      id: `${doc.authorId}-${doc._id}`,
-      data: doc.authorId,
-    });
-  }
+  decUserPostCount(doc);
+  deleteMediaUrls(doc);
 });
 
 // Handle query-based deleteOne
@@ -100,20 +110,6 @@ postSchema.post('deleteOne', { document: true, query: false }, function (doc) {
 //   const docs = await this.model.find(this.getFilter());
 //   this.set('docsToDelete', docs);
 // });
-
-postSchema.post('deleteOne', { document: false, query: true }, async function () {
-  const docs: any[] = this.get('docsToDelete') || [];
-  for (const doc of docs) {
-    if (doc?.authorId) {
-      userServiceHandler.add({
-        type: 'delete',
-        collectionName: 'postCount',
-        id: `${doc.authorId}-${doc._id}`,
-        data: doc.authorId,
-      });
-    }
-  }
-});
 
 // Handle deleteMany
 // postSchema.pre('deleteMany', async function () {
@@ -124,14 +120,8 @@ postSchema.post('deleteOne', { document: false, query: true }, async function ()
 postSchema.post('deleteMany', async function () {
   const docs: any[] = this.get('docsToDelete') || [];
   for (const doc of docs) {
-    if (doc?.authorId) {
-      userServiceHandler.add({
-        type: 'delete',
-        collectionName: 'postCount',
-        id: `${doc.authorId}-${doc._id}`,
-        data: doc.authorId,
-      });
-    }
+    decUserPostCount(doc);
+    deleteMediaUrls(doc);
   }
 });
 

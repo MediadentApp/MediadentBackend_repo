@@ -283,17 +283,6 @@ export const login = catchAsync(async (req: AppRequestBody<LoginBody>, res: AppR
   return createSendToken(user, 200, res, extra);
 });
 
-export const fetchUser = catchAsync(async (req: AppRequest, res: AppResponse, next: NextFunction) => {
-  // From protect middleware
-  const { user } = req;
-
-  if (!user || !(user instanceof User)) {
-    return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.LOGIN.USER_NOT_FOUND));
-  }
-  // Sending user and creating JWT token
-  createSendToken(user, 200, res);
-});
-
 export const protect = catchAsync(async (req: AppRequest, res: AppResponse, next: NextFunction) => {
   // 1) Extract the token
   const token = req.signedCookies?.token;

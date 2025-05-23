@@ -25,6 +25,7 @@ import userServiceHandler from '#src/services/user.service.js';
 import { IUser, UpdateUserDTO } from '#src/types/model.js';
 import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
 import { deleteImagesFromS3 } from '#src/libs/s3.js';
+import { flattenObj } from '#src/utils/dataManipulation.js';
 
 /**
  * Get the user's profile
@@ -50,7 +51,7 @@ export const fetchUser = catchAsync(async (req: AppRequest, res: AppResponse, ne
 export const updateUser = catchAsync(
   async (req: AppRequestBody<UpdateUserDTO>, res: AppResponse, next: NextFunction) => {
     const { _id: userId, username, profilePicture: oldProfilePicture } = req.user;
-    let updateData = req.body;
+    let updateData = flattenObj(req.body);
     const file = req.file as Express.Multer.File;
 
     // const updateData = getUpdateObj(['description', 'type', 'moderators'], req.body);

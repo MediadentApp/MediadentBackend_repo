@@ -3,6 +3,14 @@ export enum UserRole {
   User = 'user',
 }
 
+export enum UserType {
+  Student = 'Student',
+  CollegeStudent = 'College Student',
+  Teacher = 'Teacher',
+  Professional = 'Professional',
+  // Other = 'Other',
+}
+
 export enum PostAuthorType {
   Personal = 'Personal',
   Community = 'Community',

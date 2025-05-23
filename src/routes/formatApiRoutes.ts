@@ -66,6 +66,7 @@ router.get('/searchcollege', (req: AppPaginatedRequest, res: AppPaginatedRespons
 router.get('/allstates', (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) =>
   getAllStates(req, res, next)
 );
+
 router.get('/allcities', (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) =>
   getAllCities(req, res, next)
 );

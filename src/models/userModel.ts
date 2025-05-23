@@ -12,7 +12,7 @@ import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
-import { UserRole } from '#src/types/enum.js';
+import { UserRole, UserType } from '#src/types/enum.js';
 
 // User schema definition
 const userSchema: Schema<IUser> = new Schema(
@@ -132,6 +132,7 @@ const userSchema: Schema<IUser> = new Schema(
     additionalInfo: {
       userType: {
         type: String,
+        enum: UserType,
         required: false,
       },
       gender: {

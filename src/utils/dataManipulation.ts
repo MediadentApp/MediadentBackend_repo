@@ -13,3 +13,24 @@ export const getUpdateObj = (fields: string[], body: any) => {
   });
   return updateObj;
 };
+
+/**
+ * Flattens a nested object into a single-level object with dot-separated keys.
+ *
+ * @param obj The object to flatten.
+ * @param prefix A string to prefix to each key, used for recursion.
+ * @param res An object to accumulate the flattened key-value pairs, used for recursion.
+ * @returns A single-level object with dot-separated keys representing the hierarchy of the original object.
+ */
+export function flattenObj(obj: Record<string, unknown>, prefix = '', res: Record<string, unknown> = {}) {
+  for (const key in obj) {
+    const val = obj[key];
+    const newKey = prefix ? `${prefix}.${key}` : key;
+    if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+      flattenObj(val as Record<string, unknown>, newKey, res);
+    } else {
+      res[newKey] = val;
+    }
+  }
+  return res;
+}

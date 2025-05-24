@@ -299,7 +299,7 @@ export const protect = catchAsync(async (req: AppRequest, res: AppResponse, next
     };
     const extra = { authenticated: true, errorCode, redirectUrl };
 
-    return ApiResponse(res, 206, message, data, extra);
+    return ApiResponse(res, 200, message, data, extra);
   }
 
   // 4) Grant access to the protected route
@@ -310,12 +310,12 @@ export const protect = catchAsync(async (req: AppRequest, res: AppResponse, next
 // A restrict function for roles, it will run after protect middleware
 export const restrict =
   (...roles: UserRole[]) =>
-  (req: AppRequest, res: AppResponse, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 403, ErrorCodes.CLIENT.UNAUTHORIZED));
-    }
-    next();
-  };
+    (req: AppRequest, res: AppResponse, next: NextFunction) => {
+      if (!req.user || !roles.includes(req.user.role)) {
+        return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 403, ErrorCodes.CLIENT.UNAUTHORIZED));
+      }
+      next();
+    };
 
 export const forgotPassword = catchAsync(
   async (req: AppRequestBody<ForgotPasswordBody>, res: AppResponse, next: NextFunction) => {

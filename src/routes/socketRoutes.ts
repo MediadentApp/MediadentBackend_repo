@@ -1,7 +1,5 @@
 import { Server, Socket } from 'socket.io';
 
-import ApiError from '#src/utils/ApiError.js';
-import User from '#src/models/userModel.js';
 import userSockets from '#src/helper/socketMap.js';
 import {
   deleteNotification,
@@ -10,25 +8,11 @@ import {
   readNotification,
 } from '#src/controllers/socketMessageController.js';
 import { IAuthenticatedSocket } from '#src/types/request.socket.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import socketAuthCheck from '#src/services/socketAuthentication.service.js';
 
 export default (io: Server) => {
   io.use(async (socket: Socket, next) => {
-    try {
-      const authSocket = socket as IAuthenticatedSocket;
-
-      const { token } = authSocket.handshake.auth;
-      if (!token) throw new ApiError(responseMessages.AUTH.NO_TOKEN, 401, ErrorCodes.SOCKET.INVALID_TOKEN);
-
-      const user = await User.protectApi(token, '_id firstName lastName fullName email username');
-      authSocket.user = user;
-      next();
-    } catch (err: any) {
-      console.log('Authentication error===>');
-      err.data = { content: 'Please retry later' };
-      next(err);
-    }
+    socketAuthCheck(socket, next);
   });
 
   io.on('connection', (socket: Socket) => {

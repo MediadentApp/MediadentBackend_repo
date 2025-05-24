@@ -333,10 +333,10 @@ userSchema.methods.isAdditionalInfoFilled = function (): {
 
   return this.interests && this.interests.length < appConfig.app.signup.numOfSignupInterests
     ? {
-        redirectUrl: appConfig.urls.signupInterestUrl,
-        message: responseMessages.AUTH.REDIRECT_TO_INTERESTS,
-        errorCode: ErrorCodes.SIGNUP.REDIRECT_TO_INTERESTS,
-      }
+      redirectUrl: appConfig.urls.signupInterestUrl,
+      message: responseMessages.AUTH.REDIRECT_TO_INTERESTS,
+      errorCode: ErrorCodes.SIGNUP.REDIRECT_TO_INTERESTS,
+    }
     : null;
 };
 
@@ -345,7 +345,7 @@ userSchema.statics.protectApi = async function (
   selectFields: string = '',
   populateFields?: string
 ): Promise<IUser> {
-  selectFields = selectFields + ' ' + '-passwordChangedAt +chats.chatIds +chats.groupChatIds';
+  selectFields = selectFields + ' ' + '+chats.chatIds +chats.groupChatIds';
   const redirect = appConfig.urls.loginUrl;
 
   if (!token) throw new ApiError(responseMessages.AUTH.NO_TOKEN, 401, ErrorCodes.SIGNUP.REDIRECT_TO_LOGIN, redirect);

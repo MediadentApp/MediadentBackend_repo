@@ -4,7 +4,7 @@ import { UserRole } from '#src/types/enum.js';
 import { IUserAcademicDetails, IUserInterest } from '#src/types/request.userFormat.js';
 import { Document, Model, ObjectId } from 'mongoose';
 
-export interface IUser extends Document {
+export interface IUser extends Document<ObjectId> {
   firstName: string;
   lastName: string;
   fullName?: string;

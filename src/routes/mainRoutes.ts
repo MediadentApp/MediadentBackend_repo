@@ -49,12 +49,17 @@ router.patch(
     updateUserPicture(req, res, next)
 );
 
+/**
+ * GET /feed
+ * Returns the user's home feed.
+ */
+router.get('/feed', getHomeFeed);
+
 router.post('/usersbyid', userById);
 router.get('/notifications', userNotifications);
 router.patch('/:id/follow/toggle', (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) =>
   followUserToggle(req, res, next)
 );
-router.get('/home/feed', getHomeFeed);
 
 // Communication System APIs
 router.post('/getSecondParticipants', getSecondParticipants);

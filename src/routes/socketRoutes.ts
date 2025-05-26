@@ -7,7 +7,7 @@ import {
   handleSendMessage,
   readNotification,
 } from '#src/controllers/socketMessageController.js';
-import { IAuthenticatedSocket } from '#src/types/request.socket.js';
+import { IAuthenticatedSocket, IMessageData } from '#src/types/request.socket.js';
 import socketAuthCheck from '#src/services/socketAuthentication.service.js';
 
 export default (io: Server) => {
@@ -62,7 +62,7 @@ export default (io: Server) => {
       userSockets.get(userId.toString())?.rooms.delete(chatId);
     });
 
-    authSocket.on('sendMessage', (messageData: any) => {
+    authSocket.on('sendMessage', (messageData: IMessageData) => {
       handleSendMessage(io, authSocket, messageData);
     });
 

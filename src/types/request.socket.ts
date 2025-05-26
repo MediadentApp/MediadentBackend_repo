@@ -1,5 +1,5 @@
 import { IMessage, IUser } from '#src/types/model.js';
-import { ObjectId } from 'mongoose';
+import { Types } from 'mongoose';
 import { Socket } from 'socket.io';
 
 export interface IAuthenticatedSocket extends Socket {
@@ -8,8 +8,9 @@ export interface IAuthenticatedSocket extends Socket {
 }
 
 export interface IMessageData extends Partial<IMessage> {
+  localId: string;
   content: any;
-  recipientId: ObjectId;
+  recipientId: Types.ObjectId;
 }
 
 export type INotificationType = 'newMessage' | 'newChat' | 'group_invite' | 'group_message' | 'mention' | 'other';
@@ -28,8 +29,8 @@ export interface IReadNotification {
 }
 
 export interface IChatRequestBody {
-  userBId: ObjectId;
-  chatId?: ObjectId | null;
+  userBId: Types.ObjectId;
+  chatId?: Types.ObjectId | null;
 }
 
 export interface IGroupChatRequestBody {
@@ -56,9 +57,9 @@ export interface INotificationPayload {
 }
 
 export interface ISecondParticipantResponse {
-  chatId: ObjectId;
+  chatId: Types.ObjectId;
   secondParticipant: {
-    _id: ObjectId;
+    _id: Types.ObjectId;
     profilePicture: string;
     firstName: string;
     lastName: string;
@@ -69,8 +70,8 @@ export interface ISecondParticipantResponse {
 }
 
 export interface IChatRequestBody {
-  userBId: ObjectId;
-  chatId?: ObjectId | null;
+  userBId: Types.ObjectId;
+  chatId?: Types.ObjectId | null;
 }
 
 export interface IGetMessagesRequestBody {

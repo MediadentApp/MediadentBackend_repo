@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import mongoose, { Schema, CallbackWithoutResultAndOptionalError, ObjectId } from 'mongoose';
+import mongoose, { Schema, CallbackWithoutResultAndOptionalError, Types } from 'mongoose';
 import validator from 'validator';
 
 import { IUser, IUserModel } from '#src/types/model.js';
@@ -302,9 +302,9 @@ userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOpti
       }));
 
       const chatArr = await Chat.insertMany(newChats);
-      const chatIds: ObjectId[] = chatArr.map(chat => chat._id as ObjectId);
+      const chatIds = chatArr.map(chat => chat._id);
 
-      this.chats.chatIds = [...new Set([...this.chats?.chatIds, ...chatIds])] as ObjectId[];
+      this.chats.chatIds = [...new Set([...this.chats?.chatIds, ...chatIds])] as Types.ObjectId[];
 
       await User.updateMany({ role: UserRole.Admin }, { $addToSet: { 'chats.chatIds': { $each: chatIds } } });
     }
@@ -333,10 +333,10 @@ userSchema.methods.isAdditionalInfoFilled = function (): {
 
   return this.interests && this.interests.length < appConfig.app.signup.numOfSignupInterests
     ? {
-      redirectUrl: appConfig.urls.signupInterestUrl,
-      message: responseMessages.AUTH.REDIRECT_TO_INTERESTS,
-      errorCode: ErrorCodes.SIGNUP.REDIRECT_TO_INTERESTS,
-    }
+        redirectUrl: appConfig.urls.signupInterestUrl,
+        message: responseMessages.AUTH.REDIRECT_TO_INTERESTS,
+        errorCode: ErrorCodes.SIGNUP.REDIRECT_TO_INTERESTS,
+      }
     : null;
 };
 

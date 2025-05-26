@@ -1,9 +1,5 @@
-import {
-  IChat,
-  IGroupChat,
-  IMessage,
-  IWebPushSubscription,
-} from '#src/types/model.js';
+import { MessageStatus } from '#src/types/enum.js';
+import { IChat, IGroupChat, IMessage, IWebPushSubscription } from '#src/types/model.js';
 import mongoose, { Schema, Model } from 'mongoose';
 
 const messageSchema = new Schema<IMessage>(
@@ -47,11 +43,7 @@ const messageSchema = new Schema<IMessage>(
         size: Number,
       },
     },
-    status: {
-      sent: { type: Boolean, default: false },
-      delivered: { type: Boolean, default: false },
-      read: { type: Boolean, default: false },
-    },
+    status: { type: String, enum: MessageStatus, default: MessageStatus.SENT },
     reactions: [
       {
         by: {
@@ -78,10 +70,7 @@ const messageSchema = new Schema<IMessage>(
   }
 );
 
-const Message: Model<IMessage> = mongoose.model<IMessage>(
-  'Message',
-  messageSchema
-);
+const Message: Model<IMessage> = mongoose.model<IMessage>('Message', messageSchema);
 
 const chatSchema = new Schema<IChat>(
   {
@@ -218,10 +207,9 @@ const webPushSubscriptionSchema = new Schema<IWebPushSubscription>(
   }
 );
 
-const WebPushSubscription: Model<IWebPushSubscription> =
-  mongoose.model<IWebPushSubscription>(
-    'WebPushSubscription',
-    webPushSubscriptionSchema
-  );
+const WebPushSubscription: Model<IWebPushSubscription> = mongoose.model<IWebPushSubscription>(
+  'WebPushSubscription',
+  webPushSubscriptionSchema
+);
 
 export { Message, Chat, GroupChat, WebPushSubscription };

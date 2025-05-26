@@ -1,10 +1,10 @@
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
-import { UserRole } from '#src/types/enum.js';
+import { MessageStatus, UserRole } from '#src/types/enum.js';
 import { IUserAcademicDetails, IUserInterest } from '#src/types/request.userFormat.js';
-import { Document, Model, ObjectId } from 'mongoose';
+import { Document, Model, Types } from 'mongoose';
 
-export interface IUser extends Document<ObjectId> {
+export interface IUser extends Document<Types.ObjectId> {
   firstName: string;
   lastName: string;
   fullName?: string;
@@ -21,7 +21,7 @@ export interface IUser extends Document<ObjectId> {
   githubAccount: boolean;
   github_url?: string;
   linkedinAccount: boolean;
-  education?: ObjectId;
+  education?: Types.ObjectId;
   interests: string[];
   additionalInfo: {
     userType?: string;
@@ -30,7 +30,7 @@ export interface IUser extends Document<ObjectId> {
     currentCity?: string;
   };
   bio: string;
-  blockedUsers: ObjectId[];
+  blockedUsers: Types.ObjectId[];
   settings: {
     notifications: boolean;
     theme: 'light' | 'dark';
@@ -42,8 +42,8 @@ export interface IUser extends Document<ObjectId> {
   lastSeen?: Date;
   contacts: string[];
   chats: {
-    chatIds: ObjectId[];
-    groupChatIds: ObjectId[];
+    chatIds: Types.ObjectId[];
+    groupChatIds: Types.ObjectId[];
   };
 
   postsCount: number;
@@ -83,26 +83,26 @@ export type UpdateUserDTO = {
     notifications?: boolean;
     theme?: 'light' | 'dark';
   };
-  blockedUsers?: ObjectId[];
+  blockedUsers?: Types.ObjectId[];
   contacts?: string[];
 };
 
 export interface IUserFollows extends Document {
-  userId: ObjectId; // user who follows
-  followingUserId: ObjectId; // user being followed
+  userId: Types.ObjectId; // user who follows
+  followingUserId: Types.ObjectId; // user being followed
 }
 
 export interface IUserActivity extends Document {
-  userId: ObjectId;
-  likedPosts: ObjectId[];
+  userId: Types.ObjectId;
+  likedPosts: Types.ObjectId[];
   onlineStatus: boolean;
   lastSeen: Date;
   viewedPosts: {
-    postId: ObjectId;
+    postId: Types.ObjectId;
     timestamp: Date;
   }[];
-  dismissedPosts: ObjectId[];
-  commentedPosts: ObjectId[];
+  dismissedPosts: Types.ObjectId[];
+  commentedPosts: Types.ObjectId[];
   lastSuggestedAt: Date;
 }
 
@@ -152,11 +152,11 @@ export interface IEducation extends Document {
   certifications?: string[];
   projects?: string[];
   internships?: string[];
-  user: ObjectId;
+  user: Types.ObjectId;
 }
 
 export interface ICollege {
-  id?: ObjectId;
+  id?: Types.ObjectId;
   state: string;
   name: string;
   address_line1: string;
@@ -183,9 +183,9 @@ export interface ICityStates {
 }
 
 export interface IMessage extends Document {
-  chatId?: ObjectId;
-  groupChatId?: ObjectId;
-  senderId: ObjectId;
+  chatId?: Types.ObjectId;
+  groupChatId?: Types.ObjectId;
+  senderId: Types.ObjectId;
   senderUsername: string;
   content: string;
   media?: {
@@ -195,33 +195,29 @@ export interface IMessage extends Document {
       size: number;
     };
   };
-  status: {
-    sent: boolean;
-    delivered: boolean;
-    read: boolean;
-  };
+  status: MessageStatus;
   reactions: {
-    by: ObjectId;
+    by: Types.ObjectId;
     reaction: string;
   }[];
   deleted: {
     status: boolean;
-    by: ObjectId | null;
+    by: Types.ObjectId | null;
   };
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface IChat extends Document {
-  participants: ObjectId[];
+  participants: Types.ObjectId[];
   active: boolean;
   lastMessage: {
-    senderId: ObjectId;
+    senderId: Types.ObjectId;
     content: string;
     timestamp: Date;
   } | null;
   unreadCount: {
-    userId: ObjectId;
+    userId: Types.ObjectId;
     count: number;
   }[];
 }
@@ -229,18 +225,18 @@ export interface IChat extends Document {
 export interface IGroupChat extends Document {
   groupName: string;
   groupPicture: string | null;
-  participants: ObjectId[];
-  createdBy: ObjectId;
-  admins: ObjectId[];
+  participants: Types.ObjectId[];
+  createdBy: Types.ObjectId;
+  admins: Types.ObjectId[];
   lastMessage: {
-    senderId: ObjectId;
+    senderId: Types.ObjectId;
     content: string;
     timestamp: Date;
   } | null;
 }
 
 export interface IWebPushSubscription extends Document {
-  userId: ObjectId;
+  userId: Types.ObjectId;
   subscription: {
     endpoint: string;
     keys: {
@@ -251,14 +247,14 @@ export interface IWebPushSubscription extends Document {
 }
 
 export interface INotification extends Document {
-  userId: ObjectId;
-  senderId: ObjectId;
+  userId: Types.ObjectId;
+  senderId: Types.ObjectId;
   senderName: string;
   senderUsername: string;
   type: 'newMessage' | 'newChat' | 'group_invite' | 'group_message' | 'mention' | 'other';
-  relatedChatId?: ObjectId;
-  relatedGroupId?: ObjectId;
-  messageId?: ObjectId;
+  relatedChatId?: Types.ObjectId;
+  relatedGroupId?: Types.ObjectId;
+  messageId?: Types.ObjectId;
   content: string;
   isRead: boolean;
   isPushSent: boolean;

@@ -69,3 +69,9 @@ export enum SortOrder {
   Ascending = 'asc',
   Descending = 'desc',
 }
+
+export enum MessageStatus {
+  SENT = 'sent',
+  DELIVERED = 'delivered',
+  READ = 'read',
+}

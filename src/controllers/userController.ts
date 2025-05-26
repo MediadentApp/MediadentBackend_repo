@@ -237,13 +237,9 @@ const followUserExecutor = new DebouncedExecutor();
 export const followUserToggle = catchAsync(
   async (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) => {
     const { id: followUserId } = req.params;
-    const userId = req.user._id as mongoose.Types.ObjectId;
+    const userId = req.user._id;
 
-    if (
-      !followUserId ||
-      !mongoose.Types.ObjectId.isValid(followUserId) ||
-      userId.equals(new Types.ObjectId(followUserId))
-    ) {
+    if (!followUserId || !mongoose.Types.ObjectId.isValid(followUserId) || userId.equals(followUserId)) {
       return next(
         new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
       );

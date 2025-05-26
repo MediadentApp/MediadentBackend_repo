@@ -7,6 +7,7 @@ import User from '#src/models/userModel.js';
 import Notification from '#src/models/userNotificationModel.js';
 import { AppRequestBody } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
+import { MessageStatus } from '#src/types/enum.js';
 import {
   IAuthenticatedSocket,
   IChatRequestBody,
@@ -442,9 +443,7 @@ export const getMessagesByChatId = catchAsync(
         messages: [],
         oldestMessageDate: null,
       };
-      return ApiResponse(res, 200, responseMessages.SOCKET.MESSAGES_NOT_FOUND, data, {
-        results: 0,
-      });
+      return ApiResponse(res, 200, responseMessages.SOCKET.MESSAGES_NOT_FOUND, data);
     }
 
     const newOldestMessageDate = messages[messages.length - 1].createdAt;
@@ -454,7 +453,7 @@ export const getMessagesByChatId = catchAsync(
       messages,
       oldestMessageDate: newOldestMessageDate,
     };
-    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data, { results: messages.length });
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data);
   }
 );
 
@@ -536,7 +535,7 @@ export const readNotification = catchSocket(
 // Handle sending a message
 export const handleSendMessage = catchSocket(
   async (io: Server, socket: IAuthenticatedSocket, messageData: IMessageData): Promise<void> => {
-    const { chatId, content, recipientId } = messageData;
+    const { chatId, content, recipientId, localId } = messageData;
 
     if (!chatId || !content || !recipientId) {
       socket.emit('socketError', {
@@ -552,21 +551,18 @@ export const handleSendMessage = catchSocket(
       senderId: socket.user._id,
       senderUsername: socket.user.username,
       content,
-      status: {
-        sent: true,
-        delivered: false,
-        read: false,
-      },
+      status: MessageStatus.SENT,
     });
 
     // Emit the message to the chat room
     io.to(chatId.toString()).emit('receiveMessage', {
+      localId,
       chatId,
       senderId: socket.user._id,
       senderUsername: socket.user.username,
       content,
       timestamp: new Date(),
-      status: message.status,
+      status: MessageStatus.SENT,
     });
 
     // Save the notification to the database
@@ -597,7 +593,7 @@ export const handleSendMessage = catchSocket(
 
 // Handle user disconnecting from WebSocket
 export const handleDisconnect = catchSocket(async (io: Server, socket: IAuthenticatedSocket) => {
-  userSockets.delete((socket.user._id as ObjectId).toString());
+  userSockets.delete(socket.user._id.toString());
   console.log(`User ${socket.user.username} (${socket.id}) disconnected`);
 });
 

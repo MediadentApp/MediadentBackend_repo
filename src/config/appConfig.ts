@@ -45,7 +45,7 @@ const appConfig = {
   defaultDebounceExecutionFlushDelay: 3000, // ms
   defaultDebounceExecutionMaxOperations: 200,
   defaultDebounceMongoBatchExecutionFlushDelay: 1500, // ms
-  defaultDebounceMongoBatchExecutionMaxOperations: 100,
+  defaultDebounceMongoBatchExecutionMaxOperations: 500,
   chat: {
     DEFAULT_MESSAGES_PER_PAGE: 25,
   },

@@ -55,8 +55,13 @@ router.patch(
  */
 router.get('/feed', getHomeFeed);
 
-router.post('/usersbyid', userById);
+/**
+ * GET /notifications
+ * Returns the user's notifications.
+ */
 router.get('/notifications', userNotifications);
+
+router.post('/usersbyid', userById);
 router.patch('/:id/follow/toggle', (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) =>
   followUserToggle(req, res, next)
 );

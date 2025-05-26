@@ -66,12 +66,13 @@ export default (io: Server) => {
       handleSendMessage(io, authSocket, messageData);
     });
 
-    authSocket.on('readNotification', (notification: any) => {
-      readNotification(io, authSocket, notification, String(userId));
+    authSocket.on('readNotification', (notificationIds: string[]) => {
+      readNotification(io, authSocket, { notificationIds, method: 'read' });
     });
 
-    authSocket.on('deleteNotification', (notificationId: string) => {
-      deleteNotification(io, authSocket, notificationId);
+    authSocket.on('deleteNotification', (notificationIds: string[]) => {
+      readNotification(io, authSocket, { notificationIds, method: 'delete' });
+      // deleteNotification(io, authSocket, notificationId);
     });
 
     authSocket.on('disconnect', () => {

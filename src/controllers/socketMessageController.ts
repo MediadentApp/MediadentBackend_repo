@@ -5,6 +5,7 @@ import userSockets from '#src/helper/socketMap.js';
 import { Chat, GroupChat, Message, WebPushSubscription } from '#src/models/userMessages.js';
 import User from '#src/models/userModel.js';
 import Notification from '#src/models/userNotificationModel.js';
+import NotificationService from '#src/services/notifications.service.js';
 import { AppRequestBody } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { MessageStatus } from '#src/types/enum.js';
@@ -501,33 +502,29 @@ export const deleteNotification = catchSocket(
 
 // Mark notifications as read in batch with threshold
 export const readNotification = catchSocket(
-  async (_io: Server, _socket: IAuthenticatedSocket, { userBId, type, notificationId }: IUserB, userId: string) => {
-    if (!userBId || !type || !notificationId || !userId) {
-      console.log('Missing userBId, type or notificationId');
+  async (
+    _io: Server,
+    socket: IAuthenticatedSocket,
+    { notificationIds, method }: { notificationIds: string[]; method: 'delete' | 'read' }
+  ) => {
+    if (!notificationIds.length) {
+      console.log('Missing notification id');
       return;
     }
-
-    readNotificationsToUpdate.push({
-      userId: userId,
-      userBId: userBId,
-      type,
-      notificationId: notificationId,
-    });
-
-    if (readNotificationsToUpdate.length >= READ_NOTIFICATION_BATCH_THRESHOLD) {
-      if (readNotificationTimeoutId) clearTimeout(readNotificationTimeoutId);
-
-      await markNotificationsAsRead(readNotificationsToUpdate);
-      readNotificationsToUpdate = []; // Reset batch
+    if ((method = 'delete')) {
+      NotificationService.add({
+        collectionName: 'ReadNotifications',
+        type: 'delete',
+        id: `${socket.user._id}-${Date.now()}`,
+        data: notificationIds,
+      });
     } else {
-      if (readNotificationTimeoutId) clearTimeout(readNotificationTimeoutId);
-
-      readNotificationTimeoutId = setTimeout(async () => {
-        if (readNotificationsToUpdate.length > 0) {
-          await markNotificationsAsRead(readNotificationsToUpdate);
-          readNotificationsToUpdate = []; // Reset batch
-        }
-      }, NOTIFICATION_TIMEOUT_DELAY);
+      NotificationService.add({
+        collectionName: 'ReadNotifications',
+        type: 'update',
+        id: `${socket.user._id}-${Date.now()}`,
+        data: notificationIds,
+      });
     }
   }
 );

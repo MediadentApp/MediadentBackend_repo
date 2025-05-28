@@ -47,6 +47,11 @@ export default (io: Server) => {
       userSockets.get(userId.toString())?.rooms.add(chatId);
     });
 
+    authSocket.on('check-room', (roomId, callback) => {
+      const rooms = authSocket.rooms;
+      callback(rooms.has(roomId)); // socket.rooms is a Set
+    });
+
     authSocket.on('leaveChat', (chatId: string) => {
       if (!chatId) {
         return authSocket.emit('socketError', {

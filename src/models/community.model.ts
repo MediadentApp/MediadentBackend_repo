@@ -27,7 +27,7 @@ const communitySchema: Schema<ICommunity> = new Schema<ICommunity>(
     mutedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     invitedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
 
-    isDeleted: Boolean,
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

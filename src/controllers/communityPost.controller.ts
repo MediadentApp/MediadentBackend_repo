@@ -24,13 +24,17 @@ import { QueryParam } from '#src/types/query.js';
 import { ICommunityBodyDTO } from '#src/types/request.community.js';
 import { PostBody } from '#src/types/request.post.js';
 import ApiError from '#src/utils/ApiError.js';
-import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
+import { FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
 import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { getUpdateObj } from '#src/utils/dataManipulation.js';
 import { DebouncedExecutor } from '#src/utils/DebouncedExecutor.js';
 import { NextFunction } from 'express';
 import mongoose, { ObjectId } from 'mongoose';
+
+const followCommunityExecutor = new DebouncedExecutor();
+const votePostExecutor = new DebouncedExecutor(5000, 100);
+const savePostExecutor = new DebouncedExecutor();
 
 /**
  * Controller to create a new community.
@@ -214,13 +218,50 @@ export const getCommunityBySlug = catchAsync(
       );
     }
 
-    const community = await Community.findOne({ slug }).lean();
+    // const community = await Community.findOne({ slug }).lean();
+    const community = await Community.aggregate([
+      // { $match: { $and: [{ slug: slug }, { isDeleted: false }] } },
+      { $match: { slug } },
+      {
+        $lookup: {
+          from: 'communityfollowings',
+          let: { communityId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$communityId', '$$communityId'] }, { $eq: ['$userId', req.user._id] }],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: 'followedByUser',
+        },
+      },
+      {
+        $addFields: {
+          isFollowing: {
+            $cond: {
+              if: { $gt: [{ $size: '$followedByUser' }, 0] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          followedByUser: 0,
+        },
+      },
+    ]);
 
-    if (!community) {
+    if (!community.length) {
       return next(new ApiError(responseMessages.APP.COMMUNITY.NOT_FOUND, 404));
     }
 
-    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, community);
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, community[0]);
   }
 );
 
@@ -230,16 +271,61 @@ export const getCommunityBySlug = catchAsync(
  * Route: GET /community?search=xyz&page=1&limit=10
  */
 export const getCommunities = catchAsync(async (req: AppPaginatedRequest, res: AppPaginatedResponse) => {
-  const fetchedData = await FetchPaginatedData<ICommunity>(Community, {
-    ...req.query,
-    sortField: req.query.sortField ?? '-createdAt',
-    searchFields: req.query.searchFields ?? ['name'],
-  });
+  const fetchedData = await FetchPaginatedDataWithAggregation<ICommunity>(
+    Community,
+    [
+      // {
+      //   $match: { isDeleted: false },
+      // },
+      {
+        $lookup: {
+          from: 'communityfollowings',
+          let: { communityId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$communityId', '$$communityId'] }, { $eq: ['$userId', req.user._id] }],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: 'followedByUser',
+        },
+      },
+      {
+        $addFields: {
+          isFollowing: {
+            $cond: {
+              if: { $gt: [{ $size: '$followedByUser' }, 0] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          followedByUser: 0,
+        },
+      },
+    ],
+    {
+      ...req.query,
+      sortField: req.query.sortField ?? '-createdAt',
+      searchFields: req.query.searchFields ?? ['name'],
+    }
+  );
+  // const fetchedData = await FetchPaginatedData<ICommunity>(Community, {
+  //   ...req.query,
+  //   sortField: req.query.sortField ?? '-createdAt',
+  //   searchFields: req.query.searchFields ?? ['name'],
+  // });
 
   return ApiPaginatedResponse(res, fetchedData);
 });
 
-const followCommunityExecutor = new DebouncedExecutor();
 /**
  * Controller to follow/unfollow a community.
  *
@@ -288,9 +374,56 @@ export const toggleFollowCommunity = catchAsync(
 );
 
 /**
+ * Controller to fetch community that the user is following.
+ *
+ * Route: GET /community/follows
+ */
+export const followsCommunity = catchAsync(
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+    const userId = req.user._id;
+
+    const fetchedData = await FetchPaginatedDataWithAggregation<ICommunity>(
+      CommunityFollowedBy,
+      [
+        {
+          $match: { userId },
+        },
+        { $sort: { createdAt: -1 } },
+        {
+          $lookup: {
+            from: 'communities',
+            localField: 'communityId',
+            foreignField: '_id',
+            as: 'community',
+          },
+        },
+        {
+          $unwind: '$community',
+        },
+        {
+          $replaceRoot: { newRoot: '$community' },
+        },
+        {
+          $addFields: {
+            isFollowing: true,
+          },
+        },
+      ],
+      {
+        ...req.query,
+        searchFields: req.query.searchFields ?? ['name'],
+        pageSize: req.query.pageSize ?? '30',
+      }
+    );
+
+    return ApiPaginatedResponse(res, fetchedData);
+  }
+);
+
+/**
  * Controller to fetch a paginated list of community posts.
  *
- * Route: GET /communitypost/:communityId
+ * Route: GET /communitypost/:communityId/posts
  */
 export const getAllCommunitypost = catchAsync(
   async (req: AppPaginatedRequest<CommunityPostParam>, res: AppPaginatedResponse, next: NextFunction) => {
@@ -424,9 +557,9 @@ export const getCommunityPost = catchAsync(
 /**
  * Controller to create a new community post.
  *
- * Route: POST /communitypost
+ * Route: POST /communitypost/:communityId
  */
-export const communityPosts = catchAsync(
+export const communityPost = catchAsync(
   async (req: AppRequestBody<PostBody, CommunityPostParam>, res: AppResponse, next: NextFunction) => {
     const { title, content = '', tags = [] } = req.body;
     const { communityId } = req.params;
@@ -469,7 +602,7 @@ export const communityPosts = catchAsync(
     }
 
     // 5. Construct post data
-    const allTags = Array.from(new Set([...tags, `#${user.fullName}`]));
+    const allTags = Array.from(new Set([...JSON.parse(tags), `${user.fullName}`]));
     const slug = `${title.trim().replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
 
     const postData = {
@@ -550,7 +683,6 @@ export const updateCommunityPost = catchAsync(
   }
 );
 
-const votePostExecutor = new DebouncedExecutor(5000, 100);
 /**
  * Controller to vote on a community post by ID.
  *
@@ -649,7 +781,6 @@ export const trackPostView = catchAsync(
   }
 );
 
-const savePostExecutor = new DebouncedExecutor();
 /**
  * Controller to save a community post by ID.
  *

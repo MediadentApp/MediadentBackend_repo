@@ -1,6 +1,6 @@
 import {
   createCommunity,
-  communityPosts,
+  communityPost,
   getCommunities,
   getCommunityBySlug,
   updateCommunity,
@@ -13,6 +13,7 @@ import {
   trackPostView,
   savePost,
   toggleFollowCommunity,
+  followsCommunity,
 } from '#src/controllers/communityPost.controller.js';
 import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
@@ -75,6 +76,14 @@ router.delete('/community/:id', (req: AppRequestParams<IdParam>, res: AppRespons
 );
 
 /**
+ * GET /community/follows
+ * Retrieves a list of communities that the user is following.
+ */
+router.get('/community/follows', (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) =>
+  followsCommunity(req, res, next)
+);
+
+/**
  * GET /community/:slug
  * Retrieves a single community by its unique slug/name.
  */
@@ -83,7 +92,7 @@ router.get('/community/:slug', (req: AppRequestParams<SlugParam>, res: AppRespon
 );
 
 /**
- * POST /community/:id/follow/toggle
+ * PATCH /community/:id/follow/toggle
  * Toggle following a community.
  */
 router.patch('/community/:id/follow/toggle', (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) =>
@@ -91,14 +100,14 @@ router.patch('/community/:id/follow/toggle', (req: AppRequestParams<IdParam>, re
 );
 
 /**
- * POST /communitypost
+ * POST /communitypost/:communityId
  * Creates a new post for a community.
  */
 router.post(
   '/communitypost/:communityId',
   postUpload,
   (req: AppRequestBody<PostBody, CommunityPostParam>, res: AppResponse, next: NextFunction) =>
-    communityPosts(req, res, next)
+    communityPost(req, res, next)
 );
 
 /**
@@ -113,12 +122,12 @@ router.patch(
 );
 
 /**
- * GET /communitypost/:communityId
+ * GET /communitypost/:communityId/posts
  * Retrieves a list of posts related to a specific community.
  * It can also retrieve all posts made by a specific author in a community.
  */
 router.get(
-  '/communitypost/:communityId',
+  '/communitypost/:communityId/posts',
   (req: AppPaginatedRequest<CommunityPostParam>, res: AppPaginatedResponse, next: NextFunction) =>
     getAllCommunitypost(req, res, next)
 );

@@ -1,12 +1,12 @@
-import { Document, ObjectId } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { CommunityInviteStatus, CommunityRole, CommunityType, ReportStatus } from './enum.js';
 
-export interface ICommunity extends Document<ObjectId> {
+export interface ICommunity extends Document<Types.ObjectId> {
   name: string;
   description: string;
   slug: string;
-  parentId?: ObjectId | null;
-  children: ObjectId[];
+  parentId?: Types.ObjectId | null;
+  children: Types.ObjectId[];
   path?: string[];
 
   avatarUrl: string;
@@ -14,33 +14,34 @@ export interface ICommunity extends Document<ObjectId> {
   verified: boolean;
   type: CommunityType;
 
-  owner: ObjectId;
-  members: ObjectId[];
+  owner: Types.ObjectId;
+  members: Types.ObjectId[];
   membersCount: number;
   postCount: number;
   isDeleted: boolean;
 
   followersCount: number;
+  isFollowing?: boolean;
 
-  moderators: ObjectId[];
-  bannedUsers: ObjectId[];
-  blockedUsers: ObjectId[];
-  mutedUsers: ObjectId[];
-  invitedUsers: ObjectId[];
+  moderators: Types.ObjectId[];
+  bannedUsers: Types.ObjectId[];
+  blockedUsers: Types.ObjectId[];
+  mutedUsers: Types.ObjectId[];
+  invitedUsers: Types.ObjectId[];
   // roles: {
-  //     userId: ObjectId;
+  //     userId: Types.ObjectId;
   //     role: CommunityRole;
   // }[]
 }
 
 export interface IFollowsCommunity {
-  userId: ObjectId;
-  communityId: ObjectId;
+  userId: Types.ObjectId;
+  communityId: Types.ObjectId;
 }
 
 export interface ICommunityInvite {
-  communityId: ObjectId;
-  invitedBy: ObjectId;
+  communityId: Types.ObjectId;
+  invitedBy: Types.ObjectId;
   email: string;
   expiresAt: Date;
   role: CommunityRole;
@@ -48,9 +49,9 @@ export interface ICommunityInvite {
 }
 
 export interface IReportCommunity {
-  postId: ObjectId;
-  reportedBy: ObjectId;
+  postId: Types.ObjectId;
+  reportedBy: Types.ObjectId;
   reason: string;
   status: ReportStatus;
-  reviewedBy?: ObjectId;
+  reviewedBy?: Types.ObjectId;
 }

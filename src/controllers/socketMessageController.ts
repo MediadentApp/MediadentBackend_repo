@@ -39,75 +39,20 @@ import webPush from 'web-push';
 const { NOTIFICATION_TIMEOUT_DELAY, READ_NOTIFICATION_BATCH_THRESHOLD, DELETE_NOTIFICATION_BATCH_THRESHOLD } =
   appConfig.notification;
 
-// Batched Read Notifications
-let readNotificationsToUpdate: IReadNotification[] = [];
-let readNotificationTimeoutId: NodeJS.Timeout | undefined;
-
 // Batched Delete Notifications
 let notificationsToDelete: string[] = [];
 let deleteNotificationTimeoutId: NodeJS.Timeout | undefined;
-
-/**
- * Marks notifications as read and updates/deletes them in bulk.
- * @param notificationsToMarkAsRead - List of notifications to process.
- */
-async function markNotificationsAsRead(notificationsToMarkAsRead: IReadNotification[]): Promise<void> {
-  const bulkOperations = notificationsToMarkAsRead
-    .map(({ notificationId, userId, userBId, type }) => {
-      if (notificationId) {
-        return {
-          updateOne: {
-            filter: { _id: notificationId, userId },
-            update: { $set: { isRead: true, isPushSent: false } },
-          },
-        };
-      }
-
-      if (userBId && type) {
-        if (type === 'newMessage') {
-          return {
-            deleteMany: {
-              filter: { userId, senderId: userBId, type },
-            },
-          };
-        }
-        return {
-          updateMany: {
-            filter: { userId, senderId: userBId, type },
-            update: { $set: { isRead: true, isPushSent: false } },
-          },
-        };
-      }
-
-      return null;
-    })
-    .filter((op): op is Exclude<typeof op, null> => op !== null); // Ensures non-null values
-
-  try {
-    if (bulkOperations.length > 0) {
-      await Notification.bulkWrite(bulkOperations);
-    }
-  } catch (error) {
-    console.error('Error marking notifications as read:', error);
-  }
-}
 
 const VAPID_WEBPUSH_PUBLIC_KEY = process.env.WEBPUSH_PUBLIC_KEY;
 const VAPID_WEBPUSH_PRIVATE_KEY = process.env.WEBPUSH_PRIVATE_KEY;
 const VAPID_WEBPUSH_EMAIL = process.env.WEBPUSH_EMAIL;
 
-// console.log('VAPID keys:', VAPID_WEBPUSH_PUBLIC_KEY, VAPID_WEBPUSH_PRIVATE_KEY, VAPID_WEBPUSH_EMAIL);
-
-if (!VAPID_WEBPUSH_PUBLIC_KEY || !VAPID_WEBPUSH_PRIVATE_KEY) {
+if (!VAPID_WEBPUSH_PUBLIC_KEY || !VAPID_WEBPUSH_PRIVATE_KEY || !VAPID_WEBPUSH_EMAIL) {
   throw new Error('VAPID keys are missing.');
 }
 
-if (Buffer.from(VAPID_WEBPUSH_PUBLIC_KEY, 'base64').length !== 65) {
-  throw new Error('Invalid VAPID public key. It should be 65 bytes when decoded.');
-}
-
 // Web Push Configuration
-webPush.setVapidDetails(VAPID_WEBPUSH_EMAIL as string, VAPID_WEBPUSH_PUBLIC_KEY, VAPID_WEBPUSH_PRIVATE_KEY);
+webPush.setVapidDetails(VAPID_WEBPUSH_EMAIL, VAPID_WEBPUSH_PUBLIC_KEY, VAPID_WEBPUSH_PRIVATE_KEY);
 
 /**
  * Finds a socket connection by user ID.
@@ -542,17 +487,7 @@ export const handleSendMessage = catchSocket(
       return; // Explicitly return to satisfy void return type
     }
 
-    // Save the message in the database
-    const message = await Message.create({
-      chatId,
-      senderId: socket.user._id,
-      senderUsername: socket.user.username,
-      content,
-      status: MessageStatus.SENT,
-    });
-
-    // Emit the message to the chat room
-    io.to(chatId.toString()).emit('receiveMessage', {
+    const message = {
       localId,
       chatId,
       senderId: socket.user._id,
@@ -560,7 +495,13 @@ export const handleSendMessage = catchSocket(
       content,
       timestamp: new Date(),
       status: MessageStatus.SENT,
-    });
+    };
+
+    // Save the message in the database
+    void Message.create(message);
+
+    // Emit the message to the chat room
+    io.to(chatId.toString()).emit('receiveMessage', message);
 
     // Save the notification to the database
     const notification = await Notification.create({
@@ -582,6 +523,7 @@ export const handleSendMessage = catchSocket(
         io.to(recipientData.socketId).emit('newNotification', notification);
       }
     } else {
+      console.log('sending notif');
       // Send a push notification if the user is offline
       sendPushNotification(recipientId.toString(), notification);
     }

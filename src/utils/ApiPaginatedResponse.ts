@@ -267,7 +267,7 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
     : { createdAt: -1 };
   pipeline.push({ $sort: sort });
 
-  console.log('pipeline', pipeline);
+  console.log('pipeline', JSON.stringify(pipeline, null, 2));
 
   // Count pipeline
   const countPipeline = [...pipeline, { $count: 'totalItems' }];

@@ -15,7 +15,7 @@ import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.req
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
-import { VoteEnum } from '#src/types/enum.js';
+import { PostSortOptions, PostSortRangeOptions, VoteEnum } from '#src/types/enum.js';
 import { ICommunity } from '#src/types/model.community.js';
 import { IPost } from '#src/types/model.post.type.js';
 import { CommunityPostParam } from '#src/types/param.communityPost.js';
@@ -426,18 +426,80 @@ export const followsCommunity = catchAsync(
  * Route: GET /communitypost/:communityId/posts
  */
 export const getAllCommunitypost = catchAsync(
-  async (req: AppPaginatedRequest<CommunityPostParam>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest<{ communityId: string }>, res: AppPaginatedResponse, next: NextFunction) => {
     const { communityId } = req.params;
     const userId = req.user._id;
+    const sort = (req.query.sortField as PostSortOptions) ?? 'Hot';
+    const range = (req.query.range as PostSortRangeOptions) ?? 'all';
+
+    const matchStage: Record<string, any> = {
+      communityId: new mongoose.Types.ObjectId(communityId),
+    };
+
+    // Apply time range filter if applicable
+    const now = new Date();
+    if (range && range !== 'all') {
+      switch (range) {
+        case 'now':
+          matchStage.createdAt = {
+            $gte: new Date(now.getTime() - 10 * 60 * 1000), // 10 minutes ago
+            $lte: now,
+          };
+          break;
+        case 'today':
+          const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+          matchStage.createdAt = {
+            $gte: startOfTodayUTC,
+            $lte: now,
+          };
+          break;
+        case 'week':
+          matchStage.createdAt = {
+            $gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+            $lte: now,
+          };
+          break;
+        case 'month':
+          const oneMonthAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, now.getUTCDate()));
+          matchStage.createdAt = {
+            $gte: oneMonthAgo,
+            $lte: now,
+          };
+          break;
+        case 'year':
+          const oneYearAgo = new Date(Date.UTC(now.getUTCFullYear() - 1, now.getUTCMonth(), now.getUTCDate()));
+          matchStage.createdAt = {
+            $gte: oneYearAgo,
+            $lte: now,
+          };
+          break;
+      }
+    }
+
+    // Custom sort logic
+    const sortStage = (() => {
+      switch (sort) {
+        case 'New':
+          return { createdAt: -1 };
+        case 'Top':
+          return { upvotesCount: -1 };
+        case 'Controversial':
+          return { commentsCount: -1 };
+        case 'Hot':
+          return { netVotes: -1 };
+        default:
+          return { popularityScore: -1 };
+      }
+    })();
 
     const fetchedData = await FetchPaginatedDataWithAggregation<IPost>(
       Post,
       [
-        { $match: { communityId: new mongoose.Types.ObjectId(communityId) } },
+        { $match: matchStage },
 
         {
           $lookup: {
-            from: 'postsaves', // collection name (lowercase & plural of model)
+            from: 'postsaves',
             let: { postId: '$_id' },
             pipeline: [
               {
@@ -489,23 +551,26 @@ export const getAllCommunitypost = catchAsync(
         {
           $addFields: {
             isSaved: { $gt: [{ $size: '$savedByUser' }, 0] },
-            netVotes: { $subtract: ['$upvotesCount', '$downvotesCount'] },
             isViewed: { $gt: [{ $size: '$viewedByUser' }, 0] },
             voteType: {
               $cond: [{ $gt: [{ $size: '$votedByUser' }, 0] }, { $arrayElemAt: ['$votedByUser.voteType', 0] }, null],
             },
+            netVotes: { $subtract: ['$upvotesCount', '$downvotesCount'] },
           },
         },
         {
           $project: {
-            savedByUser: 0, // remove the raw join result
+            savedByUser: 0,
             viewedByUser: 0,
             votedByUser: 0,
           },
         },
+        { $sort: sortStage as unknown as Record<string, 1 | -1> },
       ],
       {
-        ...req.query,
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+        searchValue: req.query.searchValue ?? '',
         searchFields: req.query.searchFields ?? ['title', 'content'],
       }
     );
@@ -561,7 +626,7 @@ export const getCommunityPost = catchAsync(
  */
 export const communityPost = catchAsync(
   async (req: AppRequestBody<PostBody, CommunityPostParam>, res: AppResponse, next: NextFunction) => {
-    const { title, content = '', tags = [] } = req.body;
+    const { title, content = '', tags = '' } = req.body;
     const { communityId } = req.params;
     const files = req.files as Array<Express.Multer.File>;
     const user = req.user!;

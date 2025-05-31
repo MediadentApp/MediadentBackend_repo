@@ -1,5 +1,5 @@
 export interface PostBody {
-    title: string;
-    content: string;
-    tags: string[]
+  title: string;
+  content: string;
+  tags: string;
 }

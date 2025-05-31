@@ -1,3 +1,19 @@
+export enum PostSortOptions {
+  Hot = 'Hot',
+  New = 'New',
+  Top = 'Top',
+  Controversial = 'Controversial',
+}
+
+export enum PostSortRangeOptions {
+  Now = 'now',
+  Today = 'today',
+  Week = 'week',
+  Month = 'month',
+  Year = 'year',
+  All = 'all',
+}
+
 export enum UserRole {
   Admin = 'admin',
   User = 'user',

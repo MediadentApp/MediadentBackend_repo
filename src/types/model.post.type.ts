@@ -23,7 +23,7 @@ export interface IPost extends Document<ObjectId> {
   isSaved?: boolean; // would not be in schema
   isViewed?: boolean;
 
-  popularityScore?: number;
+  popularityScore?: { type: number; default: 6 };
   isDeleted?: boolean;
   isFlagged?: boolean;
   isApproved?: boolean;

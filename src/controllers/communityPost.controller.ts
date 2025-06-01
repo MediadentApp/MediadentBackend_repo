@@ -30,10 +30,10 @@ import catchAsync from '#src/utils/catchAsync.js';
 import { getUpdateObj } from '#src/utils/dataManipulation.js';
 import { DebouncedExecutor } from '#src/utils/DebouncedExecutor.js';
 import { NextFunction } from 'express';
-import mongoose, { ObjectId } from 'mongoose';
+import mongoose from 'mongoose';
 
 const followCommunityExecutor = new DebouncedExecutor();
-const votePostExecutor = new DebouncedExecutor(5000, 100);
+const votePostExecutor = new DebouncedExecutor(1000, 100);
 const savePostExecutor = new DebouncedExecutor();
 
 /**
@@ -429,12 +429,31 @@ export const getAllCommunitypost = catchAsync(
   async (req: AppPaginatedRequest<{ communityId: string }>, res: AppPaginatedResponse, next: NextFunction) => {
     const { communityId } = req.params;
     const userId = req.user._id;
-    const sort = (req.query.sortField as PostSortOptions) ?? 'Hot';
-    const range = (req.query.range as PostSortRangeOptions) ?? 'all';
+    const sort = (req.query.sortField as PostSortOptions) ?? PostSortOptions.Hot;
+    let range = (req.query.range as PostSortRangeOptions) ?? PostSortRangeOptions.All;
 
     const matchStage: Record<string, any> = {
       communityId: new mongoose.Types.ObjectId(communityId),
     };
+
+    console.log('sort', sort, 'range', range);
+
+    // Custom sort logic
+    const sortStage = (() => {
+      switch (sort) {
+        case 'New':
+          return { createdAt: -1 };
+        case 'Top':
+          return { netVotes: -1 };
+        case 'Controversial':
+          return { commentsCount: -1 };
+        case 'Hot':
+          range = PostSortRangeOptions.Now;
+          return { popularityScore: -1 };
+        default:
+          return { popularityScore: -1 };
+      }
+    })();
 
     // Apply time range filter if applicable
     const now = new Date();
@@ -476,27 +495,21 @@ export const getAllCommunitypost = catchAsync(
       }
     }
 
-    // Custom sort logic
-    const sortStage = (() => {
-      switch (sort) {
-        case 'New':
-          return { createdAt: -1 };
-        case 'Top':
-          return { upvotesCount: -1 };
-        case 'Controversial':
-          return { commentsCount: -1 };
-        case 'Hot':
-          return { netVotes: -1 };
-        default:
-          return { popularityScore: -1 };
-      }
-    })();
+    console.log('matchstage', matchStage);
 
     const fetchedData = await FetchPaginatedDataWithAggregation<IPost>(
       Post,
       [
         { $match: matchStage },
-
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'authorId',
+            foreignField: '_id',
+            as: 'author',
+          },
+        },
+        { $unwind: '$author' },
         {
           $lookup: {
             from: 'postsaves',
@@ -572,6 +585,7 @@ export const getAllCommunitypost = catchAsync(
         pageSize: req.query.pageSize ?? '10',
         searchValue: req.query.searchValue ?? '',
         searchFields: req.query.searchFields ?? ['title', 'content'],
+        populateFields: req.query.populateFields,
       }
     );
 

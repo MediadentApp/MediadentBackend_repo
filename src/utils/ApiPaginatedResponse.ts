@@ -1,6 +1,8 @@
 import { Types, Model, PipelineStage, SortOrder } from 'mongoose';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { IPaginatedResponse, IPaginationOptions } from '#src/types/api.response.paginated.js';
+import ApiError from '#src/utils/ApiError.js';
+import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 
 // !!! TODO: Move rawFilter to its own field
 
@@ -55,6 +57,10 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
   const pageSize = Number(rawPageSize);
 
   const filter: any = { ...rawFilter };
+
+  if (page <= 0) {
+    throw new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT);
+  }
 
   // Parse and apply selectFields (overrides projection if used)
   let selectFieldsObj: Record<string, number> | undefined = undefined;
@@ -196,6 +202,7 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
     sortOrder,
     projection,
     excludeIds,
+    selectFields,
     ids,
     ...rawFilter
   } = rawOptions;
@@ -206,6 +213,10 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
 
   // Build $match stage from filters
   const matchStage: Record<string, any> = { ...rawFilter };
+
+  if (page <= 0) {
+    throw new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT);
+  }
 
   // IDs filter
   if (ids) {
@@ -262,10 +273,12 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
   }
 
   // Sorting
-  const sort: { [key: string]: 1 | -1 } = !!sortField
-    ? { [sortField]: sortOrder === 'desc' ? -1 : 1 }
-    : { createdAt: -1 };
-  pipeline.push({ $sort: sort });
+  if (sortField) {
+    const sort: { [key: string]: 1 | -1 } = !!sortField
+      ? { [sortField]: sortOrder === 'desc' ? -1 : 1 }
+      : { createdAt: -1 };
+    pipeline.push({ $sort: sort });
+  }
 
   console.log('pipeline', JSON.stringify(pipeline, null, 2));
 

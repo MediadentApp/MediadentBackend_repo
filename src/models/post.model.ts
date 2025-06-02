@@ -20,7 +20,7 @@ const postSchema: Schema<IPost> = new Schema(
     },
     authorId: {
       type: Schema.Types.ObjectId,
-      index: true,
+      ref: 'User',
       required: true,
     },
 

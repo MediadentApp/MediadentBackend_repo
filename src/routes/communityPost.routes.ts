@@ -4,7 +4,7 @@ import {
   getCommunities,
   getCommunityBySlug,
   updateCommunity,
-  getCommunityPost,
+  getCommunityPostByIdentifier,
   getAllCommunitypost,
   deleteCommunity,
   deleteCommunityPost,
@@ -133,13 +133,13 @@ router.get(
 );
 
 /**
- * GET /communitypost/:communityId/:postId
- * Fetches a specific post by its ID within a community.
+ * GET /communitypost/:communityId/:identifier
+ * Fetches a specific post by its ID or its slug within a community.
  */
 router.get(
-  '/communitypost/:communityId/:postId',
+  '/communitypost/:communityId/:identifier',
   (req: AppRequestParams<CommunityPostParam, QueryParam>, res: AppResponse, next: NextFunction) =>
-    getCommunityPost(req, res, next)
+    getCommunityPostByIdentifier(req, res, next)
 );
 
 /**

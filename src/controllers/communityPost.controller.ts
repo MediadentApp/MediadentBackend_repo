@@ -598,38 +598,159 @@ export const getAllCommunitypost = catchAsync(
  *
  * Route: GET /communitypost/:communityId/:postId
  */
-export const getCommunityPost = catchAsync(
+export const getCommunityPostByIdentifier = catchAsync(
   async (req: AppRequestParams<CommunityPostParam, QueryParam>, res: AppResponse, next: NextFunction) => {
-    const { communityId, postId } = req.params;
-    const { searchByUserId } = req.query;
+    const { communityId, identifier } = req.params;
     const { _id: userId } = req.user;
 
-    const community = await Community.exists({ _id: communityId }).lean();
-    if (!community) {
-      return next(new ApiError(responseMessages.APP.COMMUNITY.NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
-    }
+    // const community = await Community.exists({ _id: communityId }).lean();
+    // if (!community) {
+    //   return next(new ApiError(responseMessages.APP.COMMUNITY.NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
+    // }
 
-    const searchCriteria = {
-      communityId,
-      _id: postId,
+    const searchCriteria: Record<string, unknown> = {
+      // communityId,
     };
 
-    const post = await Post.findOne(searchCriteria).lean({ virtuals: true });
+    const identifierIsID = mongoose.Types.ObjectId.isValid(identifier);
+    if (identifierIsID) {
+      searchCriteria._id = identifier;
+    } else {
+      searchCriteria.slug = identifier;
+    }
+
+    // const post = await Post.findOne(searchCriteria).populate('authorId communityId').lean({ virtuals: true });
+
+    const post = await Post.aggregate([
+      { $match: searchCriteria },
+      {
+        $lookup: {
+          from: 'communities',
+          localField: 'communityId',
+          foreignField: '_id',
+          as: 'community',
+          pipeline: [
+            {
+              $lookup: {
+                from: 'communityfollowings',
+                let: { communityId: '$_id' },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [{ $eq: ['$communityId', '$$communityId'] }, { $eq: ['$userId', req.user._id] }],
+                      },
+                    },
+                  },
+                  { $limit: 1 },
+                ],
+                as: 'followedByUser',
+              },
+            },
+            {
+              $addFields: {
+                isFollowing: {
+                  $cond: {
+                    if: { $gt: [{ $size: '$followedByUser' }, 0] },
+                    then: true,
+                    else: false,
+                  },
+                },
+              },
+            },
+            {
+              $project: {
+                followedByUser: 0,
+              },
+            },
+          ],
+        },
+      },
+      { $unwind: '$community' },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'authorId',
+          foreignField: '_id',
+          as: 'author',
+        },
+      },
+      { $unwind: '$author' },
+      {
+        $lookup: {
+          from: 'postsaves',
+          let: { postId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: 'savedByUser',
+        },
+      },
+      {
+        $lookup: {
+          from: 'postviews',
+          let: { postId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: 'viewedByUser',
+        },
+      },
+      {
+        $lookup: {
+          from: 'postvotes',
+          let: { postId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: 'votedByUser',
+        },
+      },
+      {
+        $addFields: {
+          isSaved: { $gt: [{ $size: '$savedByUser' }, 0] },
+          isViewed: { $gt: [{ $size: '$viewedByUser' }, 0] },
+          voteType: {
+            $cond: [{ $gt: [{ $size: '$votedByUser' }, 0] }, { $arrayElemAt: ['$votedByUser.voteType', 0] }, null],
+          },
+          netVotes: { $subtract: ['$upvotesCount', '$downvotesCount'] },
+        },
+      },
+      {
+        $project: {
+          savedByUser: 0,
+          viewedByUser: 0,
+          votedByUser: 0,
+        },
+      },
+    ]);
 
     if (!post) {
       return next(new ApiError(responseMessages.APP.POST.POST_NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
     }
 
-    if (post) {
-      const saved = await PostSave.exists({
-        postId: post._id,
-        userId: userId,
-      });
-
-      post.isSaved = !!saved; // add field dynamically
-    }
-
-    ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, post);
+    ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, post[0]);
   }
 );
 

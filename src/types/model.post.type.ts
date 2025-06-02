@@ -1,5 +1,7 @@
 import { Document, ObjectId, Types } from 'mongoose';
 import { ReportStatus, VoteEnum } from './enum.js';
+import { ICommunity } from '#src/types/model.community.js';
+import { IUser } from '#src/types/model.js';
 
 export interface IPost extends Document<ObjectId> {
   slug: string; // URL-safe, unique (e.g., “computer-science”)
@@ -10,7 +12,9 @@ export interface IPost extends Document<ObjectId> {
   tags: string[];
 
   communityId: ObjectId | null; // ID can be of Community
+  community?: ICommunity;
   authorId: ObjectId;
+  author?: IUser;
 
   views: number;
   upvotesCount: number;

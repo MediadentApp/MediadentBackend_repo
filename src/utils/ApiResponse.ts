@@ -17,12 +17,12 @@ import { Response } from 'express';
  * @returns {Response<IApiResponse<IResponseData>>} - The response with the given status code, message,
  *   and data.
  */
-export default function ApiResponse<ResponseDataType = any>(
+export default function ApiResponse<ResponseDataType = any, ExtraDataType extends IResponseExtra = IResponseExtra>(
   res: Response,
   statusCode: number = 200,
   message: IResponseMessage | null = null,
   data: IResponseData<ResponseDataType> | null = null,
-  extra: IResponseExtra = {}
+  extra: ExtraDataType = {} as ExtraDataType
 ): Response<IApiResponse<IResponseData<ResponseDataType>>> {
   const statusMap: { [key: number]: string } = {
     1: 'info',
@@ -32,7 +32,7 @@ export default function ApiResponse<ResponseDataType = any>(
     4: 'fail',
     5: 'server_error',
   };
-  const status = statusCode in statusMap ? statusMap[statusCode] : statusMap[Math.floor(statusCode / 100)] ?? 'info';
+  const status = statusCode in statusMap ? statusMap[statusCode] : (statusMap[Math.floor(statusCode / 100)] ?? 'info');
   message = message ?? responseMessages.GENERAL.SUCCESS;
 
   return res.status(statusCode).json({

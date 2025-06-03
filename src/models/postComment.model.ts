@@ -9,7 +9,7 @@ const commentSchema = new Schema<IPostComment>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     content: { type: String, required: true },
     // imageUrls: [{ type: String }],
-    children: [{ type: Schema.Types.ObjectId, ref: 'Comment' }],
+    // children: [{ type: Schema.Types.ObjectId, ref: 'Comment' }],
 
     childrenCount: { type: Number, default: 0, min: 0 },
     upvotesCount: { type: Number, default: 0, min: 0 },

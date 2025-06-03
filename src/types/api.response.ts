@@ -16,10 +16,11 @@ export interface IBaseApiResponse {
 }
 
 export interface IResponseExtra<T = any> {
-  data?: IResponseData<T>; // For specific use cases
   authenticated?: boolean;
   redirectUrl?: string;
   errorCode?: ErrorCodeType;
+
+  data?: IResponseData<T>; // For specific use cases
 
   // For exceptions, like createSendToken
   message?: IResponseMessage;
@@ -29,4 +30,16 @@ export interface IResponseData<T = any> {
   user?: IUser;
   email?: string;
   [key: string]: T | any;
+}
+
+export interface IResponseExtraCommentPagination extends IResponseExtra {
+  hasMore: boolean;
+  totalRootComments: number;
+  rootId: string;
+  depth: number;
+  limit: number;
+  page: number;
+  skip: number;
+  childLimit: number;
+  childSkip: number;
 }

@@ -27,7 +27,7 @@ router.post('/:postId', (req: AppRequestBody<ICommentBody, CommentParam>, res: A
  * UPDATE /comments/:commentId
  * Updates a comment.
  */
-router.put('/:commentId', (req: AppRequestBody<ICommentBody, CommentParam>, res: AppResponse, next: NextFunction) => {
+router.patch('/:commentId', (req: AppRequestBody<ICommentBody, CommentParam>, res: AppResponse, next: NextFunction) => {
   updateComment(req, res, next);
 });
 

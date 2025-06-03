@@ -4,7 +4,7 @@ import Comment from '#src/models/postComment.model.js';
 import { CommentVote } from '#src/models/postCommentVote.model.js';
 import CommunityCommentCountsServiceHandler from '#src/services/communityCommentCount.service.js';
 import { AppRequestBody, AppRequestParams, AppRequestQuery } from '#src/types/api.request.js';
-import { AppResponse } from '#src/types/api.response.js';
+import { AppResponse, IResponseExtraCommentPagination } from '#src/types/api.response.js';
 import { SortMethod, SortOrder, VoteEnum } from '#src/types/enum.js';
 import { IPostComment } from '#src/types/model.post.type.js';
 import { CommentParam } from '#src/types/param.comment.js';
@@ -83,7 +83,7 @@ export const createComment = catchAsync(
 
 /**
  * Controller for deleting a comment.
- * Route: DELETE /comments/:commentId
+ * Route: PATCH /comments/:commentId
  */
 export const updateComment = catchAsync(
   async (req: AppRequestBody<ICommentBody, CommentParam>, res: AppResponse, next: NextFunction) => {
@@ -148,19 +148,18 @@ export const getComments = catchAsync(
       children = '1', // Depth of children (1 = one level, 2 = two levels, etc.)
       childLimit = '5', // Limit for the child comments at each level
       childSkip = '0', // Skip for pagination of child comments
-      sortMethod = SortMethod.Date, // Sort method for top-level comments
+      sortMethod = SortMethod.Votes, // Sort method for top-level comments
       sortOrder = SortOrder.Descending, // Sort order for top-level comments
     } = req.query;
 
     const depth = Number(children);
     const parsedLimit = Number(limit);
-    // const parsedSkip = Number(skip);
     const parsedPage = Number(page ?? '1');
     const parsedSkip = skip ? Number(skip) : (parsedPage - 1) * parsedLimit;
     const parsedChildLimit = Number(childLimit);
     const parsedChildSkip = Number(childSkip);
 
-    if (!postId && !commentId) {
+    if (!(postId || commentId)) {
       return next(
         new ApiError(
           responseMessages.CLIENT.MISSING_ALL_NECESSARY_REQUEST_DATA,
@@ -189,7 +188,7 @@ export const getComments = catchAsync(
       sort.createdAt = order; // Default fallback to date sorting
     }
 
-    const aggregation: any[] = [
+    const commentAggregation: any[] = [
       {
         $match: matchStage,
       },
@@ -208,7 +207,7 @@ export const getComments = catchAsync(
         : []),
       {
         $graphLookup: {
-          from: 'comments',
+          from: 'postcomments',
           startWith: '$_id',
           connectFromField: '_id',
           connectToField: 'parentId',
@@ -228,8 +227,12 @@ export const getComments = catchAsync(
                 $mergeObjects: [
                   '$$child',
                   {
-                    voteScore: {
-                      $subtract: ['$$child.upvotesCount', '$$child.downvotesCount'],
+                    content: {
+                      $cond: {
+                        if: '$$child.isDeleted',
+                        then: null,
+                        else: '$$child.content',
+                      },
                     },
                   },
                 ],
@@ -238,10 +241,32 @@ export const getComments = catchAsync(
           },
         },
       },
+      {
+        $addFields: {
+          content: {
+            $cond: {
+              if: { $eq: ['$isDeleted', true] },
+              then: null,
+              else: '$content',
+            },
+          },
+        },
+      },
     ];
 
-    // Execute aggregation
-    const results = await Comment.aggregate(aggregation);
+    console.log('commentAggregation: ', JSON.stringify(commentAggregation, null, 2));
+
+    // Execute commentAggregation
+    const fetchedComments = await Comment.aggregate(commentAggregation);
+
+    // Fetch votes, Total root comments
+    const commentCountSearch = commentId ? { commentId } : { postId };
+    const commentIds = collectAllCommentIds(fetchedComments);
+    const [totalRootComments, voted] = await Promise.all([
+      Comment.countDocuments(commentCountSearch),
+      CommentVote.find({ userId: req.user._id, commentId: { $in: commentIds } }).lean(),
+    ]);
+    const voteMap = new Map(voted.map(vote => [vote.commentId.toString(), vote.voteType]));
 
     // Rebuild tree from flat structure and apply sorting and pagination per level
     const buildTree = (comment: IPostComment, childrenMap: Map<string, IPostComment[]>): IPostComment => {
@@ -262,11 +287,12 @@ export const getComments = catchAsync(
 
       return {
         ...comment,
+        voteType: voteMap.get(comment._id.toString()) ?? null,
         children: sortedChildren.map((child: IPostComment) => buildTree(child, childrenMap)),
       } as IPostComment;
     };
 
-    const structured = results.map(base => {
+    const structured = fetchedComments.map(base => {
       const all = [base, ...(base.children || [])];
       const byParent = new Map();
       for (const c of all) {
@@ -278,7 +304,25 @@ export const getComments = catchAsync(
       return buildTree(base, byParent);
     });
 
-    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, commentId ? structured[0] : structured);
+    const extra = {
+      hasMore: totalRootComments > parsedSkip + parsedLimit,
+      totalRootComments,
+      rootId: commentId ?? postId,
+      depth,
+      limit: parsedLimit,
+      page: parsedPage,
+      skip: parsedSkip,
+      childLimit: parsedChildLimit,
+      childSkip: parsedChildSkip,
+    };
+
+    return ApiResponse<IPostComment[], IResponseExtraCommentPagination>(
+      res,
+      200,
+      responseMessages.GENERAL.SUCCESS,
+      commentId ? structured[0] : structured,
+      extra
+    );
   }
 );
 
@@ -355,3 +399,19 @@ export const voteComment = catchAsync(
     );
   }
 );
+
+function collectAllCommentIds(comments: IPostComment[]): string[] {
+  const ids: string[] = [];
+
+  function recurse(commentList: IPostComment[]) {
+    for (const comment of commentList) {
+      ids.push(String(comment._id));
+      if (comment.children && comment.children.length > 0) {
+        recurse(comment.children);
+      }
+    }
+  }
+
+  recurse(comments);
+  return ids;
+}

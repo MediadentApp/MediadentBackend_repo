@@ -436,8 +436,6 @@ export const getAllCommunitypost = catchAsync(
       communityId: new mongoose.Types.ObjectId(communityId),
     };
 
-    console.log('sort', sort, 'range', range);
-
     // Custom sort logic
     const sortStage = (() => {
       switch (sort) {
@@ -494,8 +492,6 @@ export const getAllCommunitypost = catchAsync(
           break;
       }
     }
-
-    console.log('matchstage', matchStage);
 
     const fetchedData = await FetchPaginatedDataWithAggregation<IPost>(
       Post,

@@ -64,9 +64,10 @@ export interface IPostComment extends Document<ObjectId> {
   commentsCount: number;
   upvotesCount: number;
   downvotesCount: number;
-  children: IPostComment[];
+  children?: IPostComment[];
   childrenCount: number;
   isDeleted: boolean;
+  voteType: VoteEnum | null;
 
   createdAt: Date;
   updatedAt: Date;

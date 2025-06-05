@@ -6,9 +6,10 @@ import { Chat, GroupChat, Message, WebPushSubscription } from '#src/models/userM
 import User from '#src/models/userModel.js';
 import Notification from '#src/models/userNotificationModel.js';
 import NotificationService from '#src/services/notifications.service.js';
-import { AppRequestBody } from '#src/types/api.request.js';
+import { AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { MessageStatus } from '#src/types/enum.js';
+import { IdParam } from '#src/types/param.js';
 import {
   IAuthenticatedSocket,
   IChatRequestBody,
@@ -17,9 +18,7 @@ import {
   ILeaveGroupChatRequestBody,
   IMessageData,
   INotificationPayload,
-  IReadNotification,
   ISecondParticipantResponse,
-  IUserB,
 } from '#src/types/request.socket.js';
 import ApiError from '#src/utils/ApiError.js';
 import ApiResponse from '#src/utils/ApiResponse.js';
@@ -162,6 +161,30 @@ export const getChatID = catchAsync(
     });
   }
 );
+
+/**
+ * Deletes a chat by chat ID.
+ *
+ * @param chatId - The ID of the chat to delete.
+ */
+export const deleteChatId = catchAsync(async (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) => {
+  const { _id: userId } = req.user;
+  const { id } = req.params;
+
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ApiError(responseMessages.SOCKET.CHAT_ID_INVALID, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
+  }
+
+  const user = await User.findByIdAndUpdate(userId, { $pull: { 'chats.chatIds': id } }, { new: true })
+    .select('+chats.chatIds +chats.groupChatIds')
+    .lean();
+
+  const data = {
+    user: user!,
+  };
+
+  ApiResponse(res, 201, responseMessages.GENERAL.SUCCESS, data);
+});
 
 export const chats = catchAsync(async (req: Request, res: AppResponse, next: NextFunction) => {
   const { chatsIdArr } = req.body;
@@ -372,7 +395,7 @@ export const getMessagesByChatId = catchAsync(
     const limit = appConfig.chat.DEFAULT_MESSAGES_PER_PAGE || 20;
 
     // Validate chatId
-    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+    if (!chatId || !mongoose.Types.ObjectId.isValid(chatId)) {
       return next(new ApiError(responseMessages.SOCKET.CHAT_ID_INVALID, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
     }
 

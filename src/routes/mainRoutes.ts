@@ -1,5 +1,6 @@
 import {
   chats,
+  deleteChatId,
   getChatID,
   getMessagesByChatId,
   getSecondParticipants,
@@ -70,6 +71,7 @@ router.patch('/:id/follow/toggle', (req: AppRequestParams<IdParam>, res: AppResp
 router.post('/getSecondParticipants', getSecondParticipants);
 router.post('/chats', chats);
 router.post('/chatid', getChatID);
+router.delete('/chatid/:id', deleteChatId);
 router.post('/messages', getMessagesByChatId);
 
 // Placeholder route (Missing controller logic)

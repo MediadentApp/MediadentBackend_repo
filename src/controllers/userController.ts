@@ -20,12 +20,14 @@ import { computeHomeFeed } from '#src/recommendations/strategies/home.strategy.j
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { CommunityPostParam } from '#src/types/param.communityPost.js';
-import { FetchPaginatedData } from '#src/utils/ApiPaginatedResponse.js';
+import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
 import userServiceHandler from '#src/services/user.service.js';
-import { IUser, UpdateUserDTO } from '#src/types/model.js';
+import { UpdateUserDTO } from '#src/types/model.js';
 import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
 import { deleteImagesFromS3 } from '#src/libs/s3.js';
 import { flattenObj } from '#src/utils/dataManipulation.js';
+import { IPost } from '#src/types/model.post.type.js';
+import { fetchPostPipelineStage } from '#src/helper/fetchPostAggregationPipeline.js';
 
 /**
  * Get the user's profile
@@ -290,33 +292,75 @@ export const followUserToggle = catchAsync(
  * Route: GET /user/home/feed
  */
 export const getHomeFeed = catchAsync(
-  async (req: AppPaginatedRequest<CommunityPostParam>, res: AppPaginatedResponse, next: NextFunction) => {
-    const userId = (req.user._id as mongoose.Types.ObjectId).toString();
+  async (
+    req: AppPaginatedRequest<CommunityPostParam, { fresh?: string }>,
+    res: AppPaginatedResponse,
+    next: NextFunction
+  ) => {
+    const userId = req.user._id;
     const redisKey = `home:feed:${userId}`;
 
+    const fresh = !!req.query.fresh;
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = parseInt(req.query.pageSize as string) || 10;
     const start = (page - 1) * limit;
     const end = start + limit - 1;
 
     let postIds = await redisConnection.lrange(redisKey, start, end);
 
     // If Redis is empty, compute it once
-    if (postIds.length === 0 && page === 1) {
-      await computeHomeFeed(userId);
+    if (fresh || (postIds.length === 0 && page === 1)) {
+      await computeHomeFeed(String(userId));
       postIds = await redisConnection.lrange(redisKey, start, end);
     }
 
-    // If still empty after computation, return empty with message
-    // if (postIds.length === 0) {
-    //   return next(ApiResponse(res, 200, responseMessages.APP.POST.NO_MORE_POSTS, []));
-    // }
+    // const posts = await FetchPaginatedData<IPost>(Post, {
+    //   ids: postIds,
+    //   page: page.toString(),
+    //   sortField: req.query?.sortField ?? 'popularity',
+    //   sortOrder: req.query?.sortOrder ?? 'asc',
+    //   populateFields: [
+    //     { path: 'communityId', select: '_id slug title avatarUrl' },
+    //     { path: 'authorId', select: '_id username profilePicture fullName' },
+    //   ],
+    // });
 
-    const posts = await FetchPaginatedData(Post, {
-      ids: postIds,
-      page: page.toString(),
-      sortField: req.query?.sortField ?? 'popularity',
-      sortOrder: req.query?.sortOrder ?? 'asc',
+    const posts = await FetchPaginatedDataWithAggregation<IPost>(
+      Post,
+      [{ $match: { _id: { $in: postIds.map(id => new mongoose.Types.ObjectId(id)) } } }],
+      {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+        searchValue: req.query.searchValue ?? '',
+        searchFields: req.query.searchFields ?? ['title', 'content'],
+        populateFields: [
+          { path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' },
+          // { path: 'authorId', select: '_id username profilePicture fullName', from: 'users' },
+        ],
+      },
+      [...fetchPostPipelineStage(String(userId))]
+    );
+
+    return ApiPaginatedResponse(res, posts);
+  }
+);
+
+/**
+ * Controller to get popular feed
+ *
+ * Route: GET /user/popular/feed
+ */
+export const getPopularFeed = catchAsync(
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+    const posts = await FetchPaginatedData<IPost>(Post, {
+      page: req.query.page,
+      pageSize: '30',
+      sortField: 'popularity',
+      sortOrder: 'desc',
+      populateFields: [
+        { path: 'communityId', select: '_id slug title avatarUrl' },
+        { path: 'authorId', select: '_id username profilePicture fullName' },
+      ],
     });
 
     return ApiPaginatedResponse(res, posts);

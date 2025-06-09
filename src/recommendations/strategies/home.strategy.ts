@@ -1,4 +1,5 @@
 import appConfig from '#src/config/appConfig.js';
+import { fetchPostPipelineStage } from '#src/helper/fetchPostAggregationPipeline.js';
 import { CommunityFollowedBy } from '#src/models/communityFollowedBy.model.js';
 import Post from '#src/models/post.model.js';
 import { PostView } from '#src/models/postView.model.js';
@@ -69,7 +70,7 @@ export const computeHomeFeed = async (userId: string) => {
     await redisConnection.lpush(redisKey, ...postIds);
     await redisConnection.expire(redisKey, 86400); // 1 day
   } else {
-    // optionally clear old feed to prevent stale content
+    // clear old feed to prevent stale content
     await redisConnection.del(redisKey);
   }
 };

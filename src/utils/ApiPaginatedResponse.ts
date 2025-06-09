@@ -3,6 +3,7 @@ import responseMessages from '#src/config/constants/responseMessages.js';
 import { IPaginatedResponse, IPaginationOptions } from '#src/types/api.response.paginated.js';
 import ApiError from '#src/utils/ApiError.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import Post from '#src/models/post.model.js';
 
 // !!! TODO: Move rawFilter to its own field
 
@@ -160,14 +161,9 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
 
   // Apply population
   if (populateFields) {
-    const fieldsToPopulate = Array.isArray(populateFields)
-      ? populateFields
-      : typeof populateFields === 'string'
-        ? populateFields.split(',').map(field => field.trim())
-        : [];
+    const populateArray = Array.isArray(populateFields) ? populateFields : [populateFields];
 
-    const nestedPopulate = buildNestedPopulate(fieldsToPopulate);
-    nestedPopulate.forEach(populateObj => {
+    populateArray.forEach((populateObj: any) => {
       query.populate(populateObj);
     });
   }
@@ -191,7 +187,8 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
 export async function FetchPaginatedDataWithAggregation<T = any>(
   model: Model<any>,
   basePipeline: PipelineStage[] = [],
-  rawOptions: IPaginationOptions & Record<string, any>
+  rawOptions: IPaginationOptions & Record<string, any>,
+  endPipeline: PipelineStage[] = []
 ): Promise<IPaginatedResponse<T>> {
   const {
     page: rawPage = '1',
@@ -204,6 +201,7 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
     excludeIds,
     selectFields,
     ids,
+    populateFields,
     ...rawFilter
   } = rawOptions;
 
@@ -280,18 +278,78 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
     pipeline.push({ $sort: sort });
   }
 
-  console.log('pipeline', JSON.stringify(pipeline, null, 2));
+  const dataPipeline: PipelineStage[] = [{ $skip: skip }, { $limit: pageSize }, ...endPipeline];
 
-  // Count pipeline
-  const countPipeline = [...pipeline, { $count: 'totalItems' }];
+  // Apply populateFields inside `dataPipeline` before putting it into $facet
+  if (populateFields && Array.isArray(populateFields)) {
+    for (const { path, select, from: collectionName } of populateFields) {
+      const localField = path;
+      const foreignField = '_id';
 
-  // Paginate pipeline
-  const paginatedPipeline = [...pipeline, { $skip: skip }, { $limit: Number(pageSize) }];
+      const from = collectionName ?? path.replace(/Id$/, 's');
 
-  const [data, countResult] = await Promise.all([model.aggregate(paginatedPipeline), model.aggregate(countPipeline)]);
+      const selectedFields = select
+        ? select.split(' ').reduce(
+            (acc, field) => {
+              acc[field] = 1;
+              return acc;
+            },
+            { _id: 1 } as Record<string, number>
+          )
+        : { _id: 1 };
 
-  const totalItems = countResult[0]?.totalItems || 0;
-  const totalPages = Math.ceil(totalItems / Number(pageSize));
+      dataPipeline.push(
+        {
+          $lookup: {
+            from,
+            localField,
+            foreignField,
+            as: path,
+          },
+        },
+        {
+          $unwind: {
+            path: `$${path}`,
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            [path]: {
+              $cond: [
+                { $ifNull: [`$${path}`, false] },
+                Object.fromEntries(Object.entries(selectedFields).map(([key]) => [key, `$${path}.${key}`])),
+                null,
+              ],
+            },
+          },
+        }
+      );
+    }
+  }
+
+  // Add $facet to the pipeline, to count the total number of items & apply pagination
+  const paginatedPipeline: PipelineStage[] = [
+    ...pipeline,
+    {
+      $facet: {
+        data: [{ $skip: skip }, { $limit: pageSize }, ...dataPipeline] as PipelineStage.FacetPipelineStage[],
+        totalCount: [{ $count: 'totalItems' }] as PipelineStage.FacetPipelineStage[],
+      },
+    } as PipelineStage.Facet,
+    {
+      $addFields: {
+        totalItems: { $ifNull: [{ $arrayElemAt: ['$totalCount.totalItems', 0] }, 0] },
+      },
+    },
+  ];
+
+  console.log('pipeline', JSON.stringify(paginatedPipeline, null, 2));
+
+  const result = await model.aggregate(paginatedPipeline);
+
+  const { data, totalItems } = result[0] || { data: [], totalItems: 0 };
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   return {
     status: 'success',

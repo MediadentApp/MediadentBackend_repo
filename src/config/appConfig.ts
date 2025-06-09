@@ -25,7 +25,8 @@ const appConfig = {
     },
     algoRecommendation: {
       postPopularity: {
-        dailyCalcTimePattern: '0 0 13 * * *', // At second 0, minute 0, hour 13 (1 PM), every day, every month, every day of the week
+        // dailyCalcTimePattern: '0 0 13 * * *', // At second 0, minute 0, hour 13 (1 PM), every day, every month, every day of the week
+        dailyCalcTimePattern: '0 0 */1 * * *', // At second 0, minute 0, every hour, every day, every month, every day of the week
         thresholdDate: 30 * 24 * 60 * 60 * 1000, // 30 days
       },
       postViewCleanup: {
@@ -33,7 +34,7 @@ const appConfig = {
       },
     },
     post: {
-      allowedPostsPerUser: 5,
+      allowedPostsPerUser: 30,
       allowedPostImagesPerPost: 5,
       allowedPostsImageType: /jpeg|jpg|png/,
       allowedMimeTypes: ['image/jpeg', 'image/png'],

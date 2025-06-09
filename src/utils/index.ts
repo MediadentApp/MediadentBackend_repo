@@ -114,3 +114,19 @@ export function getS3KeyFromUrl(urlOrUrls: string | string[]): string | string[]
   const parts = urlOrUrls.split('.amazonaws.com/');
   return parts.length > 1 ? decodeURIComponent(parts[1]) : '';
 }
+
+/**
+ * Formats a file size in bytes as a human-readable string.
+ *
+ * @param size - The file size in bytes.
+ * @returns A string in the format '<size> bytes', '<size> KB', or '<size> MB'.
+ */
+export function formatFileSize(size: number): string {
+  if (size < 1024) {
+    return `${size} bytes`;
+  } else if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(2)} KB`;
+  } else {
+    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+  }
+}

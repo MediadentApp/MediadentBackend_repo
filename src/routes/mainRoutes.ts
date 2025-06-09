@@ -11,6 +11,7 @@ import {
   fetchUser,
   followUserToggle,
   getHomeFeed,
+  getPopularFeed,
   updateUser,
   updateUserPicture,
   userById,
@@ -51,10 +52,16 @@ router.patch(
 );
 
 /**
- * GET /feed
+ * GET home/feed
  * Returns the user's home feed.
  */
-router.get('/feed', getHomeFeed);
+router.get('/home/feed', getHomeFeed);
+
+/**
+ * GET /popular/feed
+ * Returns the user's popular feed.
+ */
+router.get('/popular/feed', getPopularFeed);
 
 /**
  * GET /notifications

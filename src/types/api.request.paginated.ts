@@ -13,6 +13,6 @@ import { SlugParam } from '#src/types/param.js';
  */
 export type AppPaginatedRequest<
   Params extends SlugParam | ParamsDictionary = SlugParam,
-  ReqQuery extends IPaginationOptions = IPaginationOptions,
+  ReqQuery extends ParsedQs = {},
   ReqBody = any,
-> = Request<Params, IPaginatedResponse, ReqBody, ReqQuery>;
+> = Request<Params, IPaginatedResponse, ReqBody, IPaginationOptions & ReqQuery & ParsedQs>;

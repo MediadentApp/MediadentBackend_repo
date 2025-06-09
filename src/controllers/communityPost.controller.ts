@@ -1,6 +1,7 @@
 import appConfig from '#src/config/appConfig.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
+import { fetchPostPipelineStage } from '#src/helper/fetchPostAggregationPipeline.js';
 import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
 import { deleteImagesFromS3 } from '#src/libs/s3.js';
 import Community, { CommunityInvite } from '#src/models/community.model.js';
@@ -379,14 +380,23 @@ export const toggleFollowCommunity = catchAsync(
  * Route: GET /community/follows
  */
 export const followsCommunity = catchAsync(
-  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest<IdParam>, res: AppPaginatedResponse, next: NextFunction) => {
     const userId = req.user._id;
+    const communityId = req.params;
+
+    const searchCriteria: any = {
+      userId,
+    };
+
+    if (communityId) {
+      searchCriteria.communityId = communityId;
+    }
 
     const fetchedData = await FetchPaginatedDataWithAggregation<ICommunity>(
       CommunityFollowedBy,
       [
         {
-          $match: { userId },
+          $match: searchCriteria,
         },
         { $sort: { createdAt: -1 } },
         {
@@ -395,6 +405,18 @@ export const followsCommunity = catchAsync(
             localField: 'communityId',
             foreignField: '_id',
             as: 'community',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  slug: 1,
+                  description: 1,
+                  avatarUrl: 1,
+                  followersCount: 1,
+                },
+              },
+            ],
           },
         },
         {
@@ -497,83 +519,7 @@ export const getAllCommunitypost = catchAsync(
       Post,
       [
         { $match: matchStage },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'authorId',
-            foreignField: '_id',
-            as: 'author',
-          },
-        },
-        { $unwind: '$author' },
-        {
-          $lookup: {
-            from: 'postsaves',
-            let: { postId: '$_id' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
-                  },
-                },
-              },
-              { $limit: 1 },
-            ],
-            as: 'savedByUser',
-          },
-        },
-        {
-          $lookup: {
-            from: 'postviews',
-            let: { postId: '$_id' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
-                  },
-                },
-              },
-              { $limit: 1 },
-            ],
-            as: 'viewedByUser',
-          },
-        },
-        {
-          $lookup: {
-            from: 'postvotes',
-            let: { postId: '$_id' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
-                  },
-                },
-              },
-              { $limit: 1 },
-            ],
-            as: 'votedByUser',
-          },
-        },
-        {
-          $addFields: {
-            isSaved: { $gt: [{ $size: '$savedByUser' }, 0] },
-            isViewed: { $gt: [{ $size: '$viewedByUser' }, 0] },
-            voteType: {
-              $cond: [{ $gt: [{ $size: '$votedByUser' }, 0] }, { $arrayElemAt: ['$votedByUser.voteType', 0] }, null],
-            },
-            netVotes: { $subtract: ['$upvotesCount', '$downvotesCount'] },
-          },
-        },
-        {
-          $project: {
-            savedByUser: 0,
-            viewedByUser: 0,
-            votedByUser: 0,
-          },
-        },
+        ...fetchPostPipelineStage(String(userId)),
         { $sort: sortStage as unknown as Record<string, 1 | -1> },
       ],
       {
@@ -624,7 +570,7 @@ export const getCommunityPostByIdentifier = catchAsync(
           from: 'communities',
           localField: 'communityId',
           foreignField: '_id',
-          as: 'community',
+          as: 'communityId',
           pipeline: [
             {
               $lookup: {
@@ -662,84 +608,8 @@ export const getCommunityPostByIdentifier = catchAsync(
           ],
         },
       },
-      { $unwind: '$community' },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'authorId',
-          foreignField: '_id',
-          as: 'author',
-        },
-      },
-      { $unwind: '$author' },
-      {
-        $lookup: {
-          from: 'postsaves',
-          let: { postId: '$_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
-                },
-              },
-            },
-            { $limit: 1 },
-          ],
-          as: 'savedByUser',
-        },
-      },
-      {
-        $lookup: {
-          from: 'postviews',
-          let: { postId: '$_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
-                },
-              },
-            },
-            { $limit: 1 },
-          ],
-          as: 'viewedByUser',
-        },
-      },
-      {
-        $lookup: {
-          from: 'postvotes',
-          let: { postId: '$_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
-                },
-              },
-            },
-            { $limit: 1 },
-          ],
-          as: 'votedByUser',
-        },
-      },
-      {
-        $addFields: {
-          isSaved: { $gt: [{ $size: '$savedByUser' }, 0] },
-          isViewed: { $gt: [{ $size: '$viewedByUser' }, 0] },
-          voteType: {
-            $cond: [{ $gt: [{ $size: '$votedByUser' }, 0] }, { $arrayElemAt: ['$votedByUser.voteType', 0] }, null],
-          },
-          netVotes: { $subtract: ['$upvotesCount', '$downvotesCount'] },
-        },
-      },
-      {
-        $project: {
-          savedByUser: 0,
-          viewedByUser: 0,
-          votedByUser: 0,
-        },
-      },
+      { $unwind: '$communityId' },
+      ...fetchPostPipelineStage(String(userId)),
     ]);
 
     if (!post) {
@@ -798,7 +668,7 @@ export const communityPost = catchAsync(
     }
 
     // 5. Construct post data
-    const allTags = Array.from(new Set([...JSON.parse(tags), `${user.fullName}`]));
+    const allTags = tags ? Array.from(new Set([...JSON.parse(tags), `${user.fullName}`])) : [`${user.fullName}`];
     const slug = `${title.trim().replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
 
     const postData = {
@@ -829,7 +699,7 @@ export const deleteCommunityPost = catchAsync(
     const { communityId, postId } = req.params;
 
     // const post = await Community.findByIdAndUpdate({ communityId, _id: postId }, { isDeleted: true }, { new: true });
-    const post = await Post.findByIdAndDelete({ communityId, _id: postId });
+    const post = await Post.findByIdAndDelete({ _id: postId });
 
     if (!post) {
       return next(new ApiError(responseMessages.APP.POST.POST_NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));

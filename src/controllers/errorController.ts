@@ -6,6 +6,8 @@ import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { AxiosError } from 'axios';
+import appConfig from '#src/config/appConfig.js';
+import { formatFileSize } from '#src/utils/index.js';
 
 const handleCastErrorDB = (err: CastError): ApiError => {
   const message = `Invalid ${err.path}: ${err.value}.` as IResponseMessage;
@@ -34,6 +36,12 @@ export const handleMongoServerError = (
 const handleMulterError = (err: any): ApiError => {
   if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return new ApiError(responseMessages.CLIENT.INVALID_IMAGE_FORMAT_OR_SIZE, 400, ErrorCodes.CLIENT.IMAGE_TOO_LARGE);
+  } else if (err.code === 'LIMIT_FILE_SIZE') {
+    return new ApiError(
+      `Image too large, max size: ${formatFileSize(appConfig.app.post.postsMaxImageSize)}` as IResponseMessage,
+      400,
+      ErrorCodes.CLIENT.IMAGE_TOO_LARGE
+    );
   }
   return new ApiError(err.message, 400, ErrorCodes.SERVER.UNKNOWN_ERROR);
 };
@@ -96,8 +104,8 @@ const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFun
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'Internal Server Error';
 
-  // console.log(`\x1b[33m${err.stack.replace(/\n/g, '\n  ')}\x1b[0m`);
-  // console.log('error', err);
+  console.log(`\x1b[33m${err.stack.replace(/\n/g, '\n  ')}\x1b[0m`);
+  console.log('error', err);
   // console.log('errorName', err.name);
 
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') {

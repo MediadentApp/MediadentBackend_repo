@@ -79,8 +79,17 @@ router.delete('/community/:id', (req: AppRequestParams<IdParam>, res: AppRespons
  * GET /community/follows
  * Retrieves a list of communities that the user is following.
  */
-router.get('/community/follows', (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) =>
+router.get('/community/follows', (req: AppPaginatedRequest<IdParam>, res: AppPaginatedResponse, next: NextFunction) =>
   followsCommunity(req, res, next)
+);
+
+/**
+ * GET /community/follows/:id
+ * Retrieves a single community that the user is following.
+ */
+router.get(
+  '/community/follows:id',
+  (req: AppPaginatedRequest<IdParam>, res: AppPaginatedResponse, next: NextFunction) => followsCommunity(req, res, next)
 );
 
 /**

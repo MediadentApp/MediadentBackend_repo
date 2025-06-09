@@ -80,7 +80,7 @@ export class DebouncedExecutor implements IDebouncedExecutor {
 
   /**
    * Immediately flushes all buffered operations.
-   * Executes them concurrently and logs any errors encountered.
+   * Executes them concurrently. Throws if any operation fails.
    */
   async flush() {
     const ops = Array.from(this.buffer.values());
@@ -91,12 +91,18 @@ export class DebouncedExecutor implements IDebouncedExecutor {
 
     console.log(`Flushing ${ops.length} operations...`);
 
-    await Promise.allSettled(ops.map(op => op.query())).then(results => {
-      results.forEach((result, idx) => {
-        if (result.status === 'rejected') {
-          console.error(`Mongo op failed:`, result.reason);
-        }
-      });
+    const results = await Promise.allSettled(ops.map(op => op.query()));
+    const errors: Error[] = [];
+
+    results.forEach((result, idx) => {
+      if (result.status === 'rejected') {
+        console.error(`Mongo op failed:`, result.reason);
+        errors.push(result.reason instanceof Error ? result.reason : new Error(String(result.reason)));
+      }
     });
+
+    if (errors.length > 0) {
+      throw new AggregateError(errors, `One or more debounced MongoDB operations failed`);
+    }
   }
 }

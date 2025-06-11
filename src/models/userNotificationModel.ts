@@ -22,14 +22,7 @@ const notificationSchema = new Schema<INotification>(
     type: {
       type: String,
       required: true,
-      enum: [
-        'newMessage',
-        'newChat',
-        'group_invite',
-        'group_message',
-        'mention',
-        'other',
-      ],
+      enum: ['newMessage', 'newChat', 'follow', 'group_invite', 'group_message', 'mention', 'other'],
     },
     relatedChatId: {
       type: Schema.Types.ObjectId,
@@ -62,9 +55,6 @@ const notificationSchema = new Schema<INotification>(
   }
 );
 
-const Notification = mongoose.model<INotification>(
-  'Notification',
-  notificationSchema
-);
+const Notification = mongoose.model<INotification>('Notification', notificationSchema);
 
 export default Notification;

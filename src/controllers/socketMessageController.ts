@@ -1,7 +1,7 @@
 import appConfig from '#src/config/appConfig.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
-import userSockets from '#src/helper/socketMap.js';
+import userSockets, { findSocketByUserId } from '#src/helper/socketMap.js';
 import { Chat, GroupChat, Message, WebPushSubscription } from '#src/models/userMessages.js';
 import User from '#src/models/userModel.js';
 import Notification from '#src/models/userNotificationModel.js';
@@ -54,13 +54,6 @@ if (!VAPID_WEBPUSH_PUBLIC_KEY || !VAPID_WEBPUSH_PRIVATE_KEY || !VAPID_WEBPUSH_EM
 webPush.setVapidDetails(VAPID_WEBPUSH_EMAIL, VAPID_WEBPUSH_PUBLIC_KEY, VAPID_WEBPUSH_PRIVATE_KEY);
 
 /**
- * Finds a socket connection by user ID.
- * @param userId - The user ID.
- * @returns The socket instance or undefined.
- */
-const findSocketByUserId = (userId: string): any => userSockets.get(userId);
-
-/**
  * Gets or creates a chat ID between two users.
  */
 export const getChatID = catchAsync(
@@ -69,11 +62,12 @@ export const getChatID = catchAsync(
     const { userBId, chatId = null } = req.body;
     const io = req.app.get('io');
 
-    if (!userBId) {
+    // Early return for invalid userBId or self-chat
+    if (!userBId || userAId === userBId) {
       return next(new ApiError(responseMessages.SOCKET.USER_ID_INVALID, 400, ErrorCodes.SOCKET.USER_NOT_FOUND));
     }
 
-    // Find chat either by `chatId` or by `participants`
+    // Attempt to find an existing one-on-one chat
     const chat = chatId
       ? await Chat.findOne({
           _id: chatId,
@@ -82,30 +76,31 @@ export const getChatID = catchAsync(
         }).lean()
       : await Chat.findOne({
           participants: { $all: [userAId, userBId] },
-          'participants.2': { $exists: false }, // Ensure it's a two-participant chat
+          'participants.2': { $exists: false },
           active: true,
         }).lean();
 
     if (chat) {
+      await User.updateMany({ _id: { $in: [userAId, userBId] } }, { $addToSet: { 'chats.chatIds': chat._id } });
       return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, { chatId: chat._id, userBId });
     }
 
-    // Ensure userB exists before creating a new chat
+    // Fetch userB to ensure it exists
     const userB = await User.findById(userBId).select('_id firstName').lean();
     if (!userB) {
       return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
     }
 
-    let newChatId: ObjectId;
-    const session: ClientSession = await mongoose.startSession();
+    // Start a transaction to create the new chat and update both users
+    const session = await mongoose.startSession();
     session.startTransaction();
 
-    try {
-      // Create a new chat with participants
-      const newChat = await Chat.create([{ participants: [userAId, userB._id], active: true }], { session });
-      newChatId = newChat[0]._id as ObjectId;
+    let newChatId: mongoose.Types.ObjectId;
 
-      // Update chat lists for both users
+    try {
+      const newChat = await Chat.create([{ participants: [userAId, userB._id], active: true }], { session });
+      newChatId = newChat[0]._id;
+
       await User.updateMany(
         { _id: { $in: [userAId, userB._id] } },
         { $addToSet: { 'chats.chatIds': newChatId } },
@@ -113,17 +108,15 @@ export const getChatID = catchAsync(
       );
 
       await session.commitTransaction();
-      session.endSession();
-
-      console.log('New chat created:', newChatId);
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
       return next(new ApiError(responseMessages.SOCKET.COULD_NOT_CREATE_CHAT, 500));
+    } finally {
+      session.endSession();
     }
 
-    // Send notification to Recipient of new Chat
-    const notificationData: INotificationPayload = {
+    // Create and emit notification
+    const notification: INotificationPayload = {
       userId: userB._id.toString(),
       senderId: userAId,
       senderName: userAFullName,
@@ -134,22 +127,20 @@ export const getChatID = catchAsync(
       isRead: false,
     };
 
-    const notification = await Notification.create(notificationData);
-    console.log('Notification created:', notification._id);
+    const savedNotification = await Notification.create(notification);
 
-    const userBSocket = findSocketByUserId(userB._id.toString());
-    const userASocket = findSocketByUserId(userAId);
+    const [userBSocket, userASocket] = [findSocketByUserId(userB._id.toString()), findSocketByUserId(userAId)];
 
     if (userBSocket) {
-      io.to(userBSocket.socketId).emit('newNotification', notification);
+      io.to(userBSocket.socketId).emit('newNotification', savedNotification);
     } else {
-      sendPushNotification(String(userB._id), notification);
+      sendPushNotification(String(userB._id), savedNotification);
     }
 
     if (userASocket) {
-      io.to(userASocket.socketId).emit('newNotification', notification);
+      io.to(userASocket.socketId).emit('newNotification', savedNotification);
     } else {
-      sendPushNotification(userAId, notification);
+      sendPushNotification(userAId, savedNotification);
     }
 
     const updatedUserA = await User.findFullUser({ _id: userAId });
@@ -157,7 +148,7 @@ export const getChatID = catchAsync(
     return ApiResponse(res, 201, responseMessages.GENERAL.SUCCESS, {
       chatId: newChatId,
       userBId,
-      updatedUser: updatedUserA,
+      user: updatedUserA!,
     });
   }
 );
@@ -175,9 +166,12 @@ export const deleteChatId = catchAsync(async (req: AppRequestParams<IdParam>, re
     return next(new ApiError(responseMessages.SOCKET.CHAT_ID_INVALID, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
   }
 
-  const user = await User.findByIdAndUpdate(userId, { $pull: { 'chats.chatIds': id } }, { new: true })
-    .select('+chats.chatIds +chats.groupChatIds')
-    .lean();
+  const [deleteChat, user] = await Promise.all([
+    Chat.findByIdAndDelete(id),
+    User.findByIdAndUpdate(userId, { $pull: { 'chats.chatIds': id } }, { new: true })
+      .select('+chats.chatIds +chats.groupChatIds')
+      .lean(),
+  ]);
 
   const data = {
     user: user!,
@@ -559,6 +553,11 @@ export const handleDisconnect = catchSocket(async (io: Server, socket: IAuthenti
   console.log(`User ${socket.user.username} (${socket.id}) disconnected`);
 });
 
+interface Notification {
+  content: string;
+  [key: string]: string | boolean;
+}
+// can be debounced
 export const sendPushNotification = async (userId: string, notificationData: object) => {
   try {
     const subscriptions = await WebPushSubscription.find({ userId }).lean();

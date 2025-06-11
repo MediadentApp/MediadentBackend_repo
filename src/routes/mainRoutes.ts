@@ -14,7 +14,7 @@ import {
   getPopularFeed,
   updateUser,
   updateUserPicture,
-  userById,
+  getUserByIdentifier,
   userNotifications,
 } from '#src/controllers/userController.js';
 import { profileImageUpload } from '#src/middlewares/multerPosts.js';
@@ -52,6 +52,12 @@ router.patch(
 );
 
 /**
+ * GET /user/:identifier
+ * Returns a user by their identifier(id/username).
+ */
+router.get('/details/:identifier', getUserByIdentifier);
+
+/**
  * GET home/feed
  * Returns the user's home feed.
  */
@@ -69,7 +75,10 @@ router.get('/popular/feed', getPopularFeed);
  */
 router.get('/notifications', userNotifications);
 
-router.post('/usersbyid', userById);
+/**
+ * PATCH /:id/follow/toggle
+ * Toggles following a user.
+ */
 router.patch('/:id/follow/toggle', (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) =>
   followUserToggle(req, res, next)
 );
@@ -77,7 +86,12 @@ router.patch('/:id/follow/toggle', (req: AppRequestParams<IdParam>, res: AppResp
 // Communication System APIs
 router.post('/getSecondParticipants', getSecondParticipants);
 router.post('/chats', chats);
-router.post('/chatid', getChatID);
+
+/**
+ * GET /chat
+ * Creates a new chat by userBId in body, or finds an existing chat by chatId
+ */
+router.post('/chat', getChatID);
 router.delete('/chatid/:id', deleteChatId);
 router.post('/messages', getMessagesByChatId);
 

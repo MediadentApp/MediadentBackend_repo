@@ -28,6 +28,7 @@ import { deleteImagesFromS3 } from '#src/libs/s3.js';
 import { flattenObj } from '#src/utils/dataManipulation.js';
 import { IPost } from '#src/types/model.post.type.js';
 import { fetchPostPipelineStage } from '#src/helper/fetchPostAggregationPipeline.js';
+import { sendUserNotification } from '#src/services/sendSocketMessageOrNotification.js';
 
 /**
  * Get the user's profile
@@ -143,8 +144,47 @@ export const updateUserPicture = catchAsync(
   }
 );
 
-// User by ID
-export const userById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Get user by identifier(username or id)
+ *
+ * Route: GET /user
+ */
+export const getUserByIdentifier = catchAsync(
+  async (req: AppRequestParams<{ identifier: string }>, res: Response, next: NextFunction) => {
+    const { identifier } = req.params;
+
+    const searchCriteria: any = {};
+
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
+      searchCriteria['_id'] = identifier;
+    } else {
+      searchCriteria['username'] = identifier;
+    }
+
+    const user = await User.findOne(searchCriteria).lean();
+    if (!user) {
+      return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.GENERAL.USER_NOT_FOUND));
+    }
+
+    if (!req.user._id.equals(user._id)) {
+      const clientFollowsUser = await UserFollows.exists({
+        userId: req.user._id,
+        followingUserId: user._id,
+      });
+      user['isFollowing'] = clientFollowsUser ? true : false;
+    }
+
+    const data = user;
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data);
+  }
+);
+
+/**
+ * Get users by ids
+ *
+ * Route: POST /users
+ */
+export const userByIds = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { idArr }: { idArr: string[] } = req.body;
   if (!idArr || idArr.length === 0)
     return next(
@@ -238,8 +278,9 @@ const followUserExecutor = new DebouncedExecutor();
  */
 export const followUserToggle = catchAsync(
   async (req: AppRequestParams<IdParam>, res: AppResponse, next: NextFunction) => {
-    const { id: followUserId } = req.params;
     const userId = req.user._id;
+    const io = req.app.get('io');
+    const { id: followUserId } = req.params;
 
     if (!followUserId || !mongoose.Types.ObjectId.isValid(followUserId) || userId.equals(followUserId)) {
       return next(
@@ -279,6 +320,16 @@ export const followUserToggle = catchAsync(
               userId,
             },
           });
+
+          const sender = req.user;
+          const content = `${sender.username} started following you`;
+          void sendUserNotification({
+            io,
+            recipientId: followUserId,
+            sender: sender,
+            type: 'follow',
+            content,
+          });
         }
       },
     });
@@ -314,17 +365,6 @@ export const getHomeFeed = catchAsync(
       postIds = await redisConnection.lrange(redisKey, start, end);
     }
 
-    // const posts = await FetchPaginatedData<IPost>(Post, {
-    //   ids: postIds,
-    //   page: page.toString(),
-    //   sortField: req.query?.sortField ?? 'popularity',
-    //   sortOrder: req.query?.sortOrder ?? 'asc',
-    //   populateFields: [
-    //     { path: 'communityId', select: '_id slug title avatarUrl' },
-    //     { path: 'authorId', select: '_id username profilePicture fullName' },
-    //   ],
-    // });
-
     const posts = await FetchPaginatedDataWithAggregation<IPost>(
       Post,
       [{ $match: { _id: { $in: postIds.map(id => new mongoose.Types.ObjectId(id)) } } }],
@@ -351,17 +391,24 @@ export const getHomeFeed = catchAsync(
  * Route: GET /user/popular/feed
  */
 export const getPopularFeed = catchAsync(
-  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
-    const posts = await FetchPaginatedData<IPost>(Post, {
-      page: req.query.page,
-      pageSize: '30',
-      sortField: 'popularity',
-      sortOrder: 'desc',
-      populateFields: [
-        { path: 'communityId', select: '_id slug title avatarUrl' },
-        { path: 'authorId', select: '_id username profilePicture fullName' },
-      ],
-    });
+  async (req: AppPaginatedRequest<{}, { fresh?: string }>, res: AppPaginatedResponse, next: NextFunction) => {
+    const { _id: userId } = req.user;
+
+    const posts = await FetchPaginatedDataWithAggregation<IPost>(
+      Post,
+      [],
+      {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '15',
+        sortField: 'popularityScore',
+        sortOrder: 'desc',
+        populateFields: [
+          { path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' },
+          // { path: 'authorId', select: '_id username profilePicture fullName', from: 'users' },
+        ],
+      },
+      [...fetchPostPipelineStage(String(userId))]
+    );
 
     return ApiPaginatedResponse(res, posts);
   }

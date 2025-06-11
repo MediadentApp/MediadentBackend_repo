@@ -52,6 +52,8 @@ export interface IUser extends Document<Types.ObjectId> {
   followersCount: number;
   savesCount: number;
 
+  isFollowing?: boolean;
+
   isAdditionalInfoFilled(): {
     message: IResponseMessage;
     redirectUrl: string;
@@ -208,7 +210,7 @@ export interface IMessage extends Document {
   updatedAt: Date;
 }
 
-export interface IChat extends Document {
+export interface IChat extends Document<Types.ObjectId> {
   participants: Types.ObjectId[];
   active: boolean;
   lastMessage: {

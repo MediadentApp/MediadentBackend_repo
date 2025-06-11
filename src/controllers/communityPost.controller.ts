@@ -382,7 +382,7 @@ export const toggleFollowCommunity = catchAsync(
 export const followsCommunity = catchAsync(
   async (req: AppPaginatedRequest<IdParam>, res: AppPaginatedResponse, next: NextFunction) => {
     const userId = req.user._id;
-    const communityId = req.params;
+    const communityId = req.params.id;
 
     const searchCriteria: any = {
       userId,
@@ -536,7 +536,7 @@ export const getAllCommunitypost = catchAsync(
 );
 
 /**
- * Controller to retrieve a single community post by ID.
+ * Controller to retrieve a single community post by ID or slug.
  *
  * Route: GET /communitypost/:communityId/:postId
  */
@@ -550,9 +550,7 @@ export const getCommunityPostByIdentifier = catchAsync(
     //   return next(new ApiError(responseMessages.APP.COMMUNITY.NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
     // }
 
-    const searchCriteria: Record<string, unknown> = {
-      // communityId,
-    };
+    const searchCriteria: Record<string, unknown> = {};
 
     const identifierIsID = mongoose.Types.ObjectId.isValid(identifier);
     if (identifierIsID) {

@@ -1,10 +1,15 @@
 // Augmenting Express `Request` type
-import { IUser } from '#src/types/model.ts';
-import { Request } from 'express';
+import { Server as SocketIOServer } from 'socket.io';
+import { IUser } from '#src/types/model';
 
 declare module 'express-serve-static-core' {
   interface Request {
-    user: IUser;
+    user?: IUser;
     requestTime?: string;
+  }
+
+  interface Application {
+    get(name: 'io'): SocketIOServer;
+    set(name: 'io', value: SocketIOServer): this;
   }
 }

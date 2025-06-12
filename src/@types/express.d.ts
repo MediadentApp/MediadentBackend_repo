@@ -6,6 +6,7 @@ declare module 'express-serve-static-core' {
   interface Request {
     user?: IUser;
     requestTime?: string;
+    csrfToken: () => string;
   }
 
   interface Application {

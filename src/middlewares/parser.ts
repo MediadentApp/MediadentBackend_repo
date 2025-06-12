@@ -3,7 +3,7 @@ import qs from 'qs';
 
 const parser = express();
 
-parser.use(express.json());
+parser.use(express.json({ limit: '1mb' }));
 
 parser.use(express.urlencoded({ extended: true }));
 

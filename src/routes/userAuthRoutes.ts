@@ -16,6 +16,11 @@ import express from 'express';
 
 const router = express.Router();
 
+// csrf-token
+router.get('/csrf-token', (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
 // Authentication routes
 router.post('/emailReg', emailReg);
 router.post('/emailVerify', emailVerify);

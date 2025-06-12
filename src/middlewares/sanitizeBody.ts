@@ -1,10 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
 import validator from 'validator';
-
 import ApiError from '#src/utils/ApiError.js';
 import fieldsToSanitize from '#src/config/sanitization.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
+
+/**
+ * Recursively remove any keys containing `$` or `.` to prevent NoSQL injection.
+ */
+function sanitizeForMongo(obj: any): void {
+  if (typeof obj !== 'object' || obj === null) return;
+
+  Object.keys(obj).forEach(key => {
+    if (key.includes('$') || key.includes('.')) {
+      delete obj[key];
+    } else {
+      sanitizeForMongo(obj[key]); // Recursively sanitize nested objects
+    }
+  });
+}
 
 export default function sanitizeBody(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -13,15 +27,18 @@ export default function sanitizeBody(req: Request, res: Response, next: NextFunc
       return next();
     }
 
-    // Apply sanitization to specified fields
+    // 💥 Protect against NoSQL injection
+    sanitizeForMongo(req.body);
+
+    // 🔧 Field-level sanitization
     Object.keys(fieldsToSanitize).forEach(field => {
-      if (req?.body[field]) {
+      if (req.body[field]) {
         const sanitizer = validator[fieldsToSanitize[field]] as (input: string) => string;
-        req.body[field] = sanitizer(req?.body[field]);
+        req.body[field] = sanitizer(req.body[field]);
       }
     });
 
-    // For email
+    // 🧹 Email trim + validation
     if (req.body.email) {
       req.body.email = validator.trim(req.body.email);
       if (!validator.isEmail(req.body.email)) {
@@ -29,25 +46,22 @@ export default function sanitizeBody(req: Request, res: Response, next: NextFunc
       }
     }
 
-    // Validate OTP (ensure it's numeric)
-    if (req?.body?.otp) {
-      if (!validator.isNumeric(req?.body.otp.toString())) {
-        return next(new ApiError(responseMessages.CLIENT.INVALID_OTP, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
-      }
+    // 🔐 OTP must be numeric
+    if (req.body.otp && !validator.isNumeric(req.body.otp.toString())) {
+      return next(new ApiError(responseMessages.CLIENT.INVALID_OTP, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
     }
 
-    // Validate password (ensure it contains only alphanumeric characters)
-    // if (req?.body?.password) {
-    //   req.body.password = validator.trim(req?.body.password);
-
-    //   if (!validator.isAlphanumeric(req?.body.password)) {
-    //     return next(new ApiError('Password should only contain alphanumeric characters', 400));
+    // Optional: password checks
+    // if (req.body.password) {
+    //   req.body.password = validator.trim(req.body.password);
+    //   if (!validator.isAlphanumeric(req.body.password)) {
+    //     return next(new ApiError('Password must be alphanumeric only', 400));
     //   }
     // }
 
     return next();
   } catch (err) {
-    console.log('Error sanitizing request body:', err);
+    console.error('Error sanitizing request body:', err);
     return next(
       new ApiError(responseMessages.CLIENT.SANITIZATION_FAILED, 400, ErrorCodes.SERVER.INTERNAL_SERVER_ERROR)
     );

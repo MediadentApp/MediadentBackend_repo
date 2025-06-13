@@ -4,33 +4,30 @@ set -e
 echo "🔧 Building project..."
 npm run build
 
-echo "📦 Preparing production files..."
+echo "📦 Cloning production branch to temp folder..."
 rm -rf ../prod-backend-temp
-mkdir -p ../prod-backend-temp
-cp -r dist package.json README.md ../prod-backend-temp
+git clone --branch production git@github.com:MediadentApp/MediadentBackend_repo.git ../prod-backend-temp
+
+echo "📦 Copying build files to temp folder..."
+cp -r dist ../prod-backend-temp/
+cp package.json ../prod-backend-temp/
+cp README.md ../prod-backend-temp/
 
 cd ../prod-backend-temp
 
-echo "🧹 Removing devDependencies using Node..."
+echo "🧹 Removing devDependencies from package.json..."
 node -e "
-const fs = require('fs');
-const pkg = JSON.parse(fs.readFileSync('package.json'));
-delete pkg.devDependencies;
-fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+  const fs = require('fs');
+  const pkg = JSON.parse(fs.readFileSync('package.json'));
+  delete pkg.devDependencies;
+  fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
 "
 
-echo "🌱 Initializing Git repo..."
-git init
-git checkout -b production
+echo "📦 Committing updated production build..."
 git add .
-git commit -m "Deploy: build from main on $(date '+%d-%m-%Y, %I:%M %p')"
-
-echo "🌐 Pushing to remote production branch..."
-git remote add origin git@github.com:MediadentApp/MediadentBackend_repo.git
-git push origin production --force
-git pull 
+git commit -m "Deploy: update build on $(date '+%d-%m-%Y, %I:%M %p')" || echo "⚠️ Nothing to commit"
+git push origin production
 
 cd ..
-sleep 1
-rm -rf prod-backend-temp
+rm -rf ../prod-backend-temp
 echo "✅ Production branch updated and deployed!"

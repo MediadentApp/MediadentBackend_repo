@@ -1,0 +1,18 @@
+import express from 'express';
+import userFormatApi from './formatApiRoutes.js';
+import { protect } from '../controllers/authController.js';
+import { mainRoutes } from '../routes/mainRoutes.js';
+import { oauthRoutes } from '../routes/oauthRoutes.js';
+import { userAuthRoutes } from '../routes/userAuthRoutes.js';
+import { health } from '../controllers/serverHealthController.js';
+import { communityPostRoutes } from '../routes/communityPost.routes.js';
+import { commentRoutes } from '../routes/comment.routes.js';
+const router = express.Router();
+router.get('/api/v1/health', health);
+router.use('/api/v1/auth', userAuthRoutes);
+router.use('/oauth2', oauthRoutes);
+router.use('/api/v1/userformat', userFormatApi);
+router.use('/api/v1/user', protect, mainRoutes);
+router.use('/api/v1/center', protect, communityPostRoutes);
+router.use('/api/v1/comments', protect, commentRoutes);
+export { router as routes };

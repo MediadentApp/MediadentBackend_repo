@@ -1,5 +1,10 @@
 const appConfig = {
-    allowedOrigins: ['http://localhost:3000', 'http://192.168.0.155:3000', 'https://studenhub-mauve.vercel.app'],
+    allowedOrigins: [
+        'http://localhost:3000',
+        'http://192.168.0.155:3000',
+        'https://studenhub-mauve.vercel.app',
+        'https://studenthub-vin51435s-projects.vercel.app',
+    ],
     bycryptHashSalt: 10,
     otp: {
         sendOtpAfter: 30, // in seconds

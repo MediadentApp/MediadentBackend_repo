@@ -12,7 +12,7 @@ import { UserRole } from '#src/types/enum.js';
 
 const router: Router = express.Router();
 
-router.get('/api/v1/health', protect, restrict(UserRole.Admin), health);
+router.get('/api/v1/health', health);
 
 router.use('/api/v1/auth', userAuthRoutes);
 router.use('/oauth2', oauthRoutes);

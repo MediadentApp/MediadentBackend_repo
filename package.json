@@ -8,7 +8,7 @@
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "dev": "nodemon --watch . --ext ts --exec tsx server.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "start": "node dist/server.js",
     "test": "vitest --watch=false",
     "test:watch": "vitest --watch",
@@ -24,6 +24,8 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.802.0",
+    "@bull-board/api": "^6.9.6",
+    "@bull-board/express": "^6.9.6",
     "aws4": "^1.13.2",
     "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
@@ -48,8 +50,6 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@bull-board/api": "^6.9.6",
-    "@bull-board/express": "^6.9.6",
     "@eslint/compat": "^1.2.8",
     "@faker-js/faker": "^9.8.0",
     "@types/aws4": "^1.11.6",
@@ -84,6 +84,7 @@
     "nodemon": "^3.1.9",
     "prettier": "^3.5.3",
     "supertest": "^7.1.0",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",

@@ -18,6 +18,8 @@ import { routes } from '#src/routes/index.js';
 import socketRoutes from '#src/routes/socketRoutes.js';
 import { unknownRoute } from '#src/controllers/serverHealthController.js';
 import serverAdapter from '#src/jobs/admin.js';
+import { restrict } from '#src/controllers/authController.js';
+import { UserRole } from '#src/types/enum.js';
 
 const app = express();
 
@@ -28,8 +30,7 @@ app.use(middlewares);
 app.use('/', routes);
 
 // BullMQ Admin Dashboard
-// app.use('/admin/queues', restrict(UserRole.Admin), serverAdapter.getRouter()); // Make a middleware to acquire auth token from param
-app.use('/admin/queues', serverAdapter.getRouter());
+app.use('/admin/queues', restrict(UserRole.Admin), serverAdapter.getRouter());
 
 // Handle unknown routes
 app.all('/*name', unknownRoute);

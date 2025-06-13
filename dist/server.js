@@ -1,3 +1,4 @@
+console.log('just a test');
 import './loadenv.js';
 // import settings
 import './appSettings.js';

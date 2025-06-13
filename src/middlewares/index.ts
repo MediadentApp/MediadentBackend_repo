@@ -17,7 +17,6 @@ middlewares.use(corsMiddleware);
 middlewares.use(rateLimiter);
 middlewares.use(helmet());
 middlewares.use(cookieParser(process.env.COOKIE_SECRET));
-// middlewares.use(csurf({ cookie: true }));
 middlewares.use(parser);
 // middlewares.use(multerMiddleware);
 middlewares.use(requestInfo);

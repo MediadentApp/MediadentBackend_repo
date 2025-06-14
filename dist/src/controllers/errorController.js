@@ -62,7 +62,7 @@ const sendErrorProd = (err, res) => {
             status: err.status,
             errorCode: err.errorCode,
             message: err.message,
-            ...(err.redirectUrl && { redirectUrl: err.redirectUrl }),
+            redirectUrl: err?.redirectUrl ?? null,
         });
     }
     else {

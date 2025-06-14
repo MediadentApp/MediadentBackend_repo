@@ -61,6 +61,7 @@ const sendErrorProd = (err, res) => {
         res.status(err.statusCode).json({
             status: err.status,
             errorCode: err.errorCode,
+            name: err.name,
             message: err.message,
             redirectUrl: err?.redirectUrl ?? null,
         });

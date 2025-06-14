@@ -87,8 +87,9 @@ const sendErrorProd = (err: ApiError, res: Response): void => {
     res.status(err.statusCode).json({
       status: err.status,
       errorCode: err.errorCode,
+      name: err.name,
       message: err.message,
-      ...(err.redirectUrl && { redirectUrl: err.redirectUrl }),
+      redirectUrl: err?.redirectUrl ?? null,
     });
   } else {
     console.error('ERROR 💥', err);

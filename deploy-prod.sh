@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+COMMIT_DESCRIPTION=""
+
 echo "🔧 Building project..."
 npm run build
 
@@ -25,9 +27,15 @@ node -e "
 
 echo "📦 Committing updated production build..."
 git add .
-git commit -m "Deploy: update build on $(date '+%d-%m-%Y, %I:%M %p')" || echo "⚠️ Nothing to commit"
+git commit -m "Deploy: update build on $(date '+%d-%m-%Y, %I:%M %p')" -m "$COMMIT_DESCRIPTION" || echo "⚠️ Nothing to commit"
 git push origin production
 
 cd ..
 rm -rf ../prod-backend-temp
-echo "✅ Production branch updated and deployed!"
+echo "✅ Production branch updated!"
+
+if [ -f config.env ]; then
+  source config.env
+  echo "🚀 Deploying the production..., URL:$DEPLOYMENT_URL"
+  curl -X GET "$DEPLOYMENT_URL"
+fi

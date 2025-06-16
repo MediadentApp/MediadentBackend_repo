@@ -7,6 +7,6 @@ const postViewSchema = new Schema<IPostView>({
   viewedAt: { type: Date, default: Date.now },
 });
 
-postViewSchema.index({ userId: 1, postId: 1 });
+postViewSchema.index({ postId: 1, userId: 1 }, { unique: true });
 
 export const PostView = mongoose.model<IPostView>('PostView', postViewSchema);

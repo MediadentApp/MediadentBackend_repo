@@ -33,9 +33,11 @@ git push origin production
 cd ../MediadentBackend_repo
 if [ -f config.env ]; then
   DEPLOYMENT_URL=$(grep '^DEPLOYMENT_URL=' config.env | cut -d '=' -f2-)
+  RENDER_DASHBOARD=$(grep '^RENDER_DASHBOARD=' config.env | cut -d '=' -f2-)
   if [ -n "$DEPLOYMENT_URL" ]; then
     echo "🌐 Sending deployment request to: $DEPLOYMENT_URL"
     curl -v --fail "$DEPLOYMENT_URL" || echo "❌ Deployment trigger failed!"
+    echo "Check deployment in $RENDER_DASHBOARD"
   fi
 fi
 

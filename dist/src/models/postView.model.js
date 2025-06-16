@@ -4,5 +4,5 @@ const postViewSchema = new Schema({
     postId: { type: Schema.Types.ObjectId, ref: 'Post', required: true },
     viewedAt: { type: Date, default: Date.now },
 });
-postViewSchema.index({ userId: 1, postId: 1 });
+postViewSchema.index({ postId: 1, userId: 1 }, { unique: true });
 export const PostView = mongoose.model('PostView', postViewSchema);

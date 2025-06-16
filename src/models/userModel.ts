@@ -259,15 +259,16 @@ userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOpti
     }
   }
 
-  const normalizedEmail = validator.normalizeEmail(this.email, {
-    all_lowercase: true,
-    gmail_remove_dots: true,
-  });
-
-  if (normalizedEmail) {
-    this.email = normalizedEmail;
-  } else {
-    throw new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.INVALID_EMAIL);
+  if (!this._id) {
+    const normalizedEmail = validator.normalizeEmail(this.email, {
+      all_lowercase: true,
+      gmail_remove_dots: true,
+    });
+    if (normalizedEmail) {
+      this.email = normalizedEmail;
+    } else {
+      throw new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.INVALID_EMAIL);
+    }
   }
 
   if (!this?.fullName) {
@@ -288,25 +289,28 @@ userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOpti
  * Adds admin role to the owner
  * Connects new Users to all admins
  */
-userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOptionalError) {
+userSchema.pre<IUser>('save', async function (next) {
   try {
-    if (this.email === process.env.OWNER_EMAIL) {
-      this.role = UserRole.Admin;
-    }
+    if (!this._id) {
+      if (this.email === process.env.OWNER_EMAIL) {
+        this.role = UserRole.Admin;
+      }
 
-    const admins = await User.find({ role: UserRole.Admin, _id: { $ne: this._id } });
+      const admins = await User.find({ role: UserRole.Admin, _id: { $ne: this._id } });
 
-    if (admins.length > 0) {
-      const newChats = admins.map(admin => ({
-        participants: [this._id, admin._id],
-      }));
+      if (admins.length > 0) {
+        const newChats = admins.map(admin => ({
+          participants: [this._id, admin._id],
+        }));
 
-      const chatArr = await Chat.insertMany(newChats);
-      const chatIds = chatArr.map(chat => chat._id);
+        const chatArr = await Chat.insertMany(newChats);
+        const chatIds = chatArr.map(chat => chat._id);
 
-      this.chats.chatIds = [...new Set([...this.chats?.chatIds, ...chatIds])] as Types.ObjectId[];
+        this.chats = this.chats || {};
+        this.chats.chatIds = [...new Set([...(this.chats.chatIds || []), ...chatIds])] as Types.ObjectId[];
 
-      await User.updateMany({ role: UserRole.Admin }, { $addToSet: { 'chats.chatIds': { $each: chatIds } } });
+        await User.updateMany({ role: UserRole.Admin }, { $addToSet: { 'chats.chatIds': { $each: chatIds } } });
+      }
     }
 
     next();

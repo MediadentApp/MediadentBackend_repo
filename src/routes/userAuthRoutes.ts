@@ -32,7 +32,7 @@ router.post('/logout', logout);
 
 // Password-related routes
 router.post('/forgotPassword', forgotPassword);
-router.patch('/resetPassword/:token', resetPassword);
+router.patch('/forgotPassword/:token', resetPassword);
 router.patch('/updatePassword', protect, updatePassword);
 
 // User academic/education details routes

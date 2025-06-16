@@ -60,7 +60,7 @@ const responseMessages = {
     IMAGE_NOT_PROVIDED: 'Image is required',
     INVALID_EMAIL: 'Invalid email format',
     INVALID_OTP: 'Invalid OTP format',
-    SANITIZATION_FAILED: 'Sanitization failed',
+    SANITIZATION_FAILED: 'Invalid Input',
     MISSING_ALL_NECESSARY_REQUEST_DATA: 'Please provide all the necessary data, including slug, params query, etc.',
   },
   USER: {

@@ -30,12 +30,14 @@ git add .
 git commit -m "Deploy: update build on $(date '+%d-%m-%Y, %I:%M %p')" -m "$COMMIT_DESCRIPTION" || echo "⚠️ Nothing to commit"
 git push origin production
 
-cd ..
+cd ../MediadentBackend_repo
+if [ -f config.env ]; then
+  DEPLOYMENT_URL=$(grep '^DEPLOYMENT_URL=' config.env | cut -d '=' -f2-)
+  if [ -n "$DEPLOYMENT_URL" ]; then
+    echo "🌐 Sending deployment request to: $DEPLOYMENT_URL"
+    curl -v --fail "$DEPLOYMENT_URL" || echo "❌ Deployment trigger failed!"
+  fi
+fi
+
 rm -rf ../prod-backend-temp
 echo "✅ Production branch updated!"
-
-if [ -f config.env ]; then
-  source config.env
-  echo "🚀 Deploying the production..., URL:$DEPLOYMENT_URL"
-  curl -X GET "$DEPLOYMENT_URL"
-fi

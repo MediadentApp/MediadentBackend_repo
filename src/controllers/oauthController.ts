@@ -52,7 +52,9 @@ export const googleAuthCallback = catchAsync(
           redirect_uri: GOOGLE_REDIRECT_URI,
           grant_type: 'authorization_code',
         }),
-        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        }
       );
 
       if (!tokenResponse?.data?.access_token) {
@@ -75,7 +77,7 @@ export const googleAuthCallback = catchAsync(
         family_name: lastName,
         email,
         verified_email: verifiedEmail,
-        picture: googlePicture,
+        picture: profilePicture,
       } = userResponse.data;
 
       if (!verifiedEmail) {
@@ -94,9 +96,10 @@ export const googleAuthCallback = catchAsync(
       } else {
         user = await User.create({
           firstName,
-          lastName,
+          lastName: lastName ?? firstName,
           email,
           googleAccount: true,
+          profilePicture,
         });
       }
 
@@ -111,6 +114,9 @@ export const googleAuthCallback = catchAsync(
       // Creating JWT token
       createSendToken(user, 201, res, extra);
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error response:', error.response?.data);
+      }
       console.error('Google Authentication Error:', error);
       next(new ApiError('Google Authentication failed. Please try again.' as IResponseMessage, 500));
     }

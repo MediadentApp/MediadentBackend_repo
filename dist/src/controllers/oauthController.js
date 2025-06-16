@@ -24,10 +24,6 @@ export const googleAuthCallback = catchAsync(async (req, res, next) => {
     }
     try {
         // Exchange code for access token
-        console.log('code', code);
-        console.log('client', process.env.GOOGLE_CLIENT_ID);
-        console.log('secret', process.env.GOOGLE_CLIENT_SECRET);
-        console.log('GOOGLE_REDIRECT_URI', GOOGLE_REDIRECT_URI);
         const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', querystring.stringify({
             code,
             client_id: process.env.GOOGLE_CLIENT_ID,
@@ -37,7 +33,6 @@ export const googleAuthCallback = catchAsync(async (req, res, next) => {
         }), {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         });
-        console.log('tokenResponse', tokenResponse);
         if (!tokenResponse?.data?.access_token) {
             return next(new ApiError('Failed to retrieve access token from Google', 500));
         }
@@ -46,7 +41,6 @@ export const googleAuthCallback = catchAsync(async (req, res, next) => {
         const userResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
             headers: { Authorization: `Bearer ${accessToken}` },
         });
-        console.log('userResponse', userResponse);
         if (!userResponse?.data) {
             return next(new ApiError('Failed to retrieve user data from Google', 500));
         }

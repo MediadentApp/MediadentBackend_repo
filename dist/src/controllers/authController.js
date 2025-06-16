@@ -226,32 +226,25 @@ export const restrict = (...roles) => (req, res, next) => {
     }
     next();
 };
+/**
+ * Forgot Password, sends reset token to email
+ * @route POST /forgotpassword
+ */
 export const forgotPassword = catchAsync(async (req, res, next) => {
     const { email } = req.body;
-    // Validate email input
     if (!email) {
         return next(new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.PASSWORD_RESET.INCOMPLETE_CREDENTIALS));
     }
-    // 1) Find user by email
     const user = await User.findOne({ email });
     if (!user) {
         return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.PASSWORD_RESET.USER_NOT_FOUND));
     }
-    if (user.googleAccount) {
-        // Your account is registered with Google. No password reset is needed.
+    if (user.googleAccount || user.githubAccount) {
         return next(new ApiError(responseMessages.GENERAL.METHOD_NOT_ALLOWED, 400, ErrorCodes.GENERAL.METHOD_NOT_ALLOWED));
     }
-    if (user.githubAccount) {
-        // 'Your account is registered with GitHub. No password reset is needed.',
-        return next(new ApiError(responseMessages.GENERAL.METHOD_NOT_ALLOWED, 400, ErrorCodes.GENERAL.METHOD_NOT_ALLOWED));
-    }
-    // 2) Generate reset token and save it to the user document
     const resetToken = user.createPasswordResetToken();
-    await user.save({ validateBeforeSave: false }); // Disable validators to prevent unnecessary checks
-    // 3) Construct password reset URL
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-    const resetURL = `${baseUrl}/api/v1/users/resetpassword/${resetToken}`;
-    // Email message (plain text and HTML)
+    const domain = req.get('origin') || process.env.DOMAIN;
+    const resetURL = `${domain}/login/resetpassword/${resetToken}?email=${email}`;
     const message = `
     Hello,
 
@@ -275,7 +268,6 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
     <p>Regards,</p>
     <p>The Mediadent Team</p>
   `;
-    // 4) Send email
     try {
         await sendEmail({
             email: user.email,
@@ -283,20 +275,23 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
             message,
             html: htmlMessage,
         });
+        await user.save({ validateBeforeSave: false });
         return ApiResponse(res, 200, responseMessages.AUTH.PASSWORD_RESET_SENT, { email });
     }
     catch (err) {
-        // Reset token fields if email sending fails
         const userUpdates = {
             passwordResetToken: undefined,
             passwordResetExpires: undefined,
         };
         Object.assign(user, userUpdates);
-        await user.save({ validateBeforeSave: false }); // Ensure consistency in DB
-        console.error('Error sending password reset email:', err);
+        await user.save({ validateBeforeSave: false });
         return next(new ApiError(responseMessages.AUTH.PASSWORD_RESET_SENT_ERROR, 500));
     }
 });
+/**
+ * Reset Password
+ * @route POST /resetpassword/:token
+ */
 export const resetPassword = catchAsync(async (req, res, next) => {
     const { password, passwordConfirm } = req.body;
     const { token } = req.params;
@@ -310,11 +305,11 @@ export const resetPassword = catchAsync(async (req, res, next) => {
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     const user = await User.findOne({
         passwordResetToken: hashedToken,
-        passwordResetExpires: { $gt: Date.now() }, // MongoDB compares timestamps automatically
+        passwordResetExpires: { $gt: Date.now() },
     });
     // 2) If the token is expired or the user doesn't exist, return an error
     if (!user) {
-        return next(new ApiError(responseMessages.AUTH.INVALID_TOKEN, 400, ErrorCodes.PASSWORD_RESET.TOKEN_EXPIRED));
+        return next(new ApiError(responseMessages.AUTH.TOKEN_EXPIRED, 400, ErrorCodes.PASSWORD_RESET.TOKEN_EXPIRED));
     }
     user.password = password;
     user.passwordConfirm = passwordConfirm;

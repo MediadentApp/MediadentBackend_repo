@@ -50,7 +50,7 @@ export const googleAuthCallback = catchAsync(async (req, res, next) => {
         if (!userResponse?.data) {
             return next(new ApiError('Failed to retrieve user data from Google', 500));
         }
-        const { given_name: firstName, family_name: lastName, email, verified_email: verifiedEmail, picture: googlePicture, } = userResponse.data;
+        const { given_name: firstName, family_name: lastName, email, verified_email: verifiedEmail, picture: profilePicture, } = userResponse.data;
         if (!verifiedEmail) {
             return next(new ApiError('Your email is not verified by Google', 401, ErrorCodes.CLIENT.FORBIDDEN));
         }
@@ -64,9 +64,10 @@ export const googleAuthCallback = catchAsync(async (req, res, next) => {
         else {
             user = await User.create({
                 firstName,
-                lastName,
+                lastName: lastName ?? firstName,
                 email,
                 googleAccount: true,
+                profilePicture,
             });
         }
         let extra = { authenticated: true };

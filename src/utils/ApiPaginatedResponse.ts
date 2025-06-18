@@ -184,6 +184,23 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
   return returnData;
 }
 
+/**
+ * Fetches paginated data from the database with aggregation.
+ *
+ * @param {Model<any>} model - The Mongoose model to query.
+ * @param {PipelineStage[]} basePipeline - The initial stages of the aggregation pipeline.
+ * @param {IPaginationOptions & Record<string, any>} rawOptions - The raw query options including pagination and filter settings.
+ * @param {PipelineStage[]} endPipeline - Additional stages to apply at the end of the pipeline.
+ * @returns {Promise<IPaginatedResponse<T>>} - The paginated response containing the data and pagination details.
+ *
+ * @remarks
+ * This function utilizes MongoDB's aggregation framework to fetch and paginate data.
+ * It supports various filtering options including search, ID-based filtering, and projection.
+ * The aggregation pipeline is customized with provided base and end stages, and handles population of referenced fields.
+ *
+ * @example
+ * FetchPaginatedDataWithAggregation(Post, [{ $match: { isActive: true } }], { page: '1', pageSize: '10', searchValue: 'example' }, []);
+ */
 export async function FetchPaginatedDataWithAggregation<T = any>(
   model: Model<any>,
   basePipeline: PipelineStage[] = [],

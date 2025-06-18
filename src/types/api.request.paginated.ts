@@ -1,5 +1,4 @@
-import { Request, Response } from 'express';
-import { ParamsDictionary } from 'express-serve-static-core';
+import { ParamsDictionary, Request } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
 import { IPaginatedResponse, IPaginationOptions } from '#src/types/api.response.paginated.js';
 import { SlugParam } from '#src/types/param.js';

@@ -2,12 +2,16 @@ import {
   createComment,
   deleteComment,
   getComments,
+  getCommentsByUser,
   updateComment,
   voteComment,
 } from '#src/controllers/comments.controller.js';
 import { AppRequestBody, AppRequestParams, AppRequestQuery } from '#src/types/api.request.js';
+import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse } from '#src/types/api.response.js';
+import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { CommentParam } from '#src/types/param.comment.js';
+import { IdParam } from '#src/types/param.js';
 import { ICommentQuery } from '#src/types/query.comment.js';
 import { ICommentBody, ICommentVoteBody } from '#src/types/request.comment.js';
 import express, { NextFunction } from 'express';
@@ -45,6 +49,14 @@ router.delete('/:commentId', (req: AppRequestParams<CommentParam>, res: AppRespo
  */
 router.get('/', (req: AppRequestQuery<ICommentQuery>, res: AppResponse, next: NextFunction) =>
   getComments(req, res, next)
+);
+
+/**
+ * GET /comments/user
+ * Retrieves a all comments by a user
+ */
+router.get('/user/:id', (req: AppPaginatedRequest<IdParam>, res: AppPaginatedResponse, next: NextFunction) =>
+  getCommentsByUser(req, res, next)
 );
 
 /**

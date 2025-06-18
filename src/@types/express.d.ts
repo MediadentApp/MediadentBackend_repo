@@ -1,6 +1,6 @@
 // Augmenting Express `Request` type
-import { Server as SocketIOServer } from 'socket.io';
 import { IUser } from '#src/types/model';
+import { Server as SocketIOServer } from 'socket.io';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -14,3 +14,5 @@ declare module 'express-serve-static-core' {
     set(name: 'io', value: SocketIOServer): this;
   }
 }
+
+export {};

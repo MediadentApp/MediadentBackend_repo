@@ -4,14 +4,18 @@ import Comment from '#src/models/postComment.model.js';
 import { CommentVote } from '#src/models/postCommentVote.model.js';
 import CommunityCommentCountsServiceHandler from '#src/services/communityCommentCount.service.js';
 import { AppRequestBody, AppRequestParams, AppRequestQuery } from '#src/types/api.request.js';
+import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse, IResponseExtraCommentPagination } from '#src/types/api.response.js';
+import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { SortMethod, SortOrder, VoteEnum } from '#src/types/enum.js';
 import { IPostComment } from '#src/types/model.post.type.js';
 import { CommentParam } from '#src/types/param.comment.js';
+import { IdParam } from '#src/types/param.js';
 import { ICommentQuery } from '#src/types/query.comment.js';
-import { ICommentBody, ICommentVoteBody } from '#src/types/request.comment.js';
+import { ICommentBody } from '#src/types/request.comment.js';
 import ApiError from '#src/utils/ApiError.js';
-import ApiResponse from '#src/utils/ApiResponse.js';
+import { FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
+import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { getUpdateObj } from '#src/utils/dataManipulation.js';
 import { NextFunction } from 'express';
@@ -323,6 +327,33 @@ export const getComments = catchAsync(
       commentId ? structured[0] : structured,
       extra
     );
+  }
+);
+
+/**
+ * Controller to get all individual comments by user id.
+ * Route: GET /comments/user/:id
+ */
+export const getCommentsByUser = catchAsync(
+  async (req: AppPaginatedRequest<IdParam>, res: AppPaginatedResponse, next: NextFunction) => {
+    let { id: userId } = req.params;
+    const user = req.user;
+
+    if (!userId) {
+      userId = user._id;
+    }
+
+    const fetchedData = await FetchPaginatedDataWithAggregation<IPostComment>(
+      Comment,
+      [{ $match: { authorId: new mongoose.Types.ObjectId(userId) } }, { $sort: { createdAt: -1 } }],
+      {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+      },
+      []
+    );
+
+    return ApiPaginatedResponse(res, fetchedData);
   }
 );
 

@@ -318,11 +318,6 @@ export const getCommunities = catchAsync(async (req: AppPaginatedRequest, res: A
       searchFields: req.query.searchFields ?? ['name'],
     }
   );
-  // const fetchedData = await FetchPaginatedData<ICommunity>(Community, {
-  //   ...req.query,
-  //   sortField: req.query.sortField ?? '-createdAt',
-  //   searchFields: req.query.searchFields ?? ['name'],
-  // });
 
   return ApiPaginatedResponse(res, fetchedData);
 });
@@ -351,6 +346,7 @@ export const toggleFollowCommunity = catchAsync(
     followCommunityExecutor.addOperation({
       id: followCommunityId,
       query: async () => {
+        // Can be done in upset
         const follows = await CommunityFollowedBy.exists({ communityId, userId }).lean();
         if (follows) {
           followCommunityServiceHandler.add({
@@ -521,6 +517,40 @@ export const getAllCommunitypost = catchAsync(
         { $match: matchStage },
         ...fetchPostPipelineStage(String(userId)),
         { $sort: sortStage as unknown as Record<string, 1 | -1> },
+      ],
+      {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+        searchValue: req.query.searchValue ?? '',
+        searchFields: req.query.searchFields ?? ['title', 'content'],
+        populateFields: req.query.populateFields,
+      }
+    );
+
+    return ApiPaginatedResponse(res, fetchedData);
+  }
+);
+
+/**
+ * Controller to retrieve a all posts by a user.
+ *
+ * Route: GET /communitypost/posts/user/:userId
+ */
+export const getPostsByUser = catchAsync(
+  async (req: AppPaginatedRequest<IdParam>, res: AppPaginatedResponse, next: NextFunction) => {
+    let { id: userId } = req.params;
+    const user = req.user;
+
+    if (!userId) {
+      userId = user._id;
+    }
+
+    const fetchedData = await FetchPaginatedDataWithAggregation<IPost>(
+      Post,
+      [
+        { $match: { authorId: new mongoose.Types.ObjectId(userId) } },
+        ...fetchPostPipelineStage(String(req.user._id)),
+        { $sort: { createdAt: -1 } },
       ],
       {
         page: req.query.page ?? '1',
@@ -850,7 +880,7 @@ export const trackPostView = catchAsync(
  *
  * Route: POST /communitypost/:communityId/:postId/save
  */
-export const savePost = catchAsync(
+export const savePostToggle = catchAsync(
   async (req: AppRequestParams<CommunityPostParam>, res: AppResponse, next: NextFunction) => {
     const { postId } = req.params;
     const { _id: userId } = req.user;
@@ -892,6 +922,37 @@ export const savePost = catchAsync(
     ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
   }
 );
+
+/**
+ * Controller to get paginated saved posts.
+ */
+export const getSavedPosts = catchAsync(async (req: AppPaginatedRequest, res: AppPaginatedResponse) => {
+  const { userId } = req.user;
+
+  const fetchedData = await FetchPaginatedDataWithAggregation(
+    Post,
+    [{ $match: { userId } }, { $sort: { createdAt: -1 } }],
+    {
+      page: req.query.page ?? '1',
+      pageSize: req.query.pageSize ?? '10',
+      searchValue: req.query.searchValue ?? '',
+      searchFields: req.query.searchFields ?? ['title', 'content'],
+    },
+    [
+      {
+        $lookup: {
+          from: 'posts',
+          localField: 'postId',
+          foreignField: '_id',
+          as: 'post',
+        },
+      },
+      { $unwind: '$post' },
+    ]
+  );
+
+  return ApiPaginatedResponse(res, fetchedData);
+});
 
 // WIP
 export const inviteToCommunity = catchAsync(async (req: AppRequestBody, res: AppResponse, next: NextFunction) => {

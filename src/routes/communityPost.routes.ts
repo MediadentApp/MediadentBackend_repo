@@ -11,9 +11,11 @@ import {
   updateCommunityPost,
   votePost,
   trackPostView,
-  savePost,
+  savePostToggle,
   toggleFollowCommunity,
   followsCommunity,
+  getSavedPosts,
+  getPostsByUser,
 } from '#src/controllers/communityPost.controller.js';
 import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
@@ -152,6 +154,15 @@ router.get(
 );
 
 /**
+ * GET /communitypost/posts/user/:id
+ * Retrieves a list of posts made by a specific user.
+ */
+router.get(
+  '/communitypost/posts/user/:id',
+  (req: AppPaginatedRequest<IdParam>, res: AppPaginatedResponse, next: NextFunction) => getPostsByUser(req, res, next)
+);
+
+/**
  * DELETE /communitypost/:communityId/:postId
  * Deletes a post by its ID within a community.
  */
@@ -185,7 +196,15 @@ router.post(
  */
 router.patch(
   '/communitypost/:communityId/:postId/save',
-  (req: AppRequestParams<CommunityPostParam>, res: AppResponse, next: NextFunction) => savePost(req, res, next)
+  (req: AppRequestParams<CommunityPostParam>, res: AppResponse, next: NextFunction) => savePostToggle(req, res, next)
+);
+
+/**
+ * GET /communitypost/saves
+ * Retrieves a list of saved posts.
+ */
+router.get('/communitypost/saves', (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) =>
+  getSavedPosts(req, res, next)
 );
 
 export { router as communityPostRoutes };

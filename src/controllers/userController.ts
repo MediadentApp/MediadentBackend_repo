@@ -139,7 +139,7 @@ export const updateUserPicture = catchAsync(
     }
 
     return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, {
-      profilePicture: updatedUser.profilePicture,
+      user: updatedUser,
     });
   }
 );

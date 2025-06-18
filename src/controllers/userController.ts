@@ -360,23 +360,19 @@ export const getHomeFeed = catchAsync(
     let postIds = await redisConnection.lrange(redisKey, start, end);
 
     // If Redis is empty, compute it once
-    if (fresh || (postIds.length === 0 && page === 1)) {
+    if (fresh || postIds.length === 0) {
+      console.log('🧹 Redis is empty. Computing home feed immediately...');
       await computeHomeFeed(String(userId));
       postIds = await redisConnection.lrange(redisKey, start, end);
     }
+
+    console.log('postids: ', postIds);
 
     const posts = await FetchPaginatedDataWithAggregation<IPost>(
       Post,
       [{ $match: { _id: { $in: postIds.map(id => new mongoose.Types.ObjectId(id)) } } }],
       {
-        page: req.query.page ?? '1',
-        pageSize: req.query.pageSize ?? '10',
-        searchValue: req.query.searchValue ?? '',
-        searchFields: req.query.searchFields ?? ['title', 'content'],
-        populateFields: [
-          { path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' },
-          // { path: 'authorId', select: '_id username profilePicture fullName', from: 'users' },
-        ],
+        populateFields: [{ path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' }],
       },
       [...fetchPostPipelineStage(String(userId))]
     );
@@ -402,10 +398,7 @@ export const getPopularFeed = catchAsync(
         pageSize: req.query.pageSize ?? '15',
         sortField: 'popularityScore',
         sortOrder: 'desc',
-        populateFields: [
-          { path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' },
-          // { path: 'authorId', select: '_id username profilePicture fullName', from: 'users' },
-        ],
+        populateFields: [{ path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' }],
       },
       [...fetchPostPipelineStage(String(userId))]
     );

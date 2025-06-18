@@ -517,18 +517,15 @@ export const getAllCommunitypost = catchAsync(
 
     const fetchedData = await FetchPaginatedDataWithAggregation<IPost>(
       Post,
-      [
-        { $match: matchStage },
-        ...fetchPostPipelineStage(String(userId)),
-        { $sort: sortStage as unknown as Record<string, 1 | -1> },
-      ],
+      [{ $match: matchStage }, { $sort: sortStage as unknown as Record<string, 1 | -1> }],
       {
         page: req.query.page ?? '1',
         pageSize: req.query.pageSize ?? '10',
         searchValue: req.query.searchValue ?? '',
         searchFields: req.query.searchFields ?? ['title', 'content'],
         populateFields: req.query.populateFields,
-      }
+      },
+      [...fetchPostPipelineStage(String(userId))]
     );
 
     return ApiPaginatedResponse(res, fetchedData);

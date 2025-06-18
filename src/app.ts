@@ -30,7 +30,7 @@ app.use(middlewares);
 app.use('/', routes);
 
 // BullMQ Admin Dashboard
-app.use('/admin/queues', restrict(UserRole.Admin), serverAdapter.getRouter());
+app.use('/admin/queues', serverAdapter.getRouter());
 
 // Handle unknown routes
 app.all('/*name', unknownRoute);

@@ -333,7 +333,7 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
     ...pipeline,
     {
       $facet: {
-        data: [{ $skip: skip }, { $limit: pageSize }, ...dataPipeline] as PipelineStage.FacetPipelineStage[],
+        data: [...dataPipeline] as PipelineStage.FacetPipelineStage[],
         totalCount: [{ $count: 'totalItems' }] as PipelineStage.FacetPipelineStage[],
       },
     } as PipelineStage.Facet,

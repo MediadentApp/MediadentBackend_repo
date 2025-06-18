@@ -25,12 +25,15 @@ const appConfig = {
     },
     algoRecommendation: {
       postPopularity: {
-        // dailyCalcTimePattern: '0 0 13 * * *', // At second 0, minute 0, hour 13 (1 PM), every day, every month, every day of the week
         dailyCalcTimePattern: '0 0 */1 * * *', // At second 0, minute 0, every hour, every day, every month, every day of the week
+        hourlyCalcTimePattern: '0 29,59 * * * *', // 29 and 59 minutes past the hour, every hour, every day, every month, every day of the week
         thresholdDate: 30 * 24 * 60 * 60 * 1000, // 30 days
       },
       postViewCleanup: {
         dailyCleanTimePattern: '0 0 16 * * *',
+      },
+      refreshPosts: {
+        hourlyRefreshTimePattern: '0 */30 * * * *', // every 30 minutes, on the 0th second
       },
     },
     post: {

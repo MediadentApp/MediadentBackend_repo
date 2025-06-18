@@ -1,7 +1,7 @@
 import appConfig from '../../config/appConfig.js';
 import { postPopularityQueue } from '../../jobs/queues/postPopularity.queue.js';
 export const scheduleDailyPopularPost = async () => {
-    await postPopularityQueue.upsertJobScheduler(`unique-daily-popular-post`, { pattern: appConfig.app.algoRecommendation.postPopularity.dailyCalcTimePattern }, {
+    await postPopularityQueue.upsertJobScheduler(`unique-daily-popular-post`, { pattern: appConfig.app.algoRecommendation.postPopularity.hourlyCalcTimePattern }, {
         name: 'unique-daily-popular-post',
         opts: {
             keepLogs: 2,

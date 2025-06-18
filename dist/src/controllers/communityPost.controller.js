@@ -427,17 +427,13 @@ export const getAllCommunitypost = catchAsync(async (req, res, next) => {
                 break;
         }
     }
-    const fetchedData = await FetchPaginatedDataWithAggregation(Post, [
-        { $match: matchStage },
-        ...fetchPostPipelineStage(String(userId)),
-        { $sort: sortStage },
-    ], {
+    const fetchedData = await FetchPaginatedDataWithAggregation(Post, [{ $match: matchStage }, { $sort: sortStage }], {
         page: req.query.page ?? '1',
         pageSize: req.query.pageSize ?? '10',
         searchValue: req.query.searchValue ?? '',
         searchFields: req.query.searchFields ?? ['title', 'content'],
         populateFields: req.query.populateFields,
-    });
+    }, [...fetchPostPipelineStage(String(userId))]);
     return ApiPaginatedResponse(res, fetchedData);
 });
 /**

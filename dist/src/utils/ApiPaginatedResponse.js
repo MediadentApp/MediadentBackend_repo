@@ -245,7 +245,7 @@ export async function FetchPaginatedDataWithAggregation(model, basePipeline = []
         ...pipeline,
         {
             $facet: {
-                data: [{ $skip: skip }, { $limit: pageSize }, ...dataPipeline],
+                data: [...dataPipeline],
                 totalCount: [{ $count: 'totalItems' }],
             },
         },

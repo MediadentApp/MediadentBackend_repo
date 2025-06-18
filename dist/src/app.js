@@ -14,15 +14,13 @@ import { routes } from './routes/index.js';
 import socketRoutes from './routes/socketRoutes.js';
 import { unknownRoute } from './controllers/serverHealthController.js';
 import serverAdapter from './jobs/admin.js';
-import { restrict } from './controllers/authController.js';
-import { UserRole } from './types/enum.js';
 const app = express();
 // Middlewares
 app.use(middlewares);
 // Routes
 app.use('/', routes);
 // BullMQ Admin Dashboard
-app.use('/admin/queues', restrict(UserRole.Admin), serverAdapter.getRouter());
+app.use('/admin/queues', serverAdapter.getRouter());
 // Handle unknown routes
 app.all('/*name', unknownRoute);
 // Global error handler

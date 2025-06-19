@@ -14,6 +14,8 @@ import {
   savePost,
   toggleFollowCommunity,
   followsCommunity,
+  updateCommunityAvatar,
+  updateCommunityBanner,
 } from '#src/controllers/communityPost.controller.js';
 import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
@@ -65,6 +67,26 @@ router.patch(
   '/community/:id',
   communityCreationUpload,
   (req: AppRequest<IdParam, ICommunityBodyDTO>, res: AppResponse, next: NextFunction) => updateCommunity(req, res, next)
+);
+
+/**
+ * PATCH /community/:id/avatar
+ * Updates the avatar of a community.
+ */
+router.patch(
+  '/community/:id/avatar',
+  communityCreationUpload,
+  (req: AppRequest<IdParam>, res: AppResponse, next: NextFunction) => updateCommunityAvatar(req, res, next)
+);
+
+/**
+ * PATCH /community/:id/banner
+ * Updates the banner of a community.
+ */
+router.patch(
+  '/community/:id/banner',
+  communityCreationUpload,
+  (req: AppRequest<IdParam>, res: AppResponse, next: NextFunction) => updateCommunityBanner(req, res, next)
 );
 
 /**

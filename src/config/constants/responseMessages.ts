@@ -95,6 +95,11 @@ const responseMessages = {
       NAME_REQUIRED: 'Name is required',
       PARENT_NOT_FOUND: 'Parent community not found',
       NOT_FOUND: 'Community not found',
+      IMAGE_REQUIRED: 'Image is required',
+      BANNER_REQUIRED: 'Banner is required',
+      INVALID_IMAGE: 'Invalid image format',
+      INVALID_IMAGE_TYPE: 'Invalid image type',
+      INVALID_IMAGE_SIZE: `Image size should be less than ${appConfig.app.post.postsMaxImageSize / 1024 / 1024} MB`,
     },
     POST: {
       POST_LIMIT_EXCEEDED: 'You have reached the maximum limit of posts',

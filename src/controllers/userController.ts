@@ -361,12 +361,9 @@ export const getHomeFeed = catchAsync(
 
     // If Redis is empty, compute it once
     if (fresh || postIds.length === 0) {
-      console.log('🧹 Redis is empty. Computing home feed immediately...');
       await computeHomeFeed(String(userId));
       postIds = await redisConnection.lrange(redisKey, start, end);
     }
-
-    console.log('postids: ', postIds);
 
     const posts = await FetchPaginatedDataWithAggregation<IPost>(
       Post,

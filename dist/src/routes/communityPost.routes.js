@@ -1,4 +1,4 @@
-import { createCommunity, communityPost, getCommunities, getCommunityBySlug, updateCommunity, getCommunityPostByIdentifier, getAllCommunitypost, deleteCommunity, deleteCommunityPost, updateCommunityPost, votePost, trackPostView, savePost, toggleFollowCommunity, followsCommunity, } from '../controllers/communityPost.controller.js';
+import { createCommunity, communityPost, getCommunities, getCommunityBySlug, updateCommunity, getCommunityPostByIdentifier, getAllCommunitypost, deleteCommunity, deleteCommunityPost, updateCommunityPost, votePost, trackPostView, savePost, toggleFollowCommunity, followsCommunity, updateCommunityAvatar, updateCommunityBanner, } from '../controllers/communityPost.controller.js';
 import { communityCreationUpload, postUpload } from '../middlewares/multerPosts.js';
 import express from 'express';
 const router = express.Router();
@@ -22,6 +22,16 @@ router.post('/community/:id', communityCreationUpload, (req, res, next) => creat
  * Updates an existing community.
  */
 router.patch('/community/:id', communityCreationUpload, (req, res, next) => updateCommunity(req, res, next));
+/**
+ * PATCH /community/:id/avatar
+ * Updates the avatar of a community.
+ */
+router.patch('/community/:id/avatar', communityCreationUpload, (req, res, next) => updateCommunityAvatar(req, res, next));
+/**
+ * PATCH /community/:id/banner
+ * Updates the banner of a community.
+ */
+router.patch('/community/:id/banner', communityCreationUpload, (req, res, next) => updateCommunityBanner(req, res, next));
 /**
  * DELETE /community/:id
  * Deletes a community by its ID.

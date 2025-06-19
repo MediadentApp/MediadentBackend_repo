@@ -141,6 +141,80 @@ export const updateCommunity = catchAsync(async (req, res, next) => {
     ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, community);
 });
 /**
+ * Update a community avatar by its community ID.
+ *
+ * Route: PATCH /community/:id/avatar
+ */
+export const updateCommunityAvatar = catchAsync(async (req, res, next) => {
+    const { id: communityId } = req.params;
+    const file = req.files?.avatar?.[0];
+    if (!file) {
+        return next(new ApiError(responseMessages.APP.COMMUNITY.IMAGE_REQUIRED, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
+    }
+    const community = await Community.findById(communityId);
+    if (!community) {
+        return next(new ApiError(responseMessages.APP.COMMUNITY.NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
+    }
+    if (community.owner.toString() !== req.user._id.toString()) {
+        return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 403, ErrorCodes.CLIENT.UNAUTHORIZED));
+    }
+    const oldAvatarUrl = community.avatarUrl;
+    const uploadResp = await ImageUpload({
+        files: [
+            {
+                fileName: file.fieldname ?? file.originalname,
+                mimeType: file.mimetype,
+                fileBase64: file.buffer.toString('base64'),
+            },
+        ],
+        username: req.user.username ?? 'auto',
+    });
+    const avatarUrl = uploadResp?.uploaded[0]?.url ?? '';
+    community.avatarUrl = avatarUrl;
+    await community.save();
+    // 🧹 Delete old image if it existed (non-blocking)
+    if (oldAvatarUrl)
+        void deleteImagesFromS3([oldAvatarUrl]);
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, { avatarUrl });
+});
+/**
+ * Update a community banner by its community ID.
+ *
+ * Route: PATCH /community/:id/banner
+ */
+export const updateCommunityBanner = catchAsync(async (req, res, next) => {
+    const { id: communityId } = req.params;
+    const file = req.files?.banner?.[0];
+    if (!file) {
+        return next(new ApiError(responseMessages.APP.COMMUNITY.BANNER_REQUIRED, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
+    }
+    const community = await Community.findById(communityId);
+    if (!community) {
+        return next(new ApiError(responseMessages.APP.COMMUNITY.NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
+    }
+    if (community.owner.toString() !== req.user._id.toString()) {
+        return next(new ApiError(responseMessages.AUTH.UNAUTHENTICATED, 403, ErrorCodes.CLIENT.UNAUTHORIZED));
+    }
+    const oldBannerUrl = community.bannerUrl;
+    const uploadResp = await ImageUpload({
+        files: [
+            {
+                fileName: file.fieldname ?? file.originalname,
+                mimeType: file.mimetype,
+                fileBase64: file.buffer.toString('base64'),
+            },
+        ],
+        username: req.user.username ?? 'auto',
+    });
+    const bannerUrl = uploadResp?.uploaded[0]?.url ?? '';
+    community.bannerUrl = bannerUrl;
+    await community.save();
+    // 🧹 Delete old image if it existed (non-blocking)
+    if (oldBannerUrl)
+        void deleteImagesFromS3([oldBannerUrl]);
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, { bannerUrl });
+});
+/**
  * Controller to delete a community by ID.
  *
  * Route: DELETE /communitypost/:communityId/

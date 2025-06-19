@@ -277,11 +277,9 @@ export const getHomeFeed = catchAsync(async (req, res, next) => {
     let postIds = await redisConnection.lrange(redisKey, start, end);
     // If Redis is empty, compute it once
     if (fresh || postIds.length === 0) {
-        console.log('🧹 Redis is empty. Computing home feed immediately...');
         await computeHomeFeed(String(userId));
         postIds = await redisConnection.lrange(redisKey, start, end);
     }
-    console.log('postids: ', postIds);
     const posts = await FetchPaginatedDataWithAggregation(Post, [{ $match: { _id: { $in: postIds.map(id => new mongoose.Types.ObjectId(id)) } } }], {
         populateFields: [{ path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' }],
     }, [...fetchPostPipelineStage(String(userId))]);

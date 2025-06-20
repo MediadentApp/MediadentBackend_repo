@@ -14,10 +14,10 @@ setInterval(() => {
     }
 }, cacheDuration / (1000 * 60 * 10));
 const logApiAccess = (req, res, next) => {
+    if (req.path === '/api/v1/health')
+        return next();
     (async () => {
         try {
-            if (req.path === '/api/v1/health')
-                return;
             const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.socket.remoteAddress || '';
             if (ip.includes('127.0.0.1') || ip.includes('::1') || ip.includes('localhost')) {
                 return;

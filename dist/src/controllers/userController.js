@@ -12,13 +12,14 @@ import { UserFollows } from '../models/userFollows.model.js';
 import redisConnection from '../redis.js';
 import Post from '../models/post.model.js';
 import { computeHomeFeed } from '../recommendations/strategies/home.strategy.js';
-import { FetchPaginatedDataWithAggregation } from '../utils/ApiPaginatedResponse.js';
+import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '../utils/ApiPaginatedResponse.js';
 import userServiceHandler from '../services/user.service.js';
 import ImageUpload from '../libs/imageUpload.js';
 import { deleteImagesFromS3 } from '../libs/s3.js';
 import { flattenObj } from '../utils/dataManipulation.js';
 import { fetchPostPipelineStage } from '../helper/fetchPostAggregationPipeline.js';
 import { sendUserNotification } from '../services/sendSocketMessageOrNotification.js';
+import { ApiAccessLog } from '../models/accessLogs.model.js';
 /**
  * Get the user's profile
  *
@@ -300,4 +301,17 @@ export const getPopularFeed = catchAsync(async (req, res, next) => {
         populateFields: [{ path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' }],
     }, [...fetchPostPipelineStage(String(userId))]);
     return ApiPaginatedResponse(res, posts);
+});
+export const getAccessLogs = catchAsync(async (req, res, next) => {
+    const fetchedData = await FetchPaginatedData(ApiAccessLog, {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+        sortField: 'createdAt',
+        sortOrder: 'desc',
+    });
+    return ApiPaginatedResponse(res, fetchedData);
+});
+export const deleteAllAccessLogs = catchAsync(async (req, res, next) => {
+    await ApiAccessLog.deleteMany({});
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
 });

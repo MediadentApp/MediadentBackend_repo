@@ -1,14 +1,17 @@
 import express from 'express';
 import userFormatApi from './formatApiRoutes.js';
-import { protect } from '../controllers/authController.js';
+import { protect, restrict } from '../controllers/authController.js';
 import { mainRoutes } from '../routes/mainRoutes.js';
 import { oauthRoutes } from '../routes/oauthRoutes.js';
 import { userAuthRoutes } from '../routes/userAuthRoutes.js';
 import { health } from '../controllers/serverHealthController.js';
 import { communityPostRoutes } from '../routes/communityPost.routes.js';
 import { commentRoutes } from '../routes/comment.routes.js';
+import { UserRole } from '../types/enum.js';
+import { adminRoutes } from '../routes/admin.routes.js';
 const router = express.Router();
 router.get('/api/v1/health', health);
+router.use('/api/v1/admin', protect, restrict(UserRole.Admin), adminRoutes);
 router.use('/api/v1/auth', userAuthRoutes);
 router.use('/oauth2', oauthRoutes);
 router.use('/api/v1/userformat', userFormatApi);

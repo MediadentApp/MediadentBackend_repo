@@ -23,7 +23,7 @@ setInterval(
 const logApiAccess = (req: Request, res: Response, next: NextFunction) => {
   (async () => {
     try {
-      if (req.path === '/api/v1/health') return next();
+      if (req.path === '/api/v1/health') return;
 
       const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.socket.remoteAddress || '';
 

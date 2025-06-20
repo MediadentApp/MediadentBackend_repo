@@ -9,10 +9,12 @@ import { health } from '#src/controllers/serverHealthController.js';
 import { communityPostRoutes } from '#src/routes/communityPost.routes.js';
 import { commentRoutes } from '#src/routes/comment.routes.js';
 import { UserRole } from '#src/types/enum.js';
+import { adminRoutes } from '#src/routes/admin.routes.js';
 
 const router: Router = express.Router();
 
 router.get('/api/v1/health', health);
+router.use('/api/v1/admin', protect, restrict(UserRole.Admin), adminRoutes);
 
 router.use('/api/v1/auth', userAuthRoutes);
 router.use('/oauth2', oauthRoutes);

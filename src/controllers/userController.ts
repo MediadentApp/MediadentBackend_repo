@@ -29,6 +29,7 @@ import { flattenObj } from '#src/utils/dataManipulation.js';
 import { IPost } from '#src/types/model.post.type.js';
 import { fetchPostPipelineStage } from '#src/helper/fetchPostAggregationPipeline.js';
 import { sendUserNotification } from '#src/services/sendSocketMessageOrNotification.js';
+import { ApiAccessLog } from '#src/models/accessLogs.model.js';
 
 /**
  * Get the user's profile
@@ -403,3 +404,21 @@ export const getPopularFeed = catchAsync(
     return ApiPaginatedResponse(res, posts);
   }
 );
+
+export const getAccessLogs = catchAsync(
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+    const fetchedData = await FetchPaginatedData(ApiAccessLog, {
+      page: req.query.page ?? '1',
+      pageSize: req.query.pageSize ?? '10',
+      sortField: 'createdAt',
+      sortOrder: 'desc',
+    });
+
+    return ApiPaginatedResponse(res, fetchedData);
+  }
+);
+
+export const deleteAllAccessLogs = catchAsync(async (req: AppRequest, res: AppResponse, next: NextFunction) => {
+  await ApiAccessLog.deleteMany({});
+  return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+});

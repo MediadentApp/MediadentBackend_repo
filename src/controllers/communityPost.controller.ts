@@ -104,7 +104,11 @@ export const createCommunity = catchAsync(
       imageUploadResp = await ImageUpload({ files: filesData, username: req.user.username ?? 'auto' });
     }
 
-    const slug = name.replace(/\s+/g, '-');
+    const slug = `${name
+      .trim()
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // remove special characters except word chars, spaces, and hyphens
+      .replace(/\s+/g, '-')}-${Date.now()}`;
 
     const data = await Community.create({
       name,
@@ -762,7 +766,11 @@ export const communityPost = catchAsync(
 
     // 5. Construct post data
     const allTags = tags ? Array.from(new Set([...JSON.parse(tags), `${user.fullName}`])) : [`${user.fullName}`];
-    const slug = `${title.trim().replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
+    const slug = `${title
+      .trim()
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // remove special characters except word chars, spaces, and hyphens
+      .replace(/\s+/g, '-')}-${Date.now()}`;
 
     const postData = {
       title: title.trim(),

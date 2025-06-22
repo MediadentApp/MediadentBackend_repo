@@ -108,7 +108,7 @@ export const createCommunity = catchAsync(
       .trim()
       .toLowerCase()
       .replace(/[^\w\s-]/g, '') // remove special characters except word chars, spaces, and hyphens
-      .replace(/\s+/g, '-')}-${Date.now()}`;
+      .replace(/\s+/g, '-')}`;
 
     const data = await Community.create({
       name,

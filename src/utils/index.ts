@@ -7,39 +7,32 @@ import mongoose, { Types } from 'mongoose';
 export const generateOTP = (): string => Math.floor(10000 + Math.random() * 90000).toString();
 
 /**
- * Recursively searches through an object and its nested structures to find all values
- * associated with a specified key, and returns them in an array.
+ * Recursively searches an object for a given key and returns the values of all matches.
  *
- * @param obj - The object or array to search through.
- * @param key - The key for which values need to be found.
- * @returns An array containing all values found for the specified key.
+ * @param input - The object or array of objects to search.
+ * @param key - The key to search for.
+ * @returns An array of values for the given key, or an empty array if no matches are found.
  */
-export const findKeyValues = (obj: unknown, key: string): unknown[] => {
-  const arr: unknown[] = [];
+export const findKeyValues = (input: any, key: string): any[] => {
+  const results: any[] = [];
 
-  // !! Fix this eslint error
-  const recursiveSearch = (obj: unknown) => {
+  const search = (obj: any) => {
     if (Array.isArray(obj)) {
-      obj.forEach(ele => {
-        if (typeof ele === 'object' && ele !== null) {
-          recursiveSearch(ele);
+      obj.forEach(search);
+    } else if (obj && typeof obj === 'object') {
+      for (const [k, v] of Object.entries(obj)) {
+        if (k === key) {
+          Array.isArray(v) ? results.push(...v) : results.push(v);
         }
-      });
-    } else if (typeof obj === 'object' && obj !== null) {
-      Object.keys(obj).forEach(prop => {
-        if (prop === key) {
-          const value = obj[prop as keyof typeof obj];
-          arr.concat(value);
+        if (typeof v === 'object' && v !== null) {
+          search(v);
         }
-        if (typeof obj[prop as keyof typeof obj] === 'object' && obj[prop as keyof typeof obj] !== null) {
-          recursiveSearch(obj[prop as keyof typeof obj]);
-        }
-      });
+      }
     }
   };
 
-  recursiveSearch(obj);
-  return arr;
+  search(input);
+  return results;
 };
 
 /**

@@ -14,7 +14,7 @@ setInterval(() => {
     }
 }, cacheDuration / (1000 * 60 * 10));
 const logApiAccess = (req, res, next) => {
-    if (req.path === '/api/v1/health')
+    if (req.path === '/api/v1/health' || req.path === '/favicon.ico')
         return next();
     (async () => {
         try {

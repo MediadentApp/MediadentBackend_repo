@@ -5,38 +5,31 @@ import mongoose, { Types } from 'mongoose';
  */
 export const generateOTP = () => Math.floor(10000 + Math.random() * 90000).toString();
 /**
- * Recursively searches through an object and its nested structures to find all values
- * associated with a specified key, and returns them in an array.
+ * Recursively searches an object for a given key and returns the values of all matches.
  *
- * @param obj - The object or array to search through.
- * @param key - The key for which values need to be found.
- * @returns An array containing all values found for the specified key.
+ * @param input - The object or array of objects to search.
+ * @param key - The key to search for.
+ * @returns An array of values for the given key, or an empty array if no matches are found.
  */
-export const findKeyValues = (obj, key) => {
-    const arr = [];
-    // !! Fix this eslint error
-    const recursiveSearch = (obj) => {
+export const findKeyValues = (input, key) => {
+    const results = [];
+    const search = (obj) => {
         if (Array.isArray(obj)) {
-            obj.forEach(ele => {
-                if (typeof ele === 'object' && ele !== null) {
-                    recursiveSearch(ele);
-                }
-            });
+            obj.forEach(search);
         }
-        else if (typeof obj === 'object' && obj !== null) {
-            Object.keys(obj).forEach(prop => {
-                if (prop === key) {
-                    const value = obj[prop];
-                    arr.concat(value);
+        else if (obj && typeof obj === 'object') {
+            for (const [k, v] of Object.entries(obj)) {
+                if (k === key) {
+                    Array.isArray(v) ? results.push(...v) : results.push(v);
                 }
-                if (typeof obj[prop] === 'object' && obj[prop] !== null) {
-                    recursiveSearch(obj[prop]);
+                if (typeof v === 'object' && v !== null) {
+                    search(v);
                 }
-            });
+            }
         }
     };
-    recursiveSearch(obj);
-    return arr;
+    search(input);
+    return results;
 };
 /**
  * Removes restricted fields from an update object.

@@ -2,12 +2,14 @@ import { ErrorCodes } from '../config/constants/errorCodes.js';
 import responseMessages from '../config/constants/responseMessages.js';
 import Comment from '../models/postComment.model.js';
 import { CommentVote } from '../models/postCommentVote.model.js';
+import User from '../models/userModel.js';
 import CommunityCommentCountsServiceHandler from '../services/communityCommentCount.service.js';
 import { SortMethod, SortOrder, VoteEnum } from '../types/enum.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import catchAsync from '../utils/catchAsync.js';
 import { getUpdateObj } from '../utils/dataManipulation.js';
+import { findKeyValues } from '../utils/index.js';
 import mongoose from 'mongoose';
 /**
  * Controller for creating a new comment.
@@ -195,17 +197,22 @@ export const getComments = catchAsync(async (req, res, next) => {
             },
         },
     ];
-    console.log('commentAggregation: ', JSON.stringify(commentAggregation, null, 2));
+    // console.log('commentAggregation: ', JSON.stringify(commentAggregation, null, 2));
     // Execute commentAggregation
     const fetchedComments = await Comment.aggregate(commentAggregation);
     // Fetch votes, Total root comments
     const commentCountSearch = commentId ? { commentId } : { postId };
-    const commentIds = collectAllCommentIds(fetchedComments);
-    const [totalRootComments, voted] = await Promise.all([
+    const commentIds = findKeyValues(fetchedComments, '_id');
+    const userIds = findKeyValues(fetchedComments, 'userId');
+    const [totalRootComments, voted, users] = await Promise.all([
         Comment.countDocuments(commentCountSearch),
         CommentVote.find({ userId: req.user._id, commentId: { $in: commentIds } }).lean(),
+        User.find({ _id: { $in: userIds } })
+            .select('fullName _id username profilePicture')
+            .lean(),
     ]);
     const voteMap = new Map(voted.map(vote => [vote.commentId.toString(), vote.voteType]));
+    const userMap = new Map(users.map(user => [user._id.toString(), user]));
     // Rebuild tree from flat structure and apply sorting and pagination per level
     const buildTree = (comment, childrenMap) => {
         const children = childrenMap.get(comment._id.toString()) || [];
@@ -220,11 +227,13 @@ export const getComments = catchAsync(async (req, res, next) => {
             }
             return order * (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         });
-        return {
+        const allComment = {
             ...comment,
             voteType: voteMap.get(comment._id.toString()) ?? null,
+            userId: userMap.get(comment.userId.toString()) ?? null,
             children: sortedChildren.map((child) => buildTree(child, childrenMap)),
         };
+        return allComment;
     };
     const structured = fetchedComments.map(base => {
         const all = [base, ...(base.children || [])];
@@ -301,16 +310,3 @@ export const voteComment = catchAsync(async (req, res, next) => {
     // }
     );
 });
-function collectAllCommentIds(comments) {
-    const ids = [];
-    function recurse(commentList) {
-        for (const comment of commentList) {
-            ids.push(String(comment._id));
-            if (comment.children && comment.children.length > 0) {
-                recurse(comment.children);
-            }
-        }
-    }
-    recurse(comments);
-    return ids;
-}

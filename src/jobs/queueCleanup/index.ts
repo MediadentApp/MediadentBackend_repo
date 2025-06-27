@@ -24,7 +24,7 @@ function setupGracefulCleanup() {
     await Promise.all([cleanQueue(postViewCleanupQueue), cleanQueue(postPopularityQueue), cleanQueue(testQueue)]);
 
     // Flush Redis
-    // await redisConnection.flushall();
+    await redisConnection.flushall();
     console.log('🧹 Redis FLUSHALL completed.');
 
     console.log('✅ Cleanup complete. Exiting.');

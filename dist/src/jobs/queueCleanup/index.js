@@ -1,3 +1,4 @@
+import redisConnection from '../../redis.js';
 import { postViewCleanupQueue } from '../../jobs/queues/postView.queue.js';
 import { testQueue } from '../../jobs/queues/test.queue.js';
 import { postPopularityQueue } from '../../jobs/queues/postPopularity.queue.js';
@@ -16,7 +17,7 @@ function setupGracefulCleanup() {
         // Clean queues
         await Promise.all([cleanQueue(postViewCleanupQueue), cleanQueue(postPopularityQueue), cleanQueue(testQueue)]);
         // Flush Redis
-        // await redisConnection.flushall();
+        await redisConnection.flushall();
         console.log('🧹 Redis FLUSHALL completed.');
         console.log('✅ Cleanup complete. Exiting.');
         process.exit(0);

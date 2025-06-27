@@ -17,8 +17,8 @@ export const refreshPostsWorker = new Worker('refreshPosts', async (job) => {
         const randomViews = Math.floor(Math.random() * 1000);
         const randomUpvotes = Math.floor(Math.random() * 500);
         const randomDownvotes = Math.floor(Math.random() * 100);
-        const daysAgo = Math.floor(Math.random() * 6);
-        const randomCreatedAt = new Date(Date.now() - daysAgo * 86400000);
+        const randomDaysAgo = Math.floor(Math.random() * 6);
+        const randomDate = new Date(Date.now() - randomDaysAgo * 24 * 60 * 60 * 1000);
         return {
             updateOne: {
                 filter: { _id: post._id },
@@ -27,14 +27,14 @@ export const refreshPostsWorker = new Worker('refreshPosts', async (job) => {
                         views: randomViews,
                         upvotesCount: randomUpvotes,
                         downvotesCount: randomDownvotes,
-                        createdAt: randomCreatedAt,
+                        createdAt: randomDate,
                         updatedAt: new Date(),
                     },
                 },
             },
         };
     });
-    await Post.bulkWrite(bulkOps);
+    await Post.collection.bulkWrite(bulkOps);
     // Drop PostView collection
     const dropResult = await PostView.collection.drop().then(() => true, (err) => {
         if (err.code === 26)

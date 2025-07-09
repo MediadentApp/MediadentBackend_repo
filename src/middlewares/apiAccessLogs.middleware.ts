@@ -5,7 +5,7 @@ import { ApiAccessLog } from '#src/models/accessLogs.model.js';
 import { UAParser } from 'ua-parser-js';
 
 const accessCache = new Map<string, number>(); // key = ip|os|browser, value = timestamp in ms
-const cacheDuration = 60 * 60 * 1000; // 1 hour
+const cacheDuration = 2 * 60 * 1000; // 2 minutes
 
 // Every 10 minutes, clean old entries
 setInterval(
@@ -17,7 +17,7 @@ setInterval(
       }
     }
   },
-  cacheDuration / (1000 * 60 * 10)
+  cacheDuration - 1 * 60 * 1000
 );
 
 const logApiAccess = (req: Request, res: Response, next: NextFunction) => {
@@ -45,7 +45,7 @@ const logApiAccess = (req: Request, res: Response, next: NextFunction) => {
       const userId = (req as any)?.user?._id;
       const username = (req as any)?.user?.username;
 
-      const cacheKey = `${ip}|${device.os}|${device.browser}`;
+      const cacheKey = ip;
       const now = Date.now();
       const lastLogged = accessCache.get(cacheKey);
 

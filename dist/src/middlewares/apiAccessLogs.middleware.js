@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { ApiAccessLog } from '../models/accessLogs.model.js';
 import { UAParser } from 'ua-parser-js';
 const accessCache = new Map(); // key = ip|os|browser, value = timestamp in ms
-const cacheDuration = 60 * 60 * 1000; // 1 hour
+const cacheDuration = 2 * 60 * 1000; // 2 minutes
 // Every 10 minutes, clean old entries
 setInterval(() => {
     const now = Date.now();
@@ -32,7 +32,7 @@ const logApiAccess = (req, res, next) => {
             };
             const userId = req?.user?._id;
             const username = req?.user?.username;
-            const cacheKey = `${ip}|${device.os}|${device.browser}`;
+            const cacheKey = ip;
             const now = Date.now();
             const lastLogged = accessCache.get(cacheKey);
             // If logged within the last 1 hour, skip DB

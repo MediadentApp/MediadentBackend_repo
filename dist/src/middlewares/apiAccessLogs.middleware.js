@@ -12,7 +12,7 @@ setInterval(() => {
             accessCache.delete(key);
         }
     }
-}, cacheDuration - 1 * 60 * 1000);
+}, 15 * 60 * 1000);
 const logApiAccess = (req, res, next) => {
     if (req.path === '/api/v1/health' || req.path === '/favicon.ico')
         return next();

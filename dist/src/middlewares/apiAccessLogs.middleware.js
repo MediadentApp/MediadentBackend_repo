@@ -19,7 +19,7 @@ const logApiAccess = (req, res, next) => {
     (async () => {
         try {
             const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.socket.remoteAddress || '';
-            if (ip.includes('127.0.0.1') || ip.includes('::1') || ip.includes('localhost')) {
+            if (ip.includes('127.0.0.1') || ip.includes('::1') || ip.includes('localhost') || ip.includes('103.107.126.37')) {
                 return;
             }
             const geo = geoip.lookup(ip) || null;

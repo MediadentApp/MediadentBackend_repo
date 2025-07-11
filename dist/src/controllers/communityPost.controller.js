@@ -21,7 +21,7 @@ import { getUpdateObj } from '../utils/dataManipulation.js';
 import { DebouncedExecutor } from '../utils/DebouncedExecutor.js';
 import mongoose from 'mongoose';
 const followCommunityExecutor = new DebouncedExecutor();
-const votePostExecutor = new DebouncedExecutor(1000, 100);
+const votePostExecutor = new DebouncedExecutor();
 const savePostExecutor = new DebouncedExecutor();
 /**
  * Controller to create a new community.

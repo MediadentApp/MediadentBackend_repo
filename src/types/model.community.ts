@@ -1,7 +1,7 @@
-import { Document, Types } from 'mongoose';
+import { Document, ObjectId, Types } from 'mongoose';
 import { CommunityInviteStatus, CommunityRole, CommunityType, ReportStatus } from './enum.js';
 
-export interface ICommunity extends Document<Types.ObjectId> {
+export interface ICommunity extends Document<ObjectId> {
   name: string;
   description: string;
   slug: string;

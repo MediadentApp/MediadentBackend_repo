@@ -26,14 +26,14 @@ const appConfig = {
     algoRecommendation: {
       postPopularity: {
         dailyCalcTimePattern: '0 0 */1 * * *', // At second 0, minute 0, every hour, every day, every month, every day of the week
-        hourlyCalcTimePattern: '0 29,59 * * * *', // 29 and 59 minutes past the hour, every hour, every day, every month, every day of the week
+        hourlyCalcTimePattern: '0 30,00 * * * *', // At 00 and 30 minutes past every hour
         thresholdDate: 30 * 24 * 60 * 60 * 1000, // 30 days
       },
       postViewCleanup: {
         dailyCleanTimePattern: '0 0 16 * * *',
       },
       refreshPosts: {
-        hourlyRefreshTimePattern: '0 */30 * * * *', // every 30 minutes, on the 0th second
+        hourlyRefreshTimePattern: '0 29,59 * * * *', // At 29 and 59 minutes past every hour
       },
     },
     post: {
@@ -46,10 +46,10 @@ const appConfig = {
       PostViewCleanupInterval: 24 * 60 * 60 * 1000, // 24 hrs, must be in milliseconds
     },
   },
-  defaultDebounceExecutionFlushDelay: 3000, // ms
+  defaultDebounceExecutionFlushDelay: 50, // ms
   defaultDebounceExecutionMaxOperations: 200,
-  defaultDebounceMongoBatchExecutionFlushDelay: 1500, // ms
-  defaultDebounceMongoBatchExecutionMaxOperations: 500,
+  defaultDebounceMongoBatchExecutionFlushDelay: 300, // ms
+  defaultDebounceMongoBatchExecutionMaxOperations: 300,
   chat: {
     DEFAULT_MESSAGES_PER_PAGE: 25,
   },

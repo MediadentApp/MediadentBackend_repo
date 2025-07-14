@@ -34,7 +34,7 @@ import { NextFunction } from 'express';
 import mongoose from 'mongoose';
 
 const followCommunityExecutor = new DebouncedExecutor();
-const votePostExecutor = new DebouncedExecutor(1000, 100);
+const votePostExecutor = new DebouncedExecutor();
 const savePostExecutor = new DebouncedExecutor();
 
 /**

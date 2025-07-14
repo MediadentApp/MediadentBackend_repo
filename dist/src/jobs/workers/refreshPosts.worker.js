@@ -14,9 +14,9 @@ export const refreshPostsWorker = new Worker('refreshPosts', async (job) => {
         return { updated: 0, droppedPostViews: false };
     // Prepare bulk updates
     const bulkOps = posts.map(post => {
-        const randomViews = Math.floor(Math.random() * 1000);
         const randomUpvotes = Math.floor(Math.random() * 500);
         const randomDownvotes = Math.floor(Math.random() * 100);
+        const randomViews = Math.floor(Math.random() * 1000) + randomDownvotes + randomUpvotes;
         const randomDaysAgo = Math.floor(Math.random() * 6);
         const randomDate = new Date(Date.now() - randomDaysAgo * 24 * 60 * 60 * 1000);
         return {

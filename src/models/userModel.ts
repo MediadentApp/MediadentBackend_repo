@@ -271,9 +271,7 @@ userSchema.pre<IUser>('save', async function (next: CallbackWithoutResultAndOpti
     }
   }
 
-  if (!this?.fullName) {
-    this.fullName = `${this.firstName} ${this.lastName}`;
-  }
+  this.fullName = `${this.firstName} ${this.lastName}`;
 
   // Generate username if not present
   if (!this.username) {

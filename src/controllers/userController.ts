@@ -83,6 +83,10 @@ export const updateUser = catchAsync(
       };
     }
 
+    if ('firstName' in updateData || 'lastName' in updateData) {
+      updateData.fullName = `${updateData.firstName || req.user.firstName} ${updateData.lastName || req.user.lastName}`;
+    }
+
     const user = await User.findOneAndUpdate({ _id: userId }, updateData, { new: true });
     if (!user) {
       return next(new ApiError(responseMessages.USER.USER_NOT_FOUND, 404, ErrorCodes.GENERAL.USER_NOT_FOUND));

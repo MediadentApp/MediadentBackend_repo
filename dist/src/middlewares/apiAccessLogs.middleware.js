@@ -14,12 +14,12 @@ setInterval(() => {
     }
 }, 15 * 60 * 1000);
 const logApiAccess = (req, res, next) => {
-    if (req.path === '/api/v1/health' || req.path === '/favicon.ico')
+    if (req.path === '/api/v1/health' || req.path === '/favicon.ico' || req.path === '/')
         return next();
     (async () => {
         try {
             const ip = req.ip || req.socket.remoteAddress || '';
-            if (ip.includes('103.107.126.37')) {
+            if (ip.includes('127.0.0.1') || ip.includes('::1') || ip.includes('localhost') || ip.includes('103.107.126.37')) {
                 return;
             }
             const geo = geoip.lookup(ip) || null;

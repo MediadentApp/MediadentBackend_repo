@@ -25,9 +25,9 @@ const logApiAccess = (req: Request, res: Response, next: NextFunction) => {
 
   (async () => {
     try {
-      const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.socket.remoteAddress || '';
+      const ip = req.ip || req.socket.remoteAddress || '';
 
-      if (ip.includes('127.0.0.1') || ip.includes('::1') || ip.includes('localhost') || ip.includes('103.107.126.37')) {
+      if (ip.includes('103.107.126.37')) {
         return;
       }
 

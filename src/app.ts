@@ -18,10 +18,13 @@ import { routes } from '#src/routes/index.js';
 import socketRoutes from '#src/routes/socketRoutes.js';
 import { unknownRoute } from '#src/controllers/serverHealthController.js';
 import serverAdapter from '#src/jobs/admin.js';
-import { restrict } from '#src/controllers/authController.js';
-import { UserRole } from '#src/types/enum.js';
 
 const app = express();
+
+// Load banned IPs to Redis
+
+// trust X-Forwarded-For header
+app.set('trust proxy', true);
 
 // Middlewares
 app.use(middlewares);

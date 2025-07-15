@@ -6,6 +6,7 @@ import './appSettings.js';
 import mongoose, { MongooseError } from 'mongoose';
 
 import { server } from '#src/app.js';
+import { loadBannedIPsToRedis } from '#src/services/initBannedIPsToRedis.js';
 
 const isProductionOrStaging = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
 const useTestDatabase = process.env.USE_TEST_DATABASE !== 'false';
@@ -21,6 +22,9 @@ async function connectDB() {
   try {
     await mongoose.connect(DB_URI as string);
     console.log(db_type, 'database connected successfully');
+
+    // Load banned IPs to Redis
+    await loadBannedIPsToRedis();
   } catch (error) {
     console.error('Database connection failed', error);
     throw new MongooseError('Database connection failed');

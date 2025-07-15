@@ -97,3 +97,23 @@ export function formatFileSize(size) {
         return `${(size / (1024 * 1024)).toFixed(2)} MB`;
     }
 }
+/**
+ * Generates all possible IP addresses in the same subnet for a given IP address.
+ * Assumes a standard subnet mask of 255.255.255.0 (CIDR /24), which means it
+ * generates IPs from x.x.x.1 to x.x.x.254 for the provided base IP address x.x.x.
+ *
+ * @param ipAddress - The base IP address to generate subnet IPs for.
+ * @returns An array of IP addresses within the same subnet as the provided IP address.
+ */
+export const getSubnetIPs = (ipAddress) => {
+    const parts = ipAddress.split('.');
+    if (parts.length !== 4)
+        return [ipAddress];
+    const base = `${parts[0]}.${parts[1]}.${parts[2]}`;
+    const ips = [];
+    // Loop through 1 to 254 to avoid network and broadcast addresses
+    for (let i = 1; i < 255; i++) {
+        ips.push(`${base}.${i}`);
+    }
+    return ips;
+};

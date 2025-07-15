@@ -3,6 +3,7 @@ import './loadenv.js';
 import './appSettings.js';
 import mongoose, { MongooseError } from 'mongoose';
 import { server } from './src/app.js';
+import { loadBannedIPsToRedis } from './src/services/initBannedIPsToRedis.js';
 const isProductionOrStaging = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
 const useTestDatabase = process.env.USE_TEST_DATABASE !== 'false';
 const db_type = isProductionOrStaging || !useTestDatabase ? 'PRODUCTION' : 'TEST';
@@ -16,6 +17,8 @@ async function connectDB() {
     try {
         await mongoose.connect(DB_URI);
         console.log(db_type, 'database connected successfully');
+        // Load banned IPs to Redis
+        await loadBannedIPsToRedis();
     }
     catch (error) {
         console.error('Database connection failed', error);

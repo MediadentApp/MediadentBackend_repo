@@ -1,0 +1,180 @@
+import { ErrorCodes } from '../config/constants/errorCodes.js';
+import responseMessages from '../config/constants/responseMessages.js';
+import { ApiAccessLog } from '../models/accessLogs.model.js';
+import { BannedIP } from '../models/BannedIP.model.js';
+import Community from '../models/community.model.js';
+import Post from '../models/post.model.js';
+import User from '../models/userModel.js';
+import redisConnection from '../redis.js';
+import ApiError from '../utils/ApiError.js';
+import { FetchPaginatedData } from '../utils/ApiPaginatedResponse.js';
+import ApiResponse, { ApiPaginatedResponse } from '../utils/ApiResponse.js';
+import catchAsync from '../utils/catchAsync.js';
+/**
+ * Controller to fetch a paginated list of api access logs.
+ *
+ * Route: GET /admin/accesslogs
+ */
+export const getAccessLogs = catchAsync(async (req, res, next) => {
+    const fetchedData = await FetchPaginatedData(ApiAccessLog, {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+        sortField: 'createdAt',
+        sortOrder: 'desc',
+    });
+    return ApiPaginatedResponse(res, fetchedData);
+});
+/**
+ * Controller to delete all api access logs.
+ *
+ * Route: DELETE /admin/accesslogs
+ */
+export const deleteAllAccessLogs = catchAsync(async (req, res, next) => {
+    await ApiAccessLog.deleteMany({});
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+});
+/**
+ * Controller to fetch a paginated list of users.
+ *
+ * Route: GET /admin/users
+ */
+export const getAllUsers = catchAsync(async (req, res, next) => {
+    const fetchedData = await FetchPaginatedData(User, {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+        sortField: 'createdAt',
+        sortOrder: 'desc',
+    });
+    return ApiPaginatedResponse(res, fetchedData);
+});
+/**
+ * Controller to delete a user.
+ *
+ * Route: DELETE /admin/users/:id
+ */
+export const deleteUser = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const user = await User.findByIdAndDelete(id);
+    if (!user) {
+        return ApiResponse(res, 404, responseMessages.GENERAL.NOT_FOUND, { id });
+    }
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+});
+/**
+ * Controller to fetch a paginated list of communities.
+ *
+ * Route: GET /admin/communities
+ */
+export const getAllCommunities = catchAsync(async (req, res, next) => {
+    const fetchedData = await FetchPaginatedData(Community, {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+        sortField: 'createdAt',
+        sortOrder: 'desc',
+    });
+    return ApiPaginatedResponse(res, fetchedData);
+});
+/**
+ * Controller to delete a community.
+ *
+ * Route: DELETE /admin/communities/:id
+ */
+export const deleteCommunity = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const community = await Community.findByIdAndDelete(id);
+    if (!community) {
+        return ApiResponse(res, 404, responseMessages.GENERAL.NOT_FOUND, { id });
+    }
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+});
+/**
+ * Controller to fetch a paginated list of posts.
+ *
+ * Route: GET /admin/posts
+ */
+export const getAllPosts = catchAsync(async (req, res, next) => {
+    const fetchedData = await FetchPaginatedData(Post, {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+        sortField: 'createdAt',
+        sortOrder: 'desc',
+    });
+    return ApiPaginatedResponse(res, fetchedData);
+});
+/**
+ * Controller to delete a post.
+ *
+ * Route: DELETE /admin/posts/:id
+ */
+export const deletePost = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const post = await Post.findByIdAndDelete(id);
+    if (!post) {
+        return ApiResponse(res, 404, responseMessages.GENERAL.NOT_FOUND, { id });
+    }
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+});
+/**
+ * Controller to get a paginated list of banned IP addresses.
+ *
+ * Route: GET /admin/banned-ips
+ */
+export const getBannedIPs = catchAsync(async (req, res, next) => {
+    const fetchedData = await FetchPaginatedData(BannedIP, {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+        sortField: 'createdAt',
+        sortOrder: 'desc',
+    });
+    return ApiPaginatedResponse(res, fetchedData);
+});
+/**
+ * Controller to ban an IP address.
+ *
+ * Route: POST /admin/ban-ip
+ */
+export const banIP = catchAsync(async (req, res, next) => {
+    const { ip, reason, banNetwork = false } = req.body;
+    if (!ip) {
+        return next(new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
+    }
+    const existing = await BannedIP.findOne({ ip });
+    if (existing) {
+        return next(new ApiError(responseMessages.GENERAL.CONFLICT, 400, ErrorCodes.GENERAL.FAIL));
+    }
+    await BannedIP.create({ ip, reason: reason || '', banNetwork });
+    if (banNetwork) {
+        const subnet = ip.split('.').slice(0, 3).join('.');
+        await redisConnection.sadd('banned_subnets', subnet);
+    }
+    else {
+        await redisConnection.sadd('banned_ips', ip);
+    }
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+});
+/**
+ * Controller to unban an IP address.
+ *
+ * Route: DELETE /admin/unban-ip/id
+ */
+export const unbanIP = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+    if (!id) {
+        return next(new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
+    }
+    const bannedEntry = await BannedIP.findById(id);
+    if (!bannedEntry) {
+        return next(new ApiError(responseMessages.DATA.NOT_FOUND, 404, ErrorCodes.DATA.NOT_FOUND));
+    }
+    // Remove from Redis
+    if (bannedEntry.banNetwork) {
+        const subnet = bannedEntry.ip.split('.').slice(0, 3).join('.');
+        await redisConnection.srem('banned_subnets', subnet);
+    }
+    else {
+        await redisConnection.srem('banned_ips', bannedEntry.ip);
+    }
+    // Remove from MongoDB
+    await bannedEntry.deleteOne();
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+});

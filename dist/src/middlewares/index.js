@@ -8,9 +8,11 @@ import requestInfo from './requestInfo.js';
 import sanitizeBody from '../middlewares/sanitizeBody.js';
 import logApiAccess from '../middlewares/apiAccessLogs.middleware.js';
 import helmet from 'helmet';
+import ipBanCheck from '../middlewares/ipBanCheck.js';
 const middlewares = express();
 middlewares.use(logger);
 middlewares.use(logApiAccess); // Log API access
+middlewares.use(ipBanCheck);
 middlewares.use(corsMiddleware);
 middlewares.use(rateLimiter);
 middlewares.use(helmet());

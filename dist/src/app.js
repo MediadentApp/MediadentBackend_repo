@@ -15,6 +15,9 @@ import socketRoutes from './routes/socketRoutes.js';
 import { unknownRoute } from './controllers/serverHealthController.js';
 import serverAdapter from './jobs/admin.js';
 const app = express();
+// Load banned IPs to Redis
+// trust X-Forwarded-For header
+app.set('trust proxy', true);
 // Middlewares
 app.use(middlewares);
 // Routes

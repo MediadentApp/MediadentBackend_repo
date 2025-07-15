@@ -1,18 +1,11 @@
 import appConfig from '../../config/appConfig.js';
 import { updateTaggedPostsQueue } from '../../jobs/queues/updateTaggedPosts.queue.js';
 export async function schedulePostRefresh() {
-    const jobName = 'refreshPosts';
-    const repeatPattern = {
+    await updateTaggedPostsQueue.obliterate({ force: true });
+    await updateTaggedPostsQueue.upsertJobScheduler('refreshPosts', {
         pattern: appConfig.app.algoRecommendation.refreshPosts.hourlyRefreshTimePattern,
-    };
-    try {
-        await updateTaggedPostsQueue.removeJobScheduler(jobName);
-    }
-    catch (err) {
-        console.warn(`Could not remove existing scheduler '${jobName}':`, err.message);
-    }
-    await updateTaggedPostsQueue.upsertJobScheduler(jobName, repeatPattern, {
-        name: jobName,
+    }, {
+        name: 'refreshPosts',
         data: {
             keywords: ['refresh'],
             batchSize: 50,

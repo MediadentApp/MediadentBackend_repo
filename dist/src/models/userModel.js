@@ -257,9 +257,7 @@ userSchema.pre('save', async function (next) {
             throw new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.INVALID_EMAIL);
         }
     }
-    if (!this?.fullName) {
-        this.fullName = `${this.firstName} ${this.lastName}`;
-    }
+    this.fullName = `${this.firstName} ${this.lastName}`;
     // Generate username if not present
     if (!this.username) {
         const emailPrefix = this.email.split('@')[0];

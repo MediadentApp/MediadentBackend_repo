@@ -23,6 +23,7 @@ import {
   updateUserPicture,
   getUserByIdentifier,
   userNotifications,
+  searchUsers,
 } from '#src/controllers/userController.js';
 import { profileImageUpload } from '#src/middlewares/multerPosts.js';
 import { AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
@@ -75,6 +76,12 @@ router.get('/home/feed', getHomeFeed);
  * Returns the user's popular feed.
  */
 router.get('/popular/feed', getPopularFeed);
+
+/**
+ * GET /search
+ * Returns the user's popular feed.
+ */
+router.get('/search', searchUsers);
 
 /**
  * GET /posts

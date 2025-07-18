@@ -20,7 +20,7 @@ import { computeHomeFeed } from '#src/recommendations/strategies/home.strategy.j
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { CommunityPostParam } from '#src/types/param.communityPost.js';
-import { FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
+import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
 import userServiceHandler from '#src/services/user.service.js';
 import { UpdateUserDTO } from '#src/types/model.js';
 import ImageUpload, { ImageFileData } from '#src/libs/imageUpload.js';
@@ -180,6 +180,27 @@ export const getUserByIdentifier = catchAsync(
 
     const data = user;
     return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data);
+  }
+);
+
+/**
+ * Get, Search users
+ *
+ * Route: GET /users/search
+ */
+export const searchUsers = catchAsync(
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+    const fetchedData = await FetchPaginatedData(User, {
+      searchValue: req.query.searchValue ?? '',
+      searchFields: req.query.searchFields ?? ['firstName', 'lastName', 'username'],
+      selectFields: '_id,firstName,lastName,username,profilePicture,fullName,role',
+      page: req.query.page ?? '1',
+      pageSize: req.query.pageSize ?? '10',
+      sortField: 'createdAt',
+      sortOrder: 'desc',
+    });
+
+    return ApiPaginatedResponse(res, fetchedData);
   }
 );
 

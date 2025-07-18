@@ -38,12 +38,16 @@ export const getAccessLogs = catchAsync(
 /**
  * Controller to delete all api access logs.
  *
- * Route: DELETE /admin/accesslogs
+ * Route: DELETE /admin/accesslogs/:id
  */
-export const deleteAllAccessLogs = catchAsync(async (req: AppRequest, res: AppResponse, next: NextFunction) => {
-  await ApiAccessLog.deleteMany({});
-  return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
-});
+export const deleteAllAccessLogs = catchAsync(
+  async (req: AppRequest<IdParam>, res: AppResponse, next: NextFunction) => {
+    const { id } = req.params;
+
+    await ApiAccessLog.deleteMany({ _id: id ? id : { $exists: true } });
+    return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+  }
+);
 
 /**
  * Controller to fetch a paginated list of users.

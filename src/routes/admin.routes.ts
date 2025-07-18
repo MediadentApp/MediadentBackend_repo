@@ -18,6 +18,7 @@ const router = express.Router();
 
 // Routes for accessing and deleting access logs
 router.route('/accesslogs').get(getAccessLogs).delete(deleteAllAccessLogs);
+router.route('/accesslogs/:id').delete(deleteAllAccessLogs);
 
 // Routes for accessing and deleting users
 router.get('/users', getAllUsers);

@@ -30,6 +30,7 @@ import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { getUpdateObj } from '#src/utils/dataManipulation.js';
 import { DebouncedExecutor } from '#src/utils/DebouncedExecutor.js';
+import { stringToObjectID } from '#src/utils/index.js';
 import { NextFunction } from 'express';
 import mongoose from 'mongoose';
 
@@ -993,6 +994,194 @@ export const savePost = catchAsync(
       },
     });
     ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
+  }
+);
+
+/**
+ * Controller to get all user posts
+ *
+ * Route: GET /user/posts/:id
+ */
+export const getUserPosts = catchAsync(
+  async (req: AppPaginatedRequest<IdParam>, res: AppPaginatedResponse, next: NextFunction) => {
+    let { id: userId } = req.params;
+
+    if (!userId) {
+      userId = req.user._id;
+    }
+
+    const posts = await FetchPaginatedDataWithAggregation<IPost>(
+      Post,
+      [
+        {
+          $match: {
+            authorId: stringToObjectID(userId),
+          },
+        },
+      ],
+      {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '15',
+        sortField: 'createdAt',
+        sortOrder: 'desc',
+        populateFields: [{ path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' }],
+      },
+      [...fetchPostPipelineStage(String(userId))]
+    );
+
+    return ApiPaginatedResponse(res, posts);
+  }
+);
+
+/**
+ * Controller to get saved posts
+ *
+ * Route: GET /user/saved
+ */
+export const getSavedPosts = catchAsync(
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+    const userId = req.user._id;
+
+    const posts = await FetchPaginatedDataWithAggregation<IPost>(
+      PostSave,
+      [
+        {
+          $match: {
+            userId,
+          },
+        },
+      ],
+      {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '15',
+        sortField: 'createdAt',
+        sortOrder: 'desc',
+        populateFields: [{ path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' }],
+      },
+      [
+        {
+          $lookup: {
+            from: 'posts',
+            localField: 'postId',
+            foreignField: '_id',
+            as: 'post',
+          },
+        },
+        {
+          $unwind: '$post',
+        },
+        {
+          $replaceRoot: {
+            newRoot: '$post',
+          },
+        },
+        ...fetchPostPipelineStage(userId),
+      ]
+    );
+
+    return ApiPaginatedResponse(res, posts);
+  }
+);
+
+/**
+ * Controller to get all upvoted posts
+ *
+ * Route: GET /user/upvoted
+ */
+export const getUpvotedPosts = catchAsync(
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+    const userId = req.user._id;
+
+    const posts = await FetchPaginatedDataWithAggregation<IPost>(
+      PostVote,
+      [
+        {
+          $match: {
+            userId,
+            voteType: VoteEnum.upVote,
+          },
+        },
+      ],
+      {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '15',
+        sortField: 'createdAt',
+        sortOrder: req.query.sortOrder ?? 'desc',
+        populateFields: [{ path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' }],
+      },
+      [
+        {
+          $lookup: {
+            from: 'posts',
+            localField: 'postId',
+            foreignField: '_id',
+            as: 'post',
+          },
+        },
+        {
+          $unwind: '$post',
+        },
+        {
+          $replaceRoot: {
+            newRoot: '$post',
+          },
+        },
+        ...fetchPostPipelineStage(userId),
+      ]
+    );
+
+    return ApiPaginatedResponse(res, posts);
+  }
+);
+
+/**
+ * Controller to get all downvoted posts
+ *
+ * Route: GET /user/downvoted
+ */
+export const getDownvotedPosts = catchAsync(
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+    const userId = req.user._id;
+
+    const posts = await FetchPaginatedDataWithAggregation<IPost>(
+      PostVote,
+      [
+        {
+          $match: {
+            userId,
+            voteType: VoteEnum.downVote,
+          },
+        },
+      ],
+      {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '15',
+        sortField: 'createdAt',
+        sortOrder: req.query.sortOrder ?? 'desc',
+        populateFields: [{ path: 'communityId', select: '_id slug name avatarUrl', from: 'communities' }],
+      },
+      [
+        {
+          $lookup: {
+            from: 'posts',
+            localField: 'postId',
+            foreignField: '_id',
+            as: 'post',
+          },
+        },
+        {
+          $unwind: '$post',
+        },
+        {
+          $replaceRoot: {
+            newRoot: '$post',
+          },
+        },
+        ...fetchPostPipelineStage(userId),
+      ]
+    );
+
+    return ApiPaginatedResponse(res, posts);
   }
 );
 

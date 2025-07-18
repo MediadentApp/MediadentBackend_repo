@@ -1,6 +1,10 @@
 import { PipelineStage, Types } from 'mongoose';
 
-export const fetchPostPipelineStage = (id: string): PipelineStage[] => {
+type Options = {
+  saved?: boolean; // default true, searches for saved posts
+};
+
+export const fetchPostPipelineStage = (id: string, options: Options = { saved: true }): PipelineStage[] => {
   const userId = new Types.ObjectId(id);
   return [
     {
@@ -31,23 +35,25 @@ export const fetchPostPipelineStage = (id: string): PipelineStage[] => {
         },
       },
     },
-    {
-      $lookup: {
-        from: 'postsaves',
-        let: { postId: '$_id' },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+    ...(options.saved === true ? [
+      {
+        $lookup: {
+          from: 'postsaves',
+          let: { postId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+                },
               },
             },
-          },
-          { $limit: 1 },
-        ],
-        as: 'savedByUser',
+            { $limit: 1 },
+          ],
+          as: 'savedByUser',
+        },
       },
-    },
+    ] : []),
     {
       $lookup: {
         from: 'postviews',
@@ -84,7 +90,7 @@ export const fetchPostPipelineStage = (id: string): PipelineStage[] => {
     },
     {
       $addFields: {
-        isSaved: { $gt: [{ $size: '$savedByUser' }, 0] },
+        ...(options.saved === true ? { isSaved: { $gt: [{ $size: '$savedByUser' }, 0] } } : {}),
         isViewed: { $gt: [{ $size: '$viewedByUser' }, 0] },
         voteType: {
           $cond: [{ $gt: [{ $size: '$votedByUser' }, 0] }, { $arrayElemAt: ['$votedByUser.voteType', 0] }, null],

@@ -407,3 +407,9 @@ export const getPopularFeed = catchAsync(
     return ApiPaginatedResponse(res, posts);
   }
 );
+
+/**
+ * Controller to get notifications
+ *
+ * Route: GET /user/notifications
+ */

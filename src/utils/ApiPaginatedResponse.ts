@@ -344,7 +344,7 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
     },
   ];
 
-  // console.log('pipeline', JSON.stringify(paginatedPipeline, null, 2));
+  console.log('pipeline', JSON.stringify(paginatedPipeline, null, 2));
 
   const result = await model.aggregate(paginatedPipeline);
 

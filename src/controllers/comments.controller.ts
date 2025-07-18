@@ -5,19 +5,23 @@ import { CommentVote } from '#src/models/postCommentVote.model.js';
 import User from '#src/models/userModel.js';
 import CommunityCommentCountsServiceHandler from '#src/services/communityCommentCount.service.js';
 import { AppRequestBody, AppRequestParams, AppRequestQuery } from '#src/types/api.request.js';
+import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse, IResponseExtraCommentPagination } from '#src/types/api.response.js';
+import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { SortMethod, SortOrder, VoteEnum } from '#src/types/enum.js';
 import { IPostComment } from '#src/types/model.post.type.js';
 import { CommentParam } from '#src/types/param.comment.js';
+import { IdParam } from '#src/types/param.js';
 import { ICommentQuery } from '#src/types/query.comment.js';
 import { ICommentBody, ICommentVoteBody } from '#src/types/request.comment.js';
 import ApiError from '#src/utils/ApiError.js';
-import ApiResponse from '#src/utils/ApiResponse.js';
+import { FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
+import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { getUpdateObj } from '#src/utils/dataManipulation.js';
-import { findKeyValues } from '#src/utils/index.js';
+import { findKeyValues, stringToObjectID } from '#src/utils/index.js';
 import { NextFunction } from 'express';
-import mongoose from 'mongoose';
+import mongoose, { isValidObjectId } from 'mongoose';
 
 /**
  * Controller for creating a new comment.
@@ -409,5 +413,50 @@ export const voteComment = catchAsync(
       // downvotesCount: updated?.downvotesCount || 0,
       // }
     );
+  }
+);
+
+/**
+ * Controller to get all comments of a user.
+ *
+ * Route: GET /comments/user/:id
+ */
+export const getUserComments = catchAsync(
+  async (req: AppPaginatedRequest<IdParam>, res: AppPaginatedResponse, next: NextFunction) => {
+    let { id: userId } = req.params;
+    if (userId && !isValidObjectId(userId)) {
+      return next(
+        new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
+      );
+    }
+
+    if (!userId) {
+      userId = req.user._id;
+    }
+
+    const comments = await FetchPaginatedDataWithAggregation<IPostComment>(
+      Comment,
+      [
+        {
+          $match: {
+            userId: stringToObjectID(userId),
+          },
+        },
+      ],
+      {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '15',
+        sortField: 'createdAt',
+        sortOrder: req.query.sortOrder ?? 'desc',
+        populateFields: [
+          { path: 'postId', select: 'title slug communityId', from: 'posts' },
+          { path: 'userId', select: 'username fullName avatarUrl', from: 'users' },
+          { path: 'postId.communityId', select: 'avatarUrl slug name', from: 'communities' },
+        ],
+      },
+      []
+    );
+
+    return ApiPaginatedResponse(res, comments);
   }
 );

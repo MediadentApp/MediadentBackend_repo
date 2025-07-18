@@ -1,3 +1,10 @@
+import { getUserComments } from '#src/controllers/comments.controller.js';
+import {
+  getDownvotedPosts,
+  getSavedPosts,
+  getUpvotedPosts,
+  getUserPosts,
+} from '#src/controllers/communityPost.controller.js';
 import {
   chats,
   deleteChatId,
@@ -68,6 +75,33 @@ router.get('/home/feed', getHomeFeed);
  * Returns the user's popular feed.
  */
 router.get('/popular/feed', getPopularFeed);
+
+/**
+ * GET /posts
+ * Returns the user's posts.
+ */
+router.get('/posts', getUserPosts);
+router.get('/posts/:id', getUserPosts);
+
+/**
+ * GET /saved
+ * Returns the user's saved posts.
+ */
+router.get('/saved', getSavedPosts);
+
+/**
+ * GET /commets
+ * Returns the user's saved posts.
+ */
+router.get('/comments/:id', getUserComments);
+router.get('/comments', getUserComments);
+
+/**
+ * GET /voted posts
+ * Returns the user's voted posts.
+ */
+router.get('/upvoted', getUpvotedPosts);
+router.get('/downvoted', getDownvotedPosts);
 
 /**
  * GET /notifications

@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-export const fetchPostPipelineStage = (id) => {
+export const fetchPostPipelineStage = (id, options = { saved: true }) => {
     const userId = new Types.ObjectId(id);
     return [
         {
@@ -30,23 +30,25 @@ export const fetchPostPipelineStage = (id) => {
                 },
             },
         },
-        {
-            $lookup: {
-                from: 'postsaves',
-                let: { postId: '$_id' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+        ...(options.saved === true ? [
+            {
+                $lookup: {
+                    from: 'postsaves',
+                    let: { postId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+                                },
                             },
                         },
-                    },
-                    { $limit: 1 },
-                ],
-                as: 'savedByUser',
+                        { $limit: 1 },
+                    ],
+                    as: 'savedByUser',
+                },
             },
-        },
+        ] : []),
         {
             $lookup: {
                 from: 'postviews',
@@ -83,7 +85,7 @@ export const fetchPostPipelineStage = (id) => {
         },
         {
             $addFields: {
-                isSaved: { $gt: [{ $size: '$savedByUser' }, 0] },
+                ...(options.saved === true ? { isSaved: { $gt: [{ $size: '$savedByUser' }, 0] } } : {}),
                 isViewed: { $gt: [{ $size: '$viewedByUser' }, 0] },
                 voteType: {
                     $cond: [{ $gt: [{ $size: '$votedByUser' }, 0] }, { $arrayElemAt: ['$votedByUser.voteType', 0] }, null],

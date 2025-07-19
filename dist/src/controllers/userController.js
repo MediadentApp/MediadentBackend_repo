@@ -12,7 +12,7 @@ import { UserFollows } from '../models/userFollows.model.js';
 import redisConnection from '../redis.js';
 import Post from '../models/post.model.js';
 import { computeHomeFeed } from '../recommendations/strategies/home.strategy.js';
-import { FetchPaginatedDataWithAggregation } from '../utils/ApiPaginatedResponse.js';
+import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '../utils/ApiPaginatedResponse.js';
 import userServiceHandler from '../services/user.service.js';
 import ImageUpload from '../libs/imageUpload.js';
 import { deleteImagesFromS3 } from '../libs/s3.js';
@@ -138,6 +138,23 @@ export const getUserByIdentifier = catchAsync(async (req, res, next) => {
     }
     const data = user;
     return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS, data);
+});
+/**
+ * Get, Search users
+ *
+ * Route: GET /users/search
+ */
+export const searchUsers = catchAsync(async (req, res, next) => {
+    const fetchedData = await FetchPaginatedData(User, {
+        searchValue: req.query.searchValue ?? '',
+        searchFields: req.query.searchFields ?? ['firstName', 'lastName', 'username'],
+        selectFields: '_id,firstName,lastName,username,profilePicture,fullName,role',
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '10',
+        sortField: 'createdAt',
+        sortOrder: 'desc',
+    });
+    return ApiPaginatedResponse(res, fetchedData);
 });
 /**
  * Get users by ids
@@ -304,3 +321,8 @@ export const getPopularFeed = catchAsync(async (req, res, next) => {
     }, [...fetchPostPipelineStage(String(userId))]);
     return ApiPaginatedResponse(res, posts);
 });
+/**
+ * Controller to get notifications
+ *
+ * Route: GET /user/notifications
+ */

@@ -1,5 +1,7 @@
+import { getUserComments } from '../controllers/comments.controller.js';
+import { getDownvotedPosts, getSavedPosts, getUpvotedPosts, getUserPosts, } from '../controllers/communityPost.controller.js';
 import { chats, deleteChatId, getChatID, getMessagesByChatId, getSecondParticipants, sendPushNotification, subscribe, } from '../controllers/socketMessageController.js';
-import { fetchUser, followUserToggle, getHomeFeed, getPopularFeed, updateUser, updateUserPicture, getUserByIdentifier, userNotifications, } from '../controllers/userController.js';
+import { fetchUser, followUserToggle, getHomeFeed, getPopularFeed, updateUser, updateUserPicture, getUserByIdentifier, userNotifications, searchUsers, } from '../controllers/userController.js';
 import { profileImageUpload } from '../middlewares/multerPosts.js';
 import express from 'express';
 const router = express.Router();
@@ -33,6 +35,34 @@ router.get('/home/feed', getHomeFeed);
  * Returns the user's popular feed.
  */
 router.get('/popular/feed', getPopularFeed);
+/**
+ * GET /search
+ * Returns the user's popular feed.
+ */
+router.get('/search', searchUsers);
+/**
+ * GET /posts
+ * Returns the user's posts.
+ */
+router.get('/posts', getUserPosts);
+router.get('/posts/:id', getUserPosts);
+/**
+ * GET /saved
+ * Returns the user's saved posts.
+ */
+router.get('/saved', getSavedPosts);
+/**
+ * GET /commets
+ * Returns the user's saved posts.
+ */
+router.get('/comments/:id', getUserComments);
+router.get('/comments', getUserComments);
+/**
+ * GET /voted posts
+ * Returns the user's voted posts.
+ */
+router.get('/upvoted', getUpvotedPosts);
+router.get('/downvoted', getDownvotedPosts);
 /**
  * GET /notifications
  * Returns the user's notifications.

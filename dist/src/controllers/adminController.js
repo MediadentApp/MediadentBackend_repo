@@ -27,10 +27,11 @@ export const getAccessLogs = catchAsync(async (req, res, next) => {
 /**
  * Controller to delete all api access logs.
  *
- * Route: DELETE /admin/accesslogs
+ * Route: DELETE /admin/accesslogs/:id
  */
 export const deleteAllAccessLogs = catchAsync(async (req, res, next) => {
-    await ApiAccessLog.deleteMany({});
+    const { id } = req.params;
+    await ApiAccessLog.deleteMany({ _id: id ? id : { $exists: true } });
     return ApiResponse(res, 200, responseMessages.GENERAL.SUCCESS);
 });
 /**

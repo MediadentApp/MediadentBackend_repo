@@ -255,7 +255,7 @@ export async function FetchPaginatedDataWithAggregation(model, basePipeline = []
             },
         },
     ];
-    // console.log('pipeline', JSON.stringify(paginatedPipeline, null, 2));
+    console.log('pipeline', JSON.stringify(paginatedPipeline, null, 2));
     const result = await model.aggregate(paginatedPipeline);
     const { data, totalItems } = result[0] || { data: [], totalItems: 0 };
     const totalPages = Math.ceil(totalItems / pageSize);

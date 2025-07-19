@@ -6,11 +6,12 @@ import User from '../models/userModel.js';
 import CommunityCommentCountsServiceHandler from '../services/communityCommentCount.service.js';
 import { SortMethod, SortOrder, VoteEnum } from '../types/enum.js';
 import ApiError from '../utils/ApiError.js';
-import ApiResponse from '../utils/ApiResponse.js';
+import { FetchPaginatedDataWithAggregation } from '../utils/ApiPaginatedResponse.js';
+import ApiResponse, { ApiPaginatedResponse } from '../utils/ApiResponse.js';
 import catchAsync from '../utils/catchAsync.js';
 import { getUpdateObj } from '../utils/dataManipulation.js';
-import { findKeyValues } from '../utils/index.js';
-import mongoose from 'mongoose';
+import { findKeyValues, stringToObjectID } from '../utils/index.js';
+import mongoose, { isValidObjectId } from 'mongoose';
 /**
  * Controller for creating a new comment.
  * Route: POST /comments/:postId
@@ -309,4 +310,36 @@ export const voteComment = catchAsync(async (req, res, next) => {
     // downvotesCount: updated?.downvotesCount || 0,
     // }
     );
+});
+/**
+ * Controller to get all comments of a user.
+ *
+ * Route: GET /comments/user/:id
+ */
+export const getUserComments = catchAsync(async (req, res, next) => {
+    let { id: userId } = req.params;
+    if (userId && !isValidObjectId(userId)) {
+        return next(new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT));
+    }
+    if (!userId) {
+        userId = req.user._id;
+    }
+    const comments = await FetchPaginatedDataWithAggregation(Comment, [
+        {
+            $match: {
+                userId: stringToObjectID(userId),
+            },
+        },
+    ], {
+        page: req.query.page ?? '1',
+        pageSize: req.query.pageSize ?? '15',
+        sortField: 'createdAt',
+        sortOrder: req.query.sortOrder ?? 'desc',
+        populateFields: [
+            { path: 'postId', select: 'title slug communityId', from: 'posts' },
+            { path: 'userId', select: 'username fullName avatarUrl', from: 'users' },
+            { path: 'postId.communityId', select: 'avatarUrl slug name', from: 'communities' },
+        ],
+    }, []);
+    return ApiPaginatedResponse(res, comments);
 });

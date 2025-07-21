@@ -6,5 +6,5 @@ const ApiAccessLogsService = new DebouncedMongoBatchExecutor({
             await ApiAccessLog.insertMany(data);
         },
     },
-}, 10000, 100);
+}, 20000, 100);
 export default ApiAccessLogsService;

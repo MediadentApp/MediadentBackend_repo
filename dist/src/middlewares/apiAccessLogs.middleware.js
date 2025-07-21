@@ -20,7 +20,7 @@ const logApiAccess = (req, res, next) => {
     (async () => {
         try {
             const ip = req.ip || req.socket.remoteAddress || '';
-            if (appConfig.allowedIps.includes(ip)) {
+            if (appConfig.allowedIps.includes(ip) || appConfig.allowedIps.includes(ip.split('.').slice(0, 3).join('.'))) {
                 return;
             }
             const path = req.path.replace(/\/[^/]+/, '');

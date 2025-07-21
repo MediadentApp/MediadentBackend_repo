@@ -17,7 +17,7 @@ const ApiAccessLogSchema = new mongoose.Schema({
         lat: Number,
         lon: Number,
     },
-    timeWindow: { type: Date }, // optional now
+    timeWindow: { type: Date },
 }, { timestamps: true });
 ApiAccessLogSchema.index({ createdAt: 1 }); // for fast queries
 export const ApiAccessLog = mongoose.model('ApiAccessLog', ApiAccessLogSchema);

@@ -148,10 +148,10 @@ export const searchUsers = catchAsync(async (req, res, next) => {
     const fetchedData = await FetchPaginatedData(User, {
         searchValue: req.query.searchValue ?? '',
         searchFields: req.query.searchFields ?? ['firstName', 'lastName', 'username'],
-        selectFields: '_id,firstName,lastName,username,profilePicture,fullName,role',
+        selectFields: '_id,firstName,lastName,username,profilePicture,fullName,role,followersCount,bio',
         page: req.query.page ?? '1',
         pageSize: req.query.pageSize ?? '10',
-        sortField: 'createdAt',
+        sortField: req.query.sortField ?? 'followersCount',
         sortOrder: 'desc',
     });
     return ApiPaginatedResponse(res, fetchedData);

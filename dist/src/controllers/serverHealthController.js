@@ -19,3 +19,10 @@ export const health = catchAsync(async (req, res, next) => {
         memoryUsage,
     });
 });
+export const ping = catchAsync(async (req, res, next) => {
+    return res.status(200).json({
+        status: 'success',
+        message: `Pong from ${req.params.slug}`,
+        timestamp: Date.now(),
+    });
+});

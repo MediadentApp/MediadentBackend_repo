@@ -1,6 +1,29 @@
 import mongoose from 'mongoose';
 
-const ApiAccessLogSchema = new mongoose.Schema(
+export interface IApiAccessLog {
+  ip: string;
+  user?: mongoose.Types.ObjectId;
+  path?: string;
+  username?: string;
+  userAgent?: string;
+  device?: {
+    os?: string;
+    browser?: string;
+    platform?: string;
+  };
+  location?: {
+    country?: string;
+    region?: string;
+    city?: string;
+    lat?: number;
+    lon?: number;
+  };
+  timeWindow?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const ApiAccessLogSchema = new mongoose.Schema<IApiAccessLog>(
   {
     ip: { type: String, required: true },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -19,7 +42,7 @@ const ApiAccessLogSchema = new mongoose.Schema(
       lat: Number,
       lon: Number,
     },
-    timeWindow: { type: Date }, // optional now
+    timeWindow: { type: Date },
   },
   { timestamps: true }
 );

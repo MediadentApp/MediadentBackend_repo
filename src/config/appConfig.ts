@@ -1,5 +1,8 @@
 const appConfig = {
   allowedOrigins: ['http://localhost:3000', 'http://192.168.0.155:3000', 'https://studenhub-mauve.vercel.app'],
+  allowedIps: ['127.0.0.1', '::1', 'localhost', '103.107.126'] as string[],
+  // allowedIps: [''] as string[],
+  skipRoutes: ['/api/v1/health', '/favicon.ico', '/'] as string[],
   bycryptHashSalt: 10,
   otp: {
     sendOtpAfter: 30, // in seconds

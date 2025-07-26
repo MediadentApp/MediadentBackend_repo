@@ -1,5 +1,7 @@
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { AppRequestParams } from '#src/types/api.request.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
+import { SlugParam } from '#src/types/param.js';
 import ApiError from '#src/utils/ApiError.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { NextFunction, Request, Response } from 'express';
@@ -28,5 +30,13 @@ export const health = catchAsync(async (req: Request, res: Response, next: NextF
     uptime: process.uptime(),
     loadAvg,
     memoryUsage,
+  });
+});
+
+export const ping = catchAsync(async (req: AppRequestParams<SlugParam>, res: Response, next: NextFunction) => {
+  return res.status(200).json({
+    status: 'success',
+    message: `Pong from ${req.params.slug}`,
+    timestamp: Date.now(),
   });
 });

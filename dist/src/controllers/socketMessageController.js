@@ -122,12 +122,26 @@ export const deleteChatId = catchAsync(async (req, res, next) => {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
         return next(new ApiError(responseMessages.SOCKET.CHAT_ID_INVALID, 400, ErrorCodes.SOCKET.MISSING_INVALID_INPUT));
     }
-    const [deleteChat, user] = await Promise.all([
+    const [deletedChat, user] = await Promise.all([
         Chat.findByIdAndDelete(id),
         User.findByIdAndUpdate(userId, { $pull: { 'chats.chatIds': id } }, { new: true })
             .select('+chats.chatIds +chats.groupChatIds')
             .lean(),
     ]);
+    const io = req.app.get('io');
+    // Emit the deleted chat to the participants that are online
+    if (io && deletedChat) {
+        console.log('sending delete chat notif');
+        const participants = deletedChat.participants;
+        const notifData = {
+            type: 'deleteChat',
+            data: deletedChat._id,
+        };
+        io.to(participants.map(participant => findSocketByUserId(participant.toString())?.socketId)).emit('command', notifData);
+    }
+    // Delete notifications related to the chat
+    // should be throttled
+    Notification.deleteMany({ relatedChatId: id }).exec();
     const data = {
         user: user,
     };
@@ -389,7 +403,7 @@ export const handleSendMessage = catchSocket(async (io, socket, messageData) => 
             message: 'Chat ID, recipient ID, and message content are required',
             statusCode: 400,
         });
-        return; // Explicitly return to satisfy void return type
+        return;
     }
     const message = {
         localId,
@@ -419,6 +433,7 @@ export const handleSendMessage = catchSocket(async (io, socket, messageData) => 
     const recipientData = findSocketByUserId(recipientId.toString());
     if (recipientData) {
         // If the recipient is NOT in the chat room, send a notification
+        console.log('recipientData', recipientData);
         if (!recipientData.rooms.has(chatId)) {
             io.to(recipientData.socketId).emit('newNotification', notification);
         }

@@ -7,7 +7,7 @@
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "dev": "nodemon --watch . --ext ts --exec tsx server.ts",
+    "dev": "nodemon --watch src --ext ts --exec tsx server.ts",
     "build": "tsc && tsc-alias",
     "start": "node dist/server.js",
     "test": "vitest --watch=false",

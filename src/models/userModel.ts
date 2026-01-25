@@ -15,7 +15,7 @@ import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { UserRole, UserType } from '#src/types/enum.js';
 
 // User schema definition
-const userSchema: Schema<IUser> = new Schema(
+const userSchema: Schema<IUser> = new Schema<IUser>(
   {
     firstName: {
       type: String,
@@ -71,7 +71,7 @@ const userSchema: Schema<IUser> = new Schema(
     },
     password: {
       type: String,
-      required() {
+      required: function (this: IUser) {
         return !this.googleAccount && !this.githubAccount && !this.linkedinAccount;
       },
       minLength: 8,
@@ -79,7 +79,7 @@ const userSchema: Schema<IUser> = new Schema(
     },
     passwordConfirm: {
       type: String,
-      required() {
+      required: function (this: IUser) {
         return !this.googleAccount && !this.githubAccount && !this.linkedinAccount;
       },
       validate: {

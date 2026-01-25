@@ -9,6 +9,7 @@ import NotificationService from '#src/services/notifications.service.js';
 import { AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { MessageStatus } from '#src/types/enum.js';
+import { IUser } from '#src/types/model.js';
 import { IdParam } from '#src/types/param.js';
 import {
   IAuthenticatedSocket,
@@ -194,7 +195,7 @@ export const deleteChatId = catchAsync(async (req: AppRequestParams<IdParam>, re
   Notification.deleteMany({ relatedChatId: id }).exec();
 
   const data = {
-    user: user!,
+    user: user! as unknown as IUser,
   };
 
   ApiResponse(res, 201, responseMessages.GENERAL.SUCCESS, data);

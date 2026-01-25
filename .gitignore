@@ -18,6 +18,8 @@ npm-debug.log*
 
 # Built files
 dist/
+build
+coverage
 
 # OS generated files
 .DS_Store

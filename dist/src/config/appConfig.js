@@ -5,7 +5,7 @@ const appConfig = {
     skipRoutes: ['/api/v1/health', '/favicon.ico', '/'],
     bycryptHashSalt: 10,
     otp: {
-        sendOtpAfter: 30, // in seconds
+        sendOtpAfter: 60, // in seconds
         otpExpiration: 10, // in minutes
     },
     database: {

@@ -35,3 +35,14 @@ export function flattenObj(obj, prefix = '', res = {}) {
     }
     return res;
 }
+/**
+ * Replaces placeholders in the given template with the corresponding values from the variables object.
+ * Placeholders are in the format of "{{key}}", where "key" is the key of the value to be replaced in the variables object.
+ * If the key is not found in the variables object, the placeholder is replaced with "{{key}}", unchanged.
+ * @param template The string template to replace placeholders in, or an object with a "message" property that contains the template.
+ * @param variables An object containing key-value pairs of values to replace placeholders with.
+ * @returns The template string with all placeholders replaced with their corresponding values from the variables object.
+ */
+export function formatErrorMessageTemplate(template, variables) {
+    return template.replace(/\{\{(\w+)\}\}/g, (_, key) => String(variables[key] ?? `{{${key}}}`));
+}

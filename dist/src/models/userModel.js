@@ -63,7 +63,7 @@ const userSchema = new Schema({
     },
     password: {
         type: String,
-        required() {
+        required: function () {
             return !this.googleAccount && !this.githubAccount && !this.linkedinAccount;
         },
         minLength: 8,
@@ -71,7 +71,7 @@ const userSchema = new Schema({
     },
     passwordConfirm: {
         type: String,
-        required() {
+        required: function () {
             return !this.googleAccount && !this.githubAccount && !this.linkedinAccount;
         },
         validate: {

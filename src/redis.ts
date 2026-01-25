@@ -8,7 +8,21 @@ const redisConnection = new Redis(process.env.REDIS_URL, {
   // tls: {
   //   servername: 'redis-13788.c305.ap-south-1-1.ec2.redns.redis-cloud.com',
   // },
+
+  connectTimeout: 10_000,
   maxRetriesPerRequest: null,
+
+  // Exponential backoff (prevents spam)
+  retryStrategy(times) {
+    if (times > 8) return null;
+    return Math.min(1000 * 2 ** times, 30_000);
+  },
+
+  // Retry only for real network/DNS failures
+  reconnectOnError(err) {
+    const nodeErr = err as NodeJS.ErrnoException;
+    return nodeErr?.code === 'ENOTFOUND' || nodeErr?.code === 'ECONNREFUSED' || nodeErr?.code === 'ETIMEDOUT';
+  },
 });
 
 redisConnection.on('connect', () => {

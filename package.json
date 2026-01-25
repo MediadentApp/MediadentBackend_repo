@@ -28,6 +28,7 @@
     "@aws-sdk/client-s3": "^3.802.0",
     "@bull-board/api": "^6.9.6",
     "@bull-board/express": "^6.9.6",
+    "@getbrevo/brevo": "^3.0.1",
     "aws4": "^1.13.2",
     "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",

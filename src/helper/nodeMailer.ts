@@ -33,7 +33,7 @@ interface EmailOptions {
  * @param options - Email details including recipient, subject, and message.
  * @throws Error if email sending fails.
  */
-export const sendEmail = async (options: EmailOptions): Promise<void> => {
+export const sendNodeMailerEmail = async (options: EmailOptions): Promise<void> => {
   initializeTransporter();
 
   const mailOptions = {

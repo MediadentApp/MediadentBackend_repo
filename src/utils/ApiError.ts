@@ -44,7 +44,7 @@ export default class ApiError extends Error {
    * @param {string | null} [redirectUrl] - The URL to redirect to (if applicable).
    */
   constructor(
-    message: IResponseMessage,
+    message: IResponseMessage | string,
     statusCode: number,
     errorCode: ErrorCodeType | null = null,
     redirectUrl: string | null = null

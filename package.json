@@ -19,8 +19,7 @@
     "test:integration": "vitest integration",
     "test:check-mongo-memory": "vitest run check-mongo-memory.test.ts",
     "test:algo": "vitest watch algo",
-    "test:algo-memory": "npm run test:check-mongo-memory && npm run test:algo:watch",
-    "prepare": "husky"
+    "test:algo-memory": "npm run test:check-mongo-memory && npm run test:algo:watch"
   },
   "author": "Vinay Poojary",
   "license": "ISC",

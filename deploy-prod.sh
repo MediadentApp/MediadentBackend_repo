@@ -3,6 +3,11 @@ set -e
 
 COMMIT_DESCRIPTION=""
 
+ssh -T git@github.com >/dev/null 2>&1 || {
+  echo "❌ GitHub SSH not configured"
+  exit 1
+}
+
 echo "🔧 Building project..."
 npm run build
 

@@ -4,87 +4,50 @@ import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
-import { defineConfig, globalIgnores } from 'eslint/config';
+import prettierPlugin from 'eslint-plugin-prettier';
 import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
+import { globalIgnores } from 'eslint/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const compat = new FlatCompat({
   baseDirectory: __dirname,
   recommendedConfig: js.configs.recommended,
   allConfig: js.configs.all,
 });
 
-export default defineConfig([
+export default [
   globalIgnores(['**/dist', '**/node_modules']),
   {
-    extends: compat.extends('airbnb-base', 'plugin:@typescript-eslint/recommended',
-      // 'plugin:prettier/recommended'
-    ),
+    extends: compat.extends('plugin:@typescript-eslint/recommended'),
 
     plugins: {
       '@typescript-eslint': typescriptEslint,
       'unused-imports': unusedImports,
-      prettier: 'eslint-plugin-prettier',
+      prettier: prettierPlugin,
     },
 
     languageOptions: {
-      globals: {
-        ...globals.node,
-      },
-
       parser: tsParser,
       ecmaVersion: 'latest',
       sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
     },
 
-    // settings: {
-    //     "import/resolver": {
-    //         typescript: {
-    //             alwaysTryTypes: true,
-    //         },
-    //     },
-    // },
-
     rules: {
-      // "prettier/prettier": "error", // temporary disabled
-      '@typescript-eslint/no-unused-vars': ['error'],
-      'arrow-body-style': ['error', 'as-needed'],
-      'import/order': [
-        'error',
-        {
-          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
-          'newlines-between': 'always',
-
-          alphabetize: {
-            order: 'asc',
-            caseInsensitive: true,
-          },
-        },
-      ],
-
-      'import/extensions': [
-        'error',
-        'ignorePackages',
-        {
-          ts: 'always',
-        },
-      ],
-
-      'import/no-unresolved': 'off',
-
-      // Warn or error for unused imports
+      'prettier/prettier': 'error',
       'unused-imports/no-unused-imports': 'error',
-      // Optionally also remove unused variables, unless prefixed with _
       'unused-imports/no-unused-vars': [
         'error',
         { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' },
       ],
-      '@typescript-eslint/no-unused-vars': 'off', // disable to avoid duplicate warnings
-
+      '@typescript-eslint/no-unused-vars': 'off',
       'no-console': 'warn',
       'no-alert': 'error',
     },
   },
-]);
+];

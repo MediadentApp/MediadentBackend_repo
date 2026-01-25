@@ -7,7 +7,7 @@ import {
   loginServiceErrorResponse,
   otherLoginServiceErrorResponse,
 } from '#src/services/auth/checkUserExists.service.js';
-import { sendEmail } from '#src/services/email.js';
+import { sendEmail } from '#src/helper/nodeMailer.js';
 import { IUser } from '#src/types/model.js';
 import { ResetPasswordParams } from '#src/types/param.auth.js';
 import {

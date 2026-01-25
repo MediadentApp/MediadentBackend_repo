@@ -7,7 +7,6 @@ import {
   loginServiceErrorResponse,
   otherLoginServiceErrorResponse,
 } from '#src/services/auth/checkUserExists.service.js';
-import { sendEmail } from '#src/helper/nodeMailer.js';
 import { IUser } from '#src/types/model.js';
 import { ResetPasswordParams } from '#src/types/param.auth.js';
 import {
@@ -31,6 +30,8 @@ import crypto from 'crypto';
 import { NextFunction } from 'express';
 import { AppRequest, AppRequestBody } from '#src/types/api.request.js';
 import { UserRole } from '#src/types/enum.js';
+import { sendMail } from '#src/libs/sendMail.js';
+import { formatErrorMessageTemplate } from '#src/utils/dataManipulation.js';
 
 export const emailReg = catchAsync(async (req: AppRequestBody<EmailRegBody>, res: AppResponse, next: NextFunction) => {
   const { email } = req.body;
@@ -52,9 +53,24 @@ export const emailReg = catchAsync(async (req: AppRequestBody<EmailRegBody>, res
         new ApiError(responseMessages.AUTH.EMAIL_ALREADY_VERIFIED, 200, ErrorCodes.SIGNUP.EMAIL_ALREADY_VERIFIED)
       );
     }
+
     if (tempUserDb.otpSendAt && (await tempUserDb.checkOtpTime())) {
-      return next(new ApiError(responseMessages.AUTH.OTP_ALREADY_SENT, 400, ErrorCodes.SIGNUP.OTP_ALREADY_SENT));
+      const timeLeftInSeconds = Math.ceil(
+        (tempUserDb.otpSendAt.getTime() + appConfig.otp.sendOtpAfter * 1000 - Date.now()) / 1000
+      );
+      const timeLeft = `${timeLeftInSeconds} seconds`;
+
+      return next(
+        new ApiError(
+          formatErrorMessageTemplate(responseMessages.AUTH.OTP_ALREADY_SENT, {
+            time: timeLeft,
+          }),
+          400,
+          ErrorCodes.SIGNUP.OTP_ALREADY_SENT
+        )
+      );
     }
+
     // Cleanup existing temp user data
     await TempUser.deleteOne({ email });
   }
@@ -75,13 +91,28 @@ export const emailReg = catchAsync(async (req: AppRequestBody<EmailRegBody>, res
      The Mediadent Team
    `;
 
+  const emailMessageHtml = `
+    <html lang="en" className="scroll-smooth">
+    <head></head>
+    <body>
+      <p>Hello,</p>
+      <p>Your OTP for email verification is: <strong>${otp}</strong></p>
+      <p>This OTP is valid for ${appConfig.otp.otpExpiration} minutes.</p>
+      <p>If you did not request this, please ignore this email.</p>
+      <p>regards,</p>
+      <p>The Mediadent Team</p>
+    </body>
+    </html>
+  `.trim();
+
   try {
     // Send email and save TempUser concurrently
     await Promise.all([
-      sendEmail({
-        email,
+      sendMail({
+        to: email,
         subject: 'Email Verification OTP',
-        message: emailMessage,
+        htmlContent: emailMessageHtml,
+        content: emailMessage,
       }),
       TempUser.create({
         email,
@@ -376,11 +407,12 @@ export const forgotPassword = catchAsync(
   `;
 
     try {
-      await sendEmail({
-        email: user.email,
+      await sendMail({
+        to: user.email,
         subject: 'Your Password Reset Token (valid for 10 minutes)',
-        message,
-        html: htmlMessage,
+        // message,
+        htmlContent: htmlMessage,
+        content: message,
       });
 
       await user.save({ validateBeforeSave: false });

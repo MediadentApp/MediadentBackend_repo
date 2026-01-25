@@ -3,7 +3,7 @@ import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import TempUser from '#src/models/tempUserModel.js';
 import request from 'supertest';
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
-import * as emailService from '#src/services/email.js';
+import * as emailService from '#src/libs/sendMail.ts';
 import User from '#src/models/userModel.js';
 import { generateUniqueUser, generateUserDetails } from '#src/tests/seeds.js';
 import { authRequest, extractCookieFromRes } from '#src/tests/utils.js';
@@ -11,7 +11,7 @@ import responseMessages from '#src/config/constants/responseMessages.js';
 import appConfig from '#src/config/appConfig.js';
 
 // Mock sendEmail function
-vi.spyOn(emailService, 'sendEmail').mockResolvedValue(undefined);
+vi.spyOn(emailService, 'sendMail').mockResolvedValue(undefined);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -34,8 +34,8 @@ describe('Authentication Tests:', () => {
         expect(tempUser).not.toBeNull();
         expect(tempUser?.otp).toBeDefined();
         expect(tempUser?.otpSendAt).toBeDefined();
-        expect(emailService.sendEmail).toHaveBeenCalledTimes(1);
-        expect(emailService.sendEmail).toHaveBeenCalledWith({
+        expect(emailService.sendMail).toHaveBeenCalledTimes(1);
+        expect(emailService.sendMail).toHaveBeenCalledWith({
           email,
           subject: 'Email Verification OTP',
           message: expect.stringContaining('Your OTP for email verification'),

@@ -20,7 +20,7 @@ import { Response } from 'express';
 export default function ApiResponse<ResponseDataType = any, ExtraDataType extends IResponseExtra = IResponseExtra>(
   res: Response,
   statusCode: number = 200,
-  message: IResponseMessage | null = null,
+  message: IResponseMessage | string | null = null,
   data: IResponseData<ResponseDataType> | null = null,
   extra: ExtraDataType = {} as ExtraDataType
 ): Response<IApiResponse<IResponseData<ResponseDataType>>> {

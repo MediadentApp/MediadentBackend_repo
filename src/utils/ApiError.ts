@@ -28,7 +28,7 @@ export default class ApiError extends Error {
    * A unique error code for the error, if applicable.
    * Used to handle different error scenarios.
    */
-  public errorCode?: ErrorCodeType;
+  public errorCode?: ErrorCodeType | string | null;
 
   /**
    * Optional URL to redirect the user, if applicable.
@@ -46,7 +46,7 @@ export default class ApiError extends Error {
   constructor(
     message: IResponseMessage | string,
     statusCode: number,
-    errorCode: ErrorCodeType | null = null,
+    errorCode: ErrorCodeType | string | null = null,
     redirectUrl: string | null = null
   ) {
     super(message as string);

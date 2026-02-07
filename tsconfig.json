@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "nodenext",
+    "module": "NodeNext",
     "incremental": true,
     "tsBuildInfoFile": ".tsbuildinfo",
-    "moduleResolution": "nodenext",
+    "moduleResolution": "NodeNext",
     "outDir": "dist",
     "rootDir": "./",
     "allowJs": true,

@@ -55,3 +55,25 @@ export function ApiPaginatedResponse<T = any>(
 ): AppPaginatedResponse<T> {
   return res.status(200).json(data);
 }
+
+/**
+ * Returns an audio response with the given content.
+ *
+ * @param {Response} res - The Express.js response object.
+ * @param {Uint8Array | Buffer | string | null} [audioContent] - The audio content to be sent.
+ *   If not provided, returns a 500 error with a message indicating that the audio content was not found.
+ *
+ * @returns {Response} - The response with the audio content.
+ */
+export function ApiAudioResponse(res: Response, audioContent?: Uint8Array | Buffer | string | null) {
+  if (!audioContent) {
+    return ApiResponse(res, 500, 'Failed to get audio content', null);
+  }
+
+  res.set({
+    'Content-Type': 'audio/mpeg',
+    'Content-Length': audioContent.length,
+  });
+
+  res.send(audioContent);
+}

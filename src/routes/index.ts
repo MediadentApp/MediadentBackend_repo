@@ -10,6 +10,7 @@ import { communityPostRoutes } from '#src/routes/communityPost.routes.js';
 import { commentRoutes } from '#src/routes/comment.routes.js';
 import { UserRole } from '#src/types/enum.js';
 import { adminRoutes } from '#src/routes/admin.routes.js';
+import { testingRoutes } from './testing.routes.js';
 
 const router: Router = express.Router();
 
@@ -24,5 +25,7 @@ router.use('/api/v1/userformat', userFormatApi);
 router.use('/api/v1/user', protect, mainRoutes);
 router.use('/api/v1/center', protect, communityPostRoutes);
 router.use('/api/v1/comments', protect, commentRoutes);
+
+router.use('/api/v1/testing', protect, restrict(UserRole.Admin), testingRoutes);
 
 export { router as routes };

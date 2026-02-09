@@ -1,4 +1,4 @@
-import { VoteEnum } from '@studenhub/studenhub-contracts';
+import { VoteEnum } from '@vin51435/studenhub-contracts';
 import { Types } from 'mongoose';
 
 export const createMockPostVote = (

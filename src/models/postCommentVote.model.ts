@@ -1,5 +1,5 @@
 import { ICommentVote } from '#src/types/model.post.type.js';
-import { VOTE_TYPES } from '@studenhub/studenhub-contracts';
+import { VOTE_TYPES } from '@vin51435/studenhub-contracts';
 import mongoose, { Schema } from 'mongoose';
 
 const commentVoteSchema = new Schema<ICommentVote>(

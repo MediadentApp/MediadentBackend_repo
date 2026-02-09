@@ -8,7 +8,7 @@ import { userAuthRoutes } from '#src/routes/userAuthRoutes.js';
 import { health, ping } from '#src/controllers/serverHealthController.js';
 import { communityPostRoutes } from '#src/routes/communityPost.routes.js';
 import { commentRoutes } from '#src/routes/comment.routes.js';
-import { USER_ROLES } from '@studenhub/studenhub-contracts';
+import { USER_ROLES } from '@vin51435/studenhub-contracts';
 import { adminRoutes } from '#src/routes/admin.routes.js';
 
 const router: Router = express.Router();

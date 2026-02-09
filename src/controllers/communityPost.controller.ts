@@ -36,7 +36,7 @@ import {
   PostSortOption,
   PostSortRange,
   VOTE_TYPES,
-} from '@studenhub/studenhub-contracts';
+} from '@vin51435/studenhub-contracts';
 import { NextFunction } from 'express';
 import mongoose from 'mongoose';
 

@@ -1,4 +1,4 @@
-import { BooleanQuery, SortMethod } from '@studenhub/studenhub-contracts';
+import { BooleanQuery, SortMethod } from '@vin51435/studenhub-contracts';
 import { SortDirection } from 'mongodb';
 
 export type ICommentQuery = {

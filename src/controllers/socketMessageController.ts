@@ -25,7 +25,7 @@ import ApiResponse from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import catchSocket from '#src/utils/catchSocket.js';
 import { stringToObjectID } from '#src/utils/index.js';
-import { MESSAGE_STATUS } from '@studenhub/studenhub-contracts';
+import { MESSAGE_STATUS } from '@vin51435/studenhub-contracts';
 import { Request, NextFunction } from 'express';
 import mongoose, { ObjectId, ClientSession } from 'mongoose';
 import { Server } from 'socket.io';

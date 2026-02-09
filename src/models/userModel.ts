@@ -12,7 +12,7 @@ import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
-import { USER_ROLES, USER_TYPES } from '@studenhub/studenhub-contracts';
+import { USER_ROLES, USER_TYPES } from '@vin51435/studenhub-contracts';
 
 // User schema definition
 const userSchema: Schema<IUser> = new Schema<IUser>(

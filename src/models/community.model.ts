@@ -4,7 +4,7 @@ import {
   COMMUNITY_ROLES,
   COMMUNITY_TYPES,
   REPORT_STATUS,
-} from '@studenhub/studenhub-contracts';
+} from '@vin51435/studenhub-contracts';
 import { ICommunity, ICommunityInvite, IReportCommunity } from '#src/types/model.community.js';
 import mongoose, { Schema } from 'mongoose';
 

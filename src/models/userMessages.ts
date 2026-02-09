@@ -1,5 +1,5 @@
 import { IChat, IGroupChat, IMessage, IWebPushSubscription } from '#src/types/model.js';
-import { MESSAGE_STATUS } from '@studenhub/studenhub-contracts';
+import { MESSAGE_STATUS } from '@vin51435/studenhub-contracts';
 import mongoose, { Schema, Model } from 'mongoose';
 
 const messageSchema = new Schema<IMessage>(

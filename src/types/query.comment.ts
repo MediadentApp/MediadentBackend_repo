@@ -1,4 +1,4 @@
-import { BooleanQuery, SortMethod } from '#src/types/enum.js';
+import { BooleanQuery, SortMethod } from '@studenhub/studenhub-contracts';
 import { SortDirection } from 'mongodb';
 
 export type ICommentQuery = {

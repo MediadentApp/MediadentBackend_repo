@@ -8,7 +8,6 @@ import Notification from '#src/models/userNotificationModel.js';
 import NotificationService from '#src/services/notifications.service.js';
 import { AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
-import { MessageStatus } from '#src/types/enum.js';
 import { IUser } from '#src/types/model.js';
 import { IdParam } from '#src/types/param.js';
 import {
@@ -26,6 +25,7 @@ import ApiResponse from '#src/utils/ApiResponse.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import catchSocket from '#src/utils/catchSocket.js';
 import { stringToObjectID } from '#src/utils/index.js';
+import { MESSAGE_STATUS } from '@studenhub/studenhub-contracts';
 import { Request, NextFunction } from 'express';
 import mongoose, { ObjectId, ClientSession } from 'mongoose';
 import { Server } from 'socket.io';
@@ -532,7 +532,7 @@ export const handleSendMessage = catchSocket(
       senderUsername: socket.user.username,
       content,
       timestamp: new Date(),
-      status: MessageStatus.SENT,
+      status: MESSAGE_STATUS.SENT,
     };
 
     // Save the message in the database

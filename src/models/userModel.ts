@@ -12,7 +12,7 @@ import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
-import { UserRole, UserType } from '#src/types/enum.js';
+import { USER_ROLES, USER_TYPES } from '@studenhub/studenhub-contracts';
 
 // User schema definition
 const userSchema: Schema<IUser> = new Schema<IUser>(
@@ -132,7 +132,7 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
     additionalInfo: {
       userType: {
         type: String,
-        enum: UserType,
+        enum: Object.values(USER_TYPES),
         required: false,
       },
       gender: {
@@ -178,8 +178,8 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: UserRole,
-      default: UserRole.User,
+      enum: Object.values(USER_ROLES),
+      default: USER_ROLES.USER,
     },
     createdAt: {
       type: Date,
@@ -291,10 +291,10 @@ userSchema.pre<IUser>('save', async function (next) {
   try {
     if (!this._id) {
       if (this.email === process.env.OWNER_EMAIL) {
-        this.role = UserRole.Admin;
+        this.role = USER_ROLES.ADMIN;
       }
 
-      const admins = await User.find({ role: UserRole.Admin, _id: { $ne: this._id } });
+      const admins = await User.find({ role: USER_ROLES.ADMIN, _id: { $ne: this._id } });
 
       if (admins.length > 0) {
         const newChats = admins.map(admin => ({
@@ -307,7 +307,7 @@ userSchema.pre<IUser>('save', async function (next) {
         this.chats = this.chats || {};
         this.chats.chatIds = [...new Set([...(this.chats.chatIds || []), ...chatIds])] as Types.ObjectId[];
 
-        await User.updateMany({ role: UserRole.Admin }, { $addToSet: { 'chats.chatIds': { $each: chatIds } } });
+        await User.updateMany({ role: USER_ROLES.ADMIN }, { $addToSet: { 'chats.chatIds': { $each: chatIds } } });
       }
     }
 

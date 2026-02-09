@@ -1,6 +1,6 @@
 import appConfig from '#src/config/appConfig.js';
 import User from '#src/models/userModel.js';
-import { UserRole } from '#src/types/enum.js';
+import { UserRole } from '@studenhub/studenhub-contracts';
 import { IUser } from '#src/types/model.js';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';

@@ -1,5 +1,10 @@
 import { deleteImagesFromS3 } from '#src/libs/s3.js';
-import { CommunityInviteStatus, CommunityRole, CommunityType, PostAuthorType, ReportStatus } from '#src/types/enum.js';
+import {
+  COMMUNITY_INVITE_STATUS,
+  COMMUNITY_ROLES,
+  COMMUNITY_TYPES,
+  REPORT_STATUS,
+} from '@studenhub/studenhub-contracts';
 import { ICommunity, ICommunityInvite, IReportCommunity } from '#src/types/model.community.js';
 import mongoose, { Schema } from 'mongoose';
 
@@ -14,7 +19,7 @@ const communitySchema: Schema<ICommunity> = new Schema<ICommunity>(
     avatarUrl: String,
     bannerUrl: String,
     verified: Boolean,
-    type: { type: String, enum: CommunityType, default: CommunityType.Public },
+    type: { type: String, enum: Object.values(COMMUNITY_TYPES), default: COMMUNITY_TYPES.PUBLIC },
 
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, immutable: true },
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
@@ -64,8 +69,8 @@ const communityInviteSchema: Schema<ICommunityInvite> = new Schema<ICommunityInv
     invitedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     email: { type: String, required: true },
     expiresAt: { type: Date, required: true },
-    role: { type: String, enum: CommunityRole, required: true },
-    status: { type: String, enum: CommunityInviteStatus, required: true },
+    role: { type: String, enum: Object.values(COMMUNITY_ROLES), required: true },
+    status: { type: String, enum: Object.values(COMMUNITY_INVITE_STATUS), required: true },
   },
   { timestamps: true }
 );
@@ -77,7 +82,7 @@ const reportCommunitySchema: Schema<IReportCommunity> = new Schema<IReportCommun
     postId: { type: Schema.Types.ObjectId, ref: 'Post', required: true },
     reportedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     reason: { type: String, required: true },
-    status: { type: String, enum: ReportStatus, required: true },
+    status: { type: String, enum: Object.values(REPORT_STATUS), required: true },
     reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

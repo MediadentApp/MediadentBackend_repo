@@ -8,7 +8,7 @@ import { AppRequestBody, AppRequestParams, AppRequestQuery } from '#src/types/ap
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse, IResponseExtraCommentPagination } from '#src/types/api.response.js';
 import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
-import { SortMethod, SortOrder, VoteEnum } from '#src/types/enum.js';
+import { SORT_METHODS, SORT_ORDER, SortMethod, SortOrder, VOTE_TYPES } from '@studenhub/studenhub-contracts';
 import { IPostComment } from '#src/types/model.post.type.js';
 import { CommentParam } from '#src/types/param.comment.js';
 import { IdParam } from '#src/types/param.js';
@@ -154,8 +154,8 @@ export const getComments = catchAsync(
       children = '1', // Depth of children (1 = one level, 2 = two levels, etc.)
       childLimit = '5', // Limit for the child comments at each level
       childSkip = '0', // Skip for pagination of child comments
-      sortMethod = SortMethod.Votes, // Sort method for top-level comments
-      sortOrder = SortOrder.Descending, // Sort order for top-level comments
+      sortMethod = SORT_METHODS.VOTES, // Sort method for top-level comments
+      sortOrder = SORT_ORDER.DESCENDING, // Sort order for top-level comments
     } = req.query;
 
     const depth = Number(children);
@@ -182,13 +182,13 @@ export const getComments = catchAsync(
           parentId: null, // Top-level comments
         };
 
-    const order = sortOrder === SortOrder.Ascending ? 1 : -1;
+    const order = sortOrder === SORT_ORDER.ASCENDING ? 1 : -1;
 
     // Build sort object
     const sort: Record<string, 1 | -1> = {};
-    if (sortMethod === SortMethod.Date) {
+    if (sortMethod === SORT_METHODS.DATE) {
       sort.createdAt = order;
-    } else if (sortMethod === SortMethod.Votes) {
+    } else if (sortMethod === SORT_METHODS.VOTES) {
       sort.voteScore = order; // We'll compute this in the pipeline
     } else {
       sort.createdAt = order; // Default fallback to date sorting
@@ -202,7 +202,7 @@ export const getComments = catchAsync(
         ? [
             {
               $addFields:
-                sortMethod === SortMethod.Votes
+                sortMethod === SORT_METHODS.VOTES
                   ? { voteScore: { $subtract: ['$upvotesCount', '$downvotesCount'] } }
                   : {},
             },
@@ -290,7 +290,7 @@ export const getComments = catchAsync(
 
       // Sorting for child comments based on votes or date
       const sortedChildren = paginatedChildren.sort((a: IPostComment, b: IPostComment) => {
-        if (sortMethod === SortMethod.Votes) {
+        if (sortMethod === SORT_METHODS.VOTES) {
           const voteA = (a.upvotesCount || 0) - (a.downvotesCount || 0);
           const voteB = (b.upvotesCount || 0) - (b.downvotesCount || 0);
           return order * (voteB - voteA);
@@ -356,7 +356,7 @@ export const voteComment = catchAsync(
     const { commentId, voteType } = req.params;
     const userId = req.user._id;
 
-    if (!Object.values(VoteEnum).includes(voteType)) {
+    if (!Object.values(VOTE_TYPES).includes(voteType)) {
       return next(
         new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
       );
@@ -377,21 +377,21 @@ export const voteComment = catchAsync(
       voteOp = CommentVote.create({ commentId, userId, voteType });
       updateOp = Comment.updateOne(
         { _id: commentId },
-        { $inc: voteType === VoteEnum.upVote ? { upvotesCount: 1 } : { downvotesCount: 1 } }
+        { $inc: voteType === VOTE_TYPES.UPVOTE ? { upvotesCount: 1 } : { downvotesCount: 1 } }
       );
     } else if (existingVote.voteType === voteType) {
       // Toggle vote off
       voteOp = CommentVote.deleteOne({ _id: existingVote._id });
       updateOp = Comment.updateOne(
         { _id: commentId },
-        { $inc: voteType === VoteEnum.upVote ? { upvotesCount: -1 } : { downvotesCount: -1 } }
+        { $inc: voteType === VOTE_TYPES.UPVOTE ? { upvotesCount: -1 } : { downvotesCount: -1 } }
       );
     } else {
       // Switch vote
       voteOp = CommentVote.updateOne({ _id: existingVote._id }, { voteType });
       updateOp = Comment.updateOne(
         { _id: commentId },
-        voteType === VoteEnum.upVote
+        voteType === VOTE_TYPES.UPVOTE
           ? { $inc: { upvotesCount: 1, downvotesCount: -1 } }
           : { $inc: { downvotesCount: 1, upvotesCount: -1 } }
       );

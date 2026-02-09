@@ -1,12 +1,12 @@
-import { VoteEnum } from '#src/types/enum.js';
 import { IPostVote } from '#src/types/model.post.type.js';
+import { VOTE_TYPES } from '@studenhub/studenhub-contracts';
 import mongoose, { Schema } from 'mongoose';
 
 const postVoteSchema = new Schema<IPostVote>(
   {
     postId: { type: Schema.Types.ObjectId, ref: 'Post', required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    voteType: { type: String, enum: VoteEnum, required: true },
+    voteType: { type: String, enum: Object.values(VOTE_TYPES), required: true },
   },
   { timestamps: true }
 );

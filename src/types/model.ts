@@ -1,6 +1,6 @@
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
-import { MessageStatus, UserRole } from '#src/types/enum.js';
+import { MessageStatus, UserRole } from '@studenhub/studenhub-contracts';
 import { IUserAcademicDetails, IUserInterest } from '#src/types/request.userFormat.js';
 import { Document, Model, Types } from 'mongoose';
 

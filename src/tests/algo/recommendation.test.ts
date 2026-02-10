@@ -7,7 +7,7 @@ import { createMockPostSave } from '#src/tests/factories/postSave.factory.js';
 import { createMockPostView } from '#src/tests/factories/postView.factory.js';
 import { createMockPostVote } from '#src/tests/factories/postVote.factory.js';
 import { getObjectIds } from '#src/tests/unit/utils/ojbectId.js';
-import { VoteEnum } from '#src/types/enum.js';
+import { VoteEnum } from '@vin51435/studenhub-contracts';
 import { expect, test } from 'vitest';
 
 test.skip('popularity calculation with mock posts', async () => {

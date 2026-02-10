@@ -29,7 +29,7 @@ import { generateOTP } from '#src/utils/index.js';
 import crypto from 'crypto';
 import { NextFunction } from 'express';
 import { AppRequest, AppRequestBody } from '#src/types/api.request.js';
-import { UserRole } from '#src/types/enum.js';
+import { UserRole } from '@vin51435/studenhub-contracts';
 import { sendMail } from '#src/libs/sendMail.js';
 import { formatErrorMessageTemplate } from '#src/utils/dataManipulation.js';
 

@@ -1,5 +1,5 @@
-import { MessageStatus } from '#src/types/enum.js';
 import { IChat, IGroupChat, IMessage, IWebPushSubscription } from '#src/types/model.js';
+import { MESSAGE_STATUS } from '@vin51435/studenhub-contracts';
 import mongoose, { Schema, Model } from 'mongoose';
 
 const messageSchema = new Schema<IMessage>(
@@ -43,7 +43,7 @@ const messageSchema = new Schema<IMessage>(
         size: Number,
       },
     },
-    status: { type: String, enum: MessageStatus, default: MessageStatus.SENT },
+    status: { type: String, enum: MESSAGE_STATUS, default: MESSAGE_STATUS.SENT },
     reactions: [
       {
         by: {

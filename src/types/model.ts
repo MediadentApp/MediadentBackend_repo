@@ -11,7 +11,7 @@ import {
   STTModel,
   TTSModel,
   UserRole,
-} from '#src/types/enum.js';
+} from '@vin51435/studenhub-contracts';
 import { IUserAcademicDetails, IUserInterest } from '#src/types/request.userFormat.js';
 import { Document, HydratedDocument, Model, Types } from 'mongoose';
 

@@ -1,6 +1,8 @@
+import type { Express } from 'express';
+
 export interface PostRegBody {
-    title: string;
-    content: string;
-    data: Express.Multer.File[];
-    tags: string[]
+  title: string;
+  content: string;
+  data: Express.Multer.File[];
+  tags: string[];
 }

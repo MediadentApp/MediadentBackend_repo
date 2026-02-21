@@ -6,11 +6,11 @@ import { FetchPaginatedData, FetchPaginatedDataWithAggregation } from '#src/util
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppPaginatedResponse, DefaultProjectionType } from '#src/types/api.response.paginated.js';
 import { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
-import { ICollege, IUniversity, IUser, IUserFormat } from '#src/types/model.js';
+import { ICollege, IUniversity, IUser } from '#src/types/model.js';
 
 // Search Users
 export const getUsers = catchAsync(
-  async (req: AppPaginatedRequest, res: AppPaginatedResponse<IUser>, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse<IUser>, _next: NextFunction) => {
     const defaultProjection: DefaultProjectionType = {
       firstName: '1',
       lastName: '1',
@@ -30,7 +30,7 @@ export const getUsers = catchAsync(
 
 // Fetch user types
 export const getUserTypes = catchAsync(
-  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, _next: NextFunction) => {
     const fetchedData = await FetchPaginatedData(UserFormat, {
       defaultProjection: { userType: '1', _id: '0' },
     });
@@ -43,7 +43,7 @@ export const getUserTypes = catchAsync(
 
 // Fetch user genders
 export const getGenders = catchAsync(
-  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, _next: NextFunction) => {
     const fetchedData = await FetchPaginatedData(UserFormat, {
       defaultProjection: { userGender: '1', _id: '0' },
     });
@@ -56,7 +56,7 @@ export const getGenders = catchAsync(
 
 // Fetch user interests
 export const getUserInterests = catchAsync(
-  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, _next: NextFunction) => {
     const fetchedData = await FetchPaginatedData(UserFormat, {
       defaultProjection: { userInterest: '1', _id: '0' },
     });
@@ -69,7 +69,7 @@ export const getUserInterests = catchAsync(
 
 // Academic Details
 export const getAllBoards = catchAsync(
-  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, _next: NextFunction) => {
     const fetchResponse = await FetchPaginatedData(UserFormat, {
       defaultProjection: { 'userAcademicDetails.boards': '1', _id: '0' },
     });
@@ -168,7 +168,7 @@ export const getCollege = catchAsync(
 
 // Get all unique states
 export const getAllStates = catchAsync(
-  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, _next: NextFunction) => {
     const aggregation = [
       {
         $group: {
@@ -194,7 +194,7 @@ export const getAllStates = catchAsync(
 
 // Get all unique cities
 export const getAllCities = catchAsync(
-  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, _next: NextFunction) => {
     const aggregation = [
       {
         $group: {

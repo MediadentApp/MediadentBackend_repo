@@ -7,8 +7,8 @@ import { createMockPostSave } from '#src/tests/factories/postSave.factory.js';
 import { createMockPostView } from '#src/tests/factories/postView.factory.js';
 import { createMockPostVote } from '#src/tests/factories/postVote.factory.js';
 import { getObjectIds } from '#src/tests/unit/utils/ojbectId.js';
-import { VoteEnum } from '@vin51435/studenhub-contracts';
-import { expect, test } from 'vitest';
+import { VOTE_TYPES } from '@vin51435/studenhub-contracts';
+import { test } from 'vitest';
 
 test.skip('popularity calculation with mock posts', async () => {
   // Create posts in the in-memory DB
@@ -16,7 +16,7 @@ test.skip('popularity calculation with mock posts', async () => {
   const post = await Post.create(createMockPost());
 
   await PostView.create(createMockPostView(post._id.toString(), getObjectIds()));
-  await PostVote.create(createMockPostVote(post._id.toString(), getObjectIds(), VoteEnum.upVote));
+  await PostVote.create(createMockPostVote(post._id.toString(), getObjectIds(), VOTE_TYPES.UPVOTE));
   await PostSave.create(createMockPostSave(post._id.toString(), getObjectIds()));
 
   const post2 = await Post.create(createMockPost({ views: 5, upvotesCount: 1 }));

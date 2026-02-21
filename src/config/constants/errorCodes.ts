@@ -1,5 +1,3 @@
-import { NOTFOUND } from 'node:dns';
-
 export const ErrorCodes = {
   SERVER: {
     INTERNAL_SERVER_ERROR: 'SERVER_INTERNAL_SERVER_ERROR',

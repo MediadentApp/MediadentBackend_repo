@@ -4,13 +4,8 @@ import { ErrorCodes } from '#src/config/constants/errorCodes.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import ApiError from '#src/utils/ApiError.js';
 import { getS3KeyFromUrl } from '#src/utils/index.js';
-import {
-  DeleteObjectCommand,
-  DeleteObjectsCommand,
-  PutObjectCommand,
-  PutObjectCommandInput,
-  S3Client,
-} from '@aws-sdk/client-s3';
+import { DeleteObjectsCommand, PutObjectCommand, PutObjectCommandInput, S3Client } from '@aws-sdk/client-s3';
+import type { Express } from 'express';
 
 if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
   throw new Error('AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY is not set');

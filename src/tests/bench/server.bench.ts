@@ -1,4 +1,4 @@
-import { describe, it, expect, bench } from 'vitest';
+import { describe, bench } from 'vitest';
 import request from 'supertest';
 import { app } from '#src/app.js';
 

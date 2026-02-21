@@ -1,6 +1,6 @@
-import { INTERVIEW_DIFFICULTIES, INTERVIEW_STATUS, INTERVIEW_TYPES } from '#src/types/enum.js';
+import { INTERVIEW_DIFFICULTIES, INTERVIEW_STATUS, INTERVIEW_TYPES } from '@vin51435/studenhub-contracts';
 import { IPrepPalSession } from '#src/types/model.js';
-import { Schema, model, Types } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
 const PrepPalSessionSchema = new Schema<IPrepPalSession>(
   {

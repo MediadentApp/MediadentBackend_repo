@@ -49,7 +49,7 @@ export class DebouncedExecutor implements IDebouncedExecutor {
   private buffer = new Map<string, WriteOperation>();
 
   /** Timeout handle for flush delay */
-  private timeoutId: NodeJS.Timeout | null = null;
+  private timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * @param flushDelay - Time (ms) to wait before auto-flushing

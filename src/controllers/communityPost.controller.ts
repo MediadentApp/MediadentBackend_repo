@@ -39,6 +39,7 @@ import {
 } from '@vin51435/studenhub-contracts';
 import { NextFunction } from 'express';
 import mongoose from 'mongoose';
+import type { Express } from 'express';
 
 const followCommunityExecutor = new DebouncedExecutor();
 const votePostExecutor = new DebouncedExecutor();
@@ -594,33 +595,36 @@ export const getAllCommunitypost = catchAsync(
             $lte: now,
           };
           break;
-        case 'today':
+        case 'today': {
           const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
           matchStage.createdAt = {
             $gte: startOfTodayUTC,
             $lte: now,
           };
           break;
+        }
         case 'week':
           matchStage.createdAt = {
             $gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
             $lte: now,
           };
           break;
-        case 'month':
+        case 'month': {
           const oneMonthAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, now.getUTCDate()));
           matchStage.createdAt = {
             $gte: oneMonthAgo,
             $lte: now,
           };
           break;
-        case 'year':
+        }
+        case 'year': {
           const oneYearAgo = new Date(Date.UTC(now.getUTCFullYear() - 1, now.getUTCMonth(), now.getUTCDate()));
           matchStage.createdAt = {
             $gte: oneYearAgo,
             $lte: now,
           };
           break;
+        }
       }
     }
 

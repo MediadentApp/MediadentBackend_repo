@@ -3,7 +3,6 @@ import responseMessages from '#src/config/constants/responseMessages.js';
 import { IPaginatedResponse, IPaginationOptions } from '#src/types/api.response.paginated.js';
 import ApiError from '#src/utils/ApiError.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';
-import Post from '#src/models/post.model.js';
 
 // !!! TODO: Move rawFilter to its own field
 
@@ -142,7 +141,7 @@ export async function FetchPaginatedData<T = any, M extends Model<T> = Model<T>>
   const totalPages = Math.ceil(totalItems / Number(pageSize));
   const skip = (Number(page) - 1) * Number(pageSize);
   const cleanProjection = Object.fromEntries(Object.entries(projectionObj).map(([key, value]) => [key, Number(value)]));
-  const sort: { [key: string]: SortOrder } = !!sortField
+  const sort: { [key: string]: SortOrder } = sortField
     ? { [sortField]: sortOrder === 'desc' ? -1 : 1 }
     : { createdAt: -1 };
 
@@ -272,7 +271,7 @@ export async function FetchPaginatedDataWithAggregation<T = any>(
 
   // Sorting
   if (sortField) {
-    const sort: { [key: string]: 1 | -1 } = !!sortField
+    const sort: { [key: string]: 1 | -1 } = sortField
       ? { [sortField]: sortOrder === 'desc' ? -1 : 1 }
       : { createdAt: -1 };
     pipeline.push({ $sort: sort });

@@ -5,6 +5,7 @@ import ApiError from '#src/utils/ApiError.js';
 import { Request } from 'express';
 import multer from 'multer';
 import path from 'path';
+import type { Express } from 'express';
 
 // Allowed file types
 const allowedTypes = appConfig.app.post.allowedPostsImageType;

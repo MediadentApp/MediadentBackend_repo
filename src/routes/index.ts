@@ -29,6 +29,6 @@ router.use('/api/v1/comments', protect, commentRoutes);
 
 router.use('api/v1/PrepPal', protect, prepPalRoutes);
 
-router.use('/api/v1/testing', protect, restrict(UserRole.Admin), testingRoutes);
+router.use('/api/v1/testing', protect, restrict(USER_ROLES.ADMIN), testingRoutes);
 
 export { router as routes };

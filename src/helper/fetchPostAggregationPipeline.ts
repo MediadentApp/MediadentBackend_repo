@@ -35,25 +35,27 @@ export const fetchPostPipelineStage = (id: string, options: Options = { saved: t
         },
       },
     },
-    ...(options.saved === true ? [
-      {
-        $lookup: {
-          from: 'postsaves',
-          let: { postId: '$_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+    ...(options.saved === true
+      ? [
+          {
+            $lookup: {
+              from: 'postsaves',
+              let: { postId: '$_id' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [{ $eq: ['$postId', '$$postId'] }, { $eq: ['$userId', userId] }],
+                    },
+                  },
                 },
-              },
+                { $limit: 1 },
+              ],
+              as: 'savedByUser',
             },
-            { $limit: 1 },
-          ],
-          as: 'savedByUser',
-        },
-      },
-    ] : []),
+          },
+        ]
+      : []),
     {
       $lookup: {
         from: 'postviews',

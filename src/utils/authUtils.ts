@@ -28,8 +28,11 @@ export const signToken = (id: string): string => {
  */
 export function extractSignedCookie(cookieHeader: string): Record<string, string> {
   return Object.fromEntries(
-    cookieHeader.split(';').map((cookie) => {
-      const [key, val] = cookie.trim().split('=').map((str) => decodeURIComponent(str));
+    cookieHeader.split(';').map(cookie => {
+      const [key, val] = cookie
+        .trim()
+        .split('=')
+        .map(str => decodeURIComponent(str));
 
       // Remove 's:' prefix if present
       let value = val.startsWith('s:') ? val.slice(2) : val;
@@ -37,10 +40,10 @@ export function extractSignedCookie(cookieHeader: string): Record<string, string
       // If token has 4 parts (due to signature of httpOnly-cookie), remove the signature
       const parts = value.split('.');
       if (parts.length === 4) {
-        value = parts[0] + '.' + parts[1] + '.' + parts[2]
-      };
+        value = parts[0] + '.' + parts[1] + '.' + parts[2];
+      }
 
-      return [key, value]
+      return [key, value];
     })
   );
 }
@@ -101,4 +104,3 @@ export const sendDeleteToken = (res: Response) => {
 
   return ApiResponse(res, 200, responseMessages.AUTH.LOGOUT_SUCCESS);
 };
-

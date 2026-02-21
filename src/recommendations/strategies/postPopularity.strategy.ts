@@ -25,10 +25,7 @@ const postPopularityStrategy = async () => {
       .skip(skip)
       .limit(BATCH_SIZE);
 
-    if (posts.length === 0) {
-      hasMore = false;
-      break;
-    }
+    if (posts.length === 0) break;
 
     const updates = await Promise.all(
       posts.map(async post => {

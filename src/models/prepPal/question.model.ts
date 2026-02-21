@@ -1,4 +1,4 @@
-import { QUESTION_STATUS } from '#src/types/enum.js';
+import { QUESTION_STATUS } from '@vin51435/studenhub-contracts';
 import { IPrepPalQuestion } from '#src/types/model.js';
 import { model, Schema } from 'mongoose';
 

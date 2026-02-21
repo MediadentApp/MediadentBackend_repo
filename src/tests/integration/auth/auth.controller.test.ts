@@ -369,7 +369,7 @@ describe('Authentication Tests:', () => {
 
           const res = await put('/api/v1/auth/signupdetails').send(generateUserDetails());
           expect(res.statusCode).toBe(200);
-          expect(res.body.redirectUrl).toBeUndefined;
+          expect(res.body.redirectUrl).toBeUndefined();
           expect(res.body.authenticated).toBe(true);
           expect(res.body.data.user).toBeDefined();
           expect(res.body.data.user).toBeTypeOf('object');

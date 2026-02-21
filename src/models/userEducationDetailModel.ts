@@ -1,4 +1,4 @@
-import mongoose, { CallbackError, Document, Model, Schema } from 'mongoose';
+import mongoose, { Model, Schema } from 'mongoose';
 import validator from 'validator';
 
 import ApiError from '#src/utils/ApiError.js';

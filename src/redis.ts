@@ -20,7 +20,7 @@ const redisConnection = new Redis(process.env.REDIS_URL, {
 
   // Retry only for real network/DNS failures
   reconnectOnError(err) {
-    const nodeErr = err as NodeJS.ErrnoException;
+    const nodeErr = err as Error & { code?: string };
     return nodeErr?.code === 'ENOTFOUND' || nodeErr?.code === 'ECONNREFUSED' || nodeErr?.code === 'ETIMEDOUT';
   },
 });

@@ -1,4 +1,4 @@
-import { AI_SERVICE_VALUES, ALL_AI_MODELS, GEMINI_MODELS } from '#src/types/enum.js';
+import { AI_SERVICES, ALL_AI_MODELS } from '@vin51435/studenhub-contracts';
 import { IAppUsageMonthly } from '#src/types/model.js';
 import { model, Schema } from 'mongoose';
 
@@ -23,7 +23,7 @@ const appUsageMonthlySchema = new Schema<IAppUsageMonthly>(
 
     service: {
       type: String,
-      enum: Object.values(AI_SERVICE_VALUES),
+      enum: Object.values(AI_SERVICES),
       required: true,
     },
 

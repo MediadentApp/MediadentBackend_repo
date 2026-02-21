@@ -8,12 +8,12 @@ import { AppRequestBody, AppRequestParams, AppRequestQuery } from '#src/types/ap
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse, IResponseExtraCommentPagination } from '#src/types/api.response.js';
 import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
-import { SORT_METHODS, SORT_ORDER, SortMethod, SortOrder, VOTE_TYPES } from '@vin51435/studenhub-contracts';
+import { SORT_METHODS, SORT_ORDER, VOTE_TYPES } from '@vin51435/studenhub-contracts';
 import { IPostComment } from '#src/types/model.post.type.js';
 import { CommentParam } from '#src/types/param.comment.js';
 import { IdParam } from '#src/types/param.js';
 import { ICommentQuery } from '#src/types/query.comment.js';
-import { ICommentBody, ICommentVoteBody } from '#src/types/request.comment.js';
+import { ICommentBody } from '#src/types/request.comment.js';
 import ApiError from '#src/utils/ApiError.js';
 import { FetchPaginatedDataWithAggregation } from '#src/utils/ApiPaginatedResponse.js';
 import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';

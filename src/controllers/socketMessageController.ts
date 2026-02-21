@@ -27,7 +27,7 @@ import catchSocket from '#src/utils/catchSocket.js';
 import { stringToObjectID } from '#src/utils/index.js';
 import { MESSAGE_STATUS } from '@vin51435/studenhub-contracts';
 import { Request, NextFunction } from 'express';
-import mongoose, { ObjectId, ClientSession } from 'mongoose';
+import mongoose, { ObjectId } from 'mongoose';
 import { Server } from 'socket.io';
 import webPush from 'web-push';
 
@@ -41,7 +41,7 @@ const { NOTIFICATION_TIMEOUT_DELAY, READ_NOTIFICATION_BATCH_THRESHOLD, DELETE_NO
 
 // Batched Delete Notifications
 let notificationsToDelete: string[] = [];
-let deleteNotificationTimeoutId: NodeJS.Timeout | undefined;
+let deleteNotificationTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
 const VAPID_WEBPUSH_PUBLIC_KEY = process.env.WEBPUSH_PUBLIC_KEY;
 const VAPID_WEBPUSH_PRIVATE_KEY = process.env.WEBPUSH_PRIVATE_KEY;
@@ -494,7 +494,7 @@ export const readNotification = catchSocket(
       console.log('Missing notification id');
       return;
     }
-    if ((method = 'delete')) {
+    if (method === 'delete') {
       NotificationService.add({
         collectionName: 'ReadNotifications',
         type: 'delete',
@@ -575,10 +575,10 @@ export const handleDisconnect = catchSocket(async (io: Server, socket: IAuthenti
   console.log(`User ${socket.user.username} (${socket.id}) disconnected`);
 });
 
-interface Notification {
-  content: string;
-  [key: string]: string | boolean;
-}
+// interface Notification {
+//   content: string;
+//   [key: string]: string | boolean;
+// }
 // can be debounced
 export const sendPushNotification = async (userId: string, notificationData: object) => {
   try {

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import mongoose, { Types } from 'mongoose';
-
+import mongoose from 'mongoose';
+import type { Express } from 'express';
 import ApiError from '#src/utils/ApiError.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import Notification from '#src/models/userNotificationModel.js';
@@ -189,7 +189,7 @@ export const getUserByIdentifier = catchAsync(
  * Route: GET /users/search
  */
 export const searchUsers = catchAsync(
-  async (req: AppPaginatedRequest, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest, res: AppPaginatedResponse, _next: NextFunction) => {
     const fetchedData = await FetchPaginatedData(User, {
       searchValue: req.query.searchValue ?? '',
       searchFields: req.query.searchFields ?? ['firstName', 'lastName', 'username'],
@@ -371,7 +371,7 @@ export const getHomeFeed = catchAsync(
   async (
     req: AppPaginatedRequest<CommunityPostParam, { fresh?: string }>,
     res: AppPaginatedResponse,
-    next: NextFunction
+    _next: NextFunction
   ) => {
     const userId = req.user._id;
     const redisKey = `home:feed:${userId}`;
@@ -409,7 +409,7 @@ export const getHomeFeed = catchAsync(
  * Route: GET /user/popular/feed
  */
 export const getPopularFeed = catchAsync(
-  async (req: AppPaginatedRequest<{}, { fresh?: string }>, res: AppPaginatedResponse, next: NextFunction) => {
+  async (req: AppPaginatedRequest<{}, { fresh?: string }>, res: AppPaginatedResponse, _next: NextFunction) => {
     const { _id: userId } = req.user;
 
     const posts = await FetchPaginatedDataWithAggregation<IPost>(

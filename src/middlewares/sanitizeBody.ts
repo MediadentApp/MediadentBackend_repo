@@ -23,7 +23,6 @@ function sanitizeForMongo(obj: any): void {
 export default function sanitizeBody(req: Request, res: Response, next: NextFunction): void {
   try {
     if (!req.body || typeof req.body !== 'object') {
-      console.error('Invalid request body');
       return next();
     }
 

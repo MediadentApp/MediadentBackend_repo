@@ -1,5 +1,4 @@
 import express, { NextFunction, Request, Response } from 'express';
-import qs from 'qs';
 
 const parser = express();
 

@@ -1,4 +1,4 @@
-import e, { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { CastError, Error as MongooseError } from 'mongoose';
 
 import ApiError from '#src/utils/ApiError.js';
@@ -101,7 +101,7 @@ const sendErrorProd = (err: ApiError, res: Response): void => {
   }
 };
 
-const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction): void => {
+const globalErrorHandler = (err: any, req: Request, res: Response, _next: NextFunction): void => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'Internal Server Error';
 

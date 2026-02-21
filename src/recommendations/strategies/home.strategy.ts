@@ -1,5 +1,4 @@
 import appConfig from '#src/config/appConfig.js';
-import { fetchPostPipelineStage } from '#src/helper/fetchPostAggregationPipeline.js';
 import { CommunityFollowedBy } from '#src/models/communityFollowedBy.model.js';
 import Post from '#src/models/post.model.js';
 import { PostView } from '#src/models/postView.model.js';

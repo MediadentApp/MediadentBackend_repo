@@ -11,7 +11,7 @@ import {
   signupInterests,
   updatePassword,
 } from '#src/controllers/authController.js';
-import { getAcademicDetails, saveAcademicDetails, updateAcademicDetails } from '#src/controllers/userController.js';
+import { getAcademicDetails, saveAcademicDetails, updateAcademicDetails } from '#src/controllers/user.controller.js';
 import express from 'express';
 
 const router = express.Router();

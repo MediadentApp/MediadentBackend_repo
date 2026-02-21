@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import redisConnection from '#src/redis.js';
+import redisConnection from '#src/config/redis.js';
 import ApiError from '#src/utils/ApiError.js';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { ErrorCodes } from '#src/config/constants/errorCodes.js';

@@ -1,4 +1,4 @@
-import redisConnection from '#src/redis.js';
+import redisConnection from '#src/config/redis.js';
 import { Worker } from 'bullmq';
 
 export const testWorker = new Worker(

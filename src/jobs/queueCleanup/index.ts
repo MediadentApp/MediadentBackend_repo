@@ -1,4 +1,4 @@
-import redisConnection from '#src/redis.js';
+import redisConnection from '#src/config/redis.js';
 import { postViewCleanupQueue } from '#src/jobs/queues/postView.queue.js';
 import { testQueue } from '#src/jobs/queues/test.queue.js';
 import { postPopularityQueue } from '#src/jobs/queues/postPopularity.queue.js';

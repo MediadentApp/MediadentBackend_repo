@@ -1,6 +1,6 @@
 import appConfig from '#src/config/appConfig.js';
 import { PostView } from '#src/models/postView.model.js';
-import redisConnection from '#src/redis.js';
+import redisConnection from '#src/config/redis.js';
 import { IPostView } from '#src/types/model.post.type.js';
 import { Worker } from 'bullmq';
 

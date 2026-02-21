@@ -14,7 +14,7 @@ import { AppResponse } from '#src/types/api.response.js';
 import { IdParam } from '#src/types/param.js';
 import { DebouncedExecutor } from '#src/utils/DebouncedExecutor.js';
 import { UserFollows } from '#src/models/userFollows.model.js';
-import redisConnection from '#src/redis.js';
+import redisConnection from '#src/config/redis.js';
 import Post from '#src/models/post.model.js';
 import { computeHomeFeed } from '#src/recommendations/strategies/home.strategy.js';
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';

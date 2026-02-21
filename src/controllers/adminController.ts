@@ -5,7 +5,7 @@ import { BannedIP } from '#src/models/BannedIP.model.js';
 import Community from '#src/models/community.model.js';
 import Post from '#src/models/post.model.js';
 import User from '#src/models/userModel.js';
-import redisConnection from '#src/redis.js';
+import redisConnection from '#src/config/redis.js';
 import { AppRequest } from '#src/types/api.request.js';
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse } from '#src/types/api.response.js';

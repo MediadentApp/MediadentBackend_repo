@@ -1,6 +1,6 @@
 import Post from '#src/models/post.model.js';
 import { PostView } from '#src/models/postView.model.js';
-import redisConnection from '#src/redis.js';
+import redisConnection from '#src/config/redis.js';
 import { Worker } from 'bullmq';
 
 export const refreshPostsWorker = new Worker(

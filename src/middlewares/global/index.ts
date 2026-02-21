@@ -5,10 +5,10 @@ import corsMiddleware from './cors.js';
 import rateLimiter from './rateLimiter.js';
 import parser from './parser.js';
 import requestInfo from './requestInfo.js';
-import sanitizeBody from '#src/middlewares/sanitizeBody.js';
-import logApiAccess from '#src/middlewares/apiAccessLogs.middleware.js';
+import sanitizeBody from '#src/middlewares/global/sanitizeBody.js';
+import logApiAccess from '#src/middlewares/global/apiAccessLogs.middleware.js';
 import helmet from 'helmet';
-import ipBanCheck from '#src/middlewares/ipBanCheck.js';
+import ipBanCheck from '#src/middlewares/global/ipBanCheck.js';
 
 const middlewares = express();
 

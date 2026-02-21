@@ -6,7 +6,7 @@ import Comment from '#src/models/postComment.model.js';
 import { PostSave } from '#src/models/postSave.model.js';
 import { PostView } from '#src/models/postView.model.js';
 import { PostVote } from '#src/models/postVote.model.js';
-import { VoteEnum } from '#src/types/enum.js';
+import { VoteEnum } from '@vin51435/studenhub-contracts';
 import postPopularityStrategy from '#src/recommendations/strategies/postPopularity.strategy.js';
 import { getObjectIds } from '#src/tests/unit/utils/ojbectId.js';
 

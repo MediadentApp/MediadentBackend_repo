@@ -1,4 +1,4 @@
-import { VoteEnum } from '#src/types/enum.js';
+import { VoteEnum } from '@vin51435/studenhub-contracts';
 
 export type CommunityPostParam = {
   communityId: string;

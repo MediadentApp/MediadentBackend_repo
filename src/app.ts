@@ -13,7 +13,7 @@ import { Server } from 'socket.io';
 
 import appConfig from '#src/config/appConfig.js';
 import globalErrorHandler from '#src/controllers/errorController.js';
-import middlewares from '#src/middlewares/global/index.js';
+import middlewares from '#src/middlewares/index.js';
 import { routes } from '#src/routes/index.js';
 import socketRoutes from '#src/routes/socketRoutes.js';
 import { unknownRoute } from '#src/controllers/serverHealthController.js';

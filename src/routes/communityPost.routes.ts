@@ -17,7 +17,7 @@ import {
   updateCommunityAvatar,
   updateCommunityBanner,
 } from '#src/controllers/communityPost.controller.js';
-import { communityCreationUpload, postUpload } from '#src/middlewares/global/multerPosts.js';
+import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse } from '#src/types/api.response.js';

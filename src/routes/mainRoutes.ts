@@ -25,7 +25,7 @@ import {
   userNotifications,
   searchUsers,
 } from '#src/controllers/userController.js';
-import { profileImageUpload } from '#src/middlewares/global/multerPosts.js';
+import { profileImageUpload } from '#src/middlewares/multerPosts.js';
 import { AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { UpdateUserDTO } from '#src/types/model.js';

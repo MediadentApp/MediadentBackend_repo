@@ -3,10 +3,11 @@ import { CommunityFollowedBy } from '#src/models/communityFollowedBy.model.js';
 import Post from '#src/models/post.model.js';
 import { PostView } from '#src/models/postView.model.js';
 import { UserFollows } from '#src/models/userFollows.model.js';
-import redisConnection from '#src/config/redis.js';
+import { getRedis } from '#src/config/redis.js';
 
 export const computeHomeFeed = async (userId: string) => {
   console.log('computing home feed for user', userId);
+  const redisConnection = getRedis();
 
   if (!userId) return;
 

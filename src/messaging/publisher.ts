@@ -1,16 +1,19 @@
-import rabbitConnection from '#src/config/rabbit.js';
+import { getRabbitMQ } from '#src/config/rabbit.js';
 import { Publisher } from 'rabbitmq-client';
 
 let publisher: Publisher | null = null;
 
-async function initPublisher() {
-  if (publisher) return; // Already initialized
+/**
+ * Initialize publisher (call during bootstrap AFTER connectRabbitMQ)
+ */
+export function initPublisher() {
+  if (publisher) return;
 
-  const connection = await rabbitConnection();
+  const connection = getRabbitMQ();
+
   publisher = connection.createPublisher({
     confirm: true,
     exchanges: [
-      // ✅ Define exchange here
       {
         exchange: 'interview.event',
         type: 'topic',
@@ -18,23 +21,23 @@ async function initPublisher() {
       },
     ],
   });
+
+  console.log('RabbitMQ publisher initialized');
 }
 
-async function publishEvent(exchange: string, routingKey: string, data: any) {
+/**
+ * Publish event
+ */
+export async function publishEvent(exchange: string, routingKey: string, data: any) {
   if (!publisher) {
-    await initPublisher();
+    throw new Error('Publisher not initialized');
   }
 
-  await publisher!.send(
+  await publisher.send(
     {
-      exchange: exchange,
-      routingKey: routingKey,
+      exchange,
+      routingKey,
     },
     Buffer.from(JSON.stringify(data))
   );
 }
-
-export { initPublisher, publishEvent };
-
-// Initialize on module load
-initPublisher().catch(console.error);

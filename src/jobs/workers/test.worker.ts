@@ -1,17 +1,28 @@
-import redisConnection from '#src/config/redis.js';
+import { getRedis } from '#src/config/redis.js';
 import { Worker } from 'bullmq';
 
-export const testWorker = new Worker(
-  'test-queue',
-  async job => {
-    console.log('Processing job:', job.name);
-    console.log('Job data:', job.data);
-    // Simulate work
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return 'done';
-  },
-  { connection: redisConnection }
-);
+let testWorker: Worker;
+
+export function initTestWorker() {
+  testWorker = new Worker(
+    'test-queue',
+    async job => {
+      console.log('Processing job:', job.name);
+      console.log('Job data:', job.data);
+      // Simulate work
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return 'done';
+    },
+    { connection: getRedis() }
+  );
+}
+
+export function getTestWorker(): Worker {
+  if (!testWorker) {
+    throw new Error('Worker not initialized');
+  }
+  return testWorker;
+}
 
 /**
  * $ curl -X POST http://localhost:3001/admin/queues/api/queues/test-queue/add   -H 'Content-Type: application/json'   -d '{

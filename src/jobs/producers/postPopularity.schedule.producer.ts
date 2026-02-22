@@ -1,5 +1,5 @@
 import appConfig from '#src/config/appConfig.js';
-import { postPopularityQueue } from '#src/jobs/queues/postPopularity.queue.js';
+import { postPopularityQueue } from '../queues/index.js';
 
 export const scheduleDailyPopularPost = async () => {
   await postPopularityQueue.upsertJobScheduler(

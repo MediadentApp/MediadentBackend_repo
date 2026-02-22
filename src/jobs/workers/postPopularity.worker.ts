@@ -1,11 +1,22 @@
 import postPopularityStrategy from '#src/recommendations/strategies/postPopularity.strategy.js';
-import redisConnection from '#src/config/redis.js';
+import { getRedis } from '#src/config/redis.js';
 import { Worker } from 'bullmq';
 
-export const cleanupWorker = new Worker(
-  'daily-popular-post',
-  async () => {
-    await postPopularityStrategy();
-  },
-  { connection: redisConnection }
-);
+let postPopularityWorker: Worker;
+
+export function initPostPopularityWorker() {
+  postPopularityWorker = new Worker(
+    'daily-popular-post',
+    async () => {
+      await postPopularityStrategy();
+    },
+    { connection: getRedis() }
+  );
+}
+
+export function getPostPopularityWorker() {
+  if (!postPopularityWorker) {
+    throw new Error('Worker not initialized');
+  }
+  return postPopularityWorker;
+}

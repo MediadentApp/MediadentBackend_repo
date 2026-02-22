@@ -17,7 +17,7 @@ import middlewares from '#src/middlewares/index.js';
 import { routes } from '#src/routes/index.js';
 import socketRoutes from '#src/routes/socketRoutes.js';
 import { unknownRoute } from '#src/controllers/serverHealthController.js';
-import serverAdapter from '#src/jobs/admin.js';
+import { getBullBoardRouter } from '#src/jobs/admin.js';
 
 const app = express();
 
@@ -33,8 +33,9 @@ app.use(middlewares);
 app.use('/', routes);
 
 // BullMQ Admin Dashboard
-app.use('/admin/queues', serverAdapter.getRouter());
-
+export function mountBullBoard() {
+  app.use('/admin/queues', getBullBoardRouter());
+}
 // Handle unknown routes
 app.all('/*name', unknownRoute);
 

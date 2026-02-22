@@ -1,8 +1,6 @@
-import redisConnection from '#src/config/redis.js';
-import { postViewCleanupQueue } from '#src/jobs/queues/postView.queue.js';
-import { testQueue } from '#src/jobs/queues/test.queue.js';
-import { postPopularityQueue } from '#src/jobs/queues/postPopularity.queue.js';
+import { getRedis } from '#src/config/redis.js';
 import { Queue } from 'bullmq';
+import { postViewCleanupQueue, postPopularityQueue, testQueue } from '../queues/index.js';
 
 type Status = 'completed' | 'wait' | 'active' | 'paused' | 'prioritized' | 'delayed' | 'failed';
 const defaultGraceTime = 0;
@@ -19,6 +17,7 @@ async function cleanQueue(queue: Queue, time: number = defaultGraceTime, type: S
 function setupGracefulCleanup() {
   const cleanup = async () => {
     console.log('\n🧹 Graceful shutdown started...');
+    const redisConnection = getRedis();
 
     // Clean queues
     await Promise.all([cleanQueue(postViewCleanupQueue), cleanQueue(postPopularityQueue), cleanQueue(testQueue)]);

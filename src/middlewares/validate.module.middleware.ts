@@ -1,12 +1,14 @@
 import ApiError from '#src/utils/ApiError.js';
 import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import { Request, Response, NextFunction } from 'express';
-import Joi from 'joi';
+import { z } from 'zod';
+import { ParamsDictionary } from 'express-serve-static-core';
+import { ParsedQs } from 'qs';
 
 interface ValidationSchemas {
-  body?: Joi.ObjectSchema;
-  params?: Joi.ObjectSchema;
-  query?: Joi.ObjectSchema;
+  body?: z.ZodType;
+  params?: z.ZodType;
+  query?: z.ZodType;
 }
 
 export const validate =
@@ -14,35 +16,30 @@ export const validate =
   (req: Request, res: Response, next: NextFunction): void => {
     const errors: string[] = [];
 
-    const options: Joi.ValidationOptions = {
-      abortEarly: false,
-      stripUnknown: true,
-    };
-
     if (schemas.body) {
-      const { error, value } = schemas.body.validate(req.body, options);
-      if (error) {
-        errors.push(...error.details.map(d => `body: ${d.message}`));
+      const result = schemas.body.safeParse(req.body);
+      if (!result.success) {
+        errors.push(...result.error.issues.map((i: z.core.$ZodIssue) => `body: ${i.message}`));
       } else {
-        req.body = value;
+        req.body = result.data;
       }
     }
 
     if (schemas.params) {
-      const { error, value } = schemas.params.validate(req.params, options);
-      if (error) {
-        errors.push(...error.details.map(d => `params: ${d.message}`));
+      const result = schemas.params.safeParse(req.params);
+      if (!result.success) {
+        errors.push(...result.error.issues.map((i: z.core.$ZodIssue) => `params: ${i.message}`));
       } else {
-        req.params = value;
+        req.params = result.data as ParamsDictionary;
       }
     }
 
     if (schemas.query) {
-      const { error, value } = schemas.query.validate(req.query, options);
-      if (error) {
-        errors.push(...error.details.map(d => `query: ${d.message}`));
+      const result = schemas.query.safeParse(req.query);
+      if (!result.success) {
+        errors.push(...result.error.issues.map((i: z.core.$ZodIssue) => `query: ${i.message}`));
       } else {
-        req.query = value as Record<string, string>;
+        req.query = result.data as ParsedQs;
       }
     }
 

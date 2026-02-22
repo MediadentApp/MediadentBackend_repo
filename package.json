@@ -5,10 +5,10 @@
   "main": "./server.ts",
   "type": "module",
   "scripts": {
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
-    "dev": "nodemon --watch src --ext ts --exec tsx server.ts",
-    "debug": "nodemon --watch src --ext ts --exec tsx server.ts --inspect",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "dev": "tsx watch server.ts",
+    "debug": "tsx watch --inspect=0.0.0.0:9229 server.ts",
     "build": "tsc && tsc-alias",
     "start": "node dist/server.js",
     "test": "vitest --watch=false",
@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.8",
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.20.0",
     "@faker-js/faker": "^9.8.0",
     "@types/aws4": "^1.11.6",
     "@types/axios": "^0.9.36",

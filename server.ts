@@ -1,8 +1,5 @@
 import './loadenv.js';
 
-// import settings
-import './appSettings.js';
-
 import mongoose, { MongooseError } from 'mongoose';
 
 import { server } from '#src/app.js';

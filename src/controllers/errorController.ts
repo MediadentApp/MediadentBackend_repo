@@ -70,6 +70,17 @@ const handleJwtError = (): ApiError =>
 const handleJwtExpiredError = (): ApiError =>
   new ApiError(responseMessages.AUTH.TOKEN_EXPIRED, 401, ErrorCodes.CLIENT.UNAUTHENTICATED);
 
+const prodResponse = (err: ApiError) => {
+  return {
+    status: err.status,
+    errorCode: err.errorCode,
+    name: err.name,
+    message: err.message,
+    ...(err?.data ? { data: err.data } : {}),
+    ...(err?.redirectUrl ? { redirectUrl: err.redirectUrl } : {}),
+  };
+};
+
 const sendErrorDev = (err: ApiError, res: Response): void => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -78,19 +89,14 @@ const sendErrorDev = (err: ApiError, res: Response): void => {
     message: err.message,
     redirectUrl: err.redirectUrl,
     stack: err.stack,
-    error: err,
+    data: err.data,
+    error: prodResponse(err),
   });
 };
 
 const sendErrorProd = (err: ApiError, res: Response): void => {
   if (err.isOperational) {
-    res.status(err.statusCode).json({
-      status: err.status,
-      errorCode: err.errorCode,
-      name: err.name,
-      message: err.message,
-      redirectUrl: err?.redirectUrl ?? null,
-    });
+    res.status(err.statusCode).json(prodResponse(err));
   } else {
     console.error('ERROR 💥', err);
     res.status(500).json({

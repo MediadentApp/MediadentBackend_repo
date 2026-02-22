@@ -1,5 +1,5 @@
 import { app } from '#src/app.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import TempUser from '#src/models/tempUserModel.js';
 import request from 'supertest';
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';

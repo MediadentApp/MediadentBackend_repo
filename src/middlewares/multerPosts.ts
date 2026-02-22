@@ -1,5 +1,5 @@
 import appConfig from '#src/config/appConfig.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import ApiError from '#src/utils/ApiError.js';
 import { Request } from 'express';

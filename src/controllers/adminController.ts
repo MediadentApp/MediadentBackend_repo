@@ -1,4 +1,4 @@
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { ApiAccessLog } from '#src/models/accessLogs.model.js';
 import { BannedIP } from '#src/models/BannedIP.model.js';

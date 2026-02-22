@@ -1,4 +1,4 @@
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
 

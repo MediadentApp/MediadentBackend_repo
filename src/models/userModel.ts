@@ -8,7 +8,7 @@ import { IUser, IUserModel } from '#src/types/model.js';
 import ApiError from '#src/utils/ApiError.js';
 import { Chat } from '#src/models/userMessages.js';
 import appConfig from '#src/config/appConfig.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';

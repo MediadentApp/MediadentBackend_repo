@@ -1,4 +1,5 @@
 import ApiError from '#src/utils/ApiError.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 
@@ -46,7 +47,7 @@ export const validate =
     }
 
     if (errors.length > 0) {
-      throw ApiError.badRequest('Validation failed', 'ErrorCodes.VALIDATION.FAIL', { ...errors });
+      throw ApiError.badRequest('Validation failed', ErrorCodes.VALIDATION.FAIL, { ...errors });
     }
 
     next();

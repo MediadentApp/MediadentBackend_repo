@@ -1,4 +1,4 @@
-// import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+// import { ErrorCodes } from '@vin51435/studenhub-contracts';
 // import User from '#src/models/userModel.js';
 // import { checkIfUserExists } from '#src/services/auth/checkUserExists.service.js';
 // import { describe, it, expect, vi, beforeEach } from 'vitest';

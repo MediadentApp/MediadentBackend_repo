@@ -7,7 +7,7 @@ import User from '#src/models/userModel.js';
 import catchAsync from '#src/utils/catchAsync.js';
 import { createSendToken } from '#src/utils/authUtils.js';
 import { IOAuthCallbackQuery } from '#src/types/query.auth.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { IResponseExtra } from '#src/types/api.response.js';
 

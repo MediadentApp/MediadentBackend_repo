@@ -2,7 +2,7 @@ import { Types, Model, PipelineStage, SortOrder } from 'mongoose';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import { IPaginatedResponse, IPaginationOptions } from '#src/types/api.response.paginated.js';
 import ApiError from '#src/utils/ApiError.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 
 // !!! TODO: Move rawFilter to its own field
 

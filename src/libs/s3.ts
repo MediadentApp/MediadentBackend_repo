@@ -1,6 +1,6 @@
 // Direct upload to S3
 
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import ApiError from '#src/utils/ApiError.js';
 import { getS3KeyFromUrl } from '#src/utils/index.js';

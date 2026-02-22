@@ -6,7 +6,7 @@ import catchAsync from '#src/utils/catchAsync.js';
 import Notification from '#src/models/userNotificationModel.js';
 import User from '#src/models/userModel.js';
 import Education from '#src/models/userEducationDetailModel.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import responseMessages from '#src/config/constants/responseMessages.js';
 import ApiResponse, { ApiPaginatedResponse } from '#src/utils/ApiResponse.js';
 import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';

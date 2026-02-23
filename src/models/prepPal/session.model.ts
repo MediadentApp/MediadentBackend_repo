@@ -1,8 +1,8 @@
-import { PrepPalSessionDocument } from '#src/types/model.js';
+import { PrepPalSessionDB } from '#src/types/model.js';
 import { INTERVIEW_DIFFICULTIES, INTERVIEW_STATUS, INTERVIEW_TYPES } from '@vin51435/studenhub-contracts';
-import { Schema, model } from 'mongoose';
+import { HydratedDocument, Schema, model } from 'mongoose';
 
-const PrepPalSessionSchema = new Schema<PrepPalSessionDocument>(
+const PrepPalSessionSchema = new Schema<PrepPalSessionDB>(
   {
     user: {
       type: Schema.Types.ObjectId,
@@ -35,18 +35,14 @@ const PrepPalSessionSchema = new Schema<PrepPalSessionDocument>(
       default: INTERVIEW_STATUS.IN_PROGRESS,
     },
 
-    finalScore: {
-      type: Number, // 0–10
-    },
+    finalScore: Number, // 0–10
 
     startedAt: {
       type: Date,
       default: Date.now,
     },
 
-    completedAt: {
-      type: Date,
-    },
+    completedAt: Date,
 
     currentQuestionIndex: {
       type: Number,
@@ -79,4 +75,6 @@ const PrepPalSessionSchema = new Schema<PrepPalSessionDocument>(
   { timestamps: true }
 );
 
-export const PrepPalSession = model('PrepPalSession', PrepPalSessionSchema);
+export type PrepPalSessionDocument = HydratedDocument<PrepPalSessionDB>;
+
+export const PrepPalSessionModel = model<PrepPalSessionDB>('PrepPalSession', PrepPalSessionSchema);

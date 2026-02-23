@@ -278,20 +278,20 @@ export interface IUserFormat extends Document {
   userInterest: IUserInterest[];
 }
 
-export interface PrepPalSessionDocument extends Omit<PrepPalSessionDTO, 'user' | 'userUsage'> {
+export interface PrepPalSessionDB extends Omit<PrepPalSessionDTO, 'user' | 'userUsage'> {
   user: Types.ObjectId;
   userUsage: Types.ObjectId;
 }
 
-export interface UserUsageSchemaDocument extends Omit<UserUsageDTO, 'user'> {
+export interface UserUsageSchemaDB extends Omit<UserUsageDTO, 'user'> {
   user: Types.ObjectId;
 }
 
-export interface PrepPalQuestionDocument extends Omit<PrepPalQuestionDTO, 'session'> {
+export interface PrepPalQuestionDB extends Omit<PrepPalQuestionDTO, 'session'> {
   session: Types.ObjectId;
 }
 
-export interface PrepPalAnswerDocument extends Omit<PrepPalAnswerDTO, 'session' | 'question'> {
+export interface PrepPalAnswerDB extends Omit<PrepPalAnswerDTO, 'session' | 'question'> {
   session: Types.ObjectId;
   question: Types.ObjectId;
 }

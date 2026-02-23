@@ -1,8 +1,8 @@
 import { AI_SERVICES, ALL_AI_MODELS } from '@vin51435/studenhub-contracts';
-import { UserUsageSchemaDocument } from '#src/types/model.js';
+import { UserUsageSchemaDB } from '#src/types/model.js';
 import { model, Schema } from 'mongoose';
 
-const userUsageSchema = new Schema<UserUsageSchemaDocument>(
+const userUsageSchema = new Schema<UserUsageSchemaDB>(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 
@@ -24,28 +24,28 @@ const userUsageSchema = new Schema<UserUsageSchemaDocument>(
 
     inputTokens: {
       type: Number,
-      required: function (this: UserUsageSchemaDocument): boolean {
+      required: function (this: UserUsageSchemaDB): boolean {
         return this.service === 'Gemini';
       },
     },
 
     outputTokens: {
       type: Number,
-      required: function (this: UserUsageSchemaDocument): boolean {
+      required: function (this: UserUsageSchemaDB): boolean {
         return this.service === 'Gemini';
       },
     },
 
     characters: {
       type: Number,
-      required: function (this: UserUsageSchemaDocument): boolean {
+      required: function (this: UserUsageSchemaDB): boolean {
         return this.service === 'tts';
       },
     },
 
     seconds: {
       type: Number,
-      required: function (this: UserUsageSchemaDocument): boolean {
+      required: function (this: UserUsageSchemaDB): boolean {
         return this.service === 'stt';
       },
     },

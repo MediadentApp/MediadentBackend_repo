@@ -1,9 +1,9 @@
-import responseMessages from '#src/config/constants/responseMessages.js';
 import User from '#src/models/userModel.js';
 import ApiError from '#src/utils/ApiError.js';
 import { Socket } from 'socket.io';
 import { IAuthenticatedSocket } from '#src/types/request.socket.js';
 import { extractSignedCookie } from '#src/utils/authUtils.js';
+import { responseMessages } from '@vin51435/studenhub-contracts';
 
 const socketAuthCheck = async (socket: Socket, next: (err?: any) => void) => {
   try {

@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import validator from 'validator';
 import ApiError from '#src/utils/ApiError.js';
 import fieldsToSanitize from '#src/config/sanitization.js';
-import { ErrorCodes } from '@vin51435/studenhub-contracts';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 
 /**
  * Recursively remove any keys containing `$` or `.` to prevent NoSQL injection.

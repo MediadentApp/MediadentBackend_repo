@@ -1,7 +1,7 @@
-import responseMessages from '#src/config/constants/responseMessages.js';
 import { IApiResponse, IResponseData, IResponseExtra } from '#src/types/api.response.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { AppPaginatedResponse, IPaginatedResponse } from '#src/types/api.response.paginated.js';
+import { responseMessages } from '@vin51435/studenhub-contracts';
 import { Response } from 'express';
 
 /**

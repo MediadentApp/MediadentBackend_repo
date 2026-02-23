@@ -1,11 +1,10 @@
 import mongoose, { Model, Schema } from 'mongoose';
 import validator from 'validator';
-
 import ApiError from '#src/utils/ApiError.js';
 import { IEducation } from '#src/types/model.js';
 import { sanitizeUpdate } from '#src/utils/index.js';
 import User from '#src/models/userModel.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { responseMessages } from '@vin51435/studenhub-contracts';
 
 const isValidDateFormat = (value: string) =>
   validator.isDate(value, {

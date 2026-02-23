@@ -1,5 +1,5 @@
 import { app } from '#src/app.js';
-import { ErrorCodes } from '@vin51435/studenhub-contracts';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 import TempUser from '#src/models/tempUserModel.js';
 import request from 'supertest';
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
@@ -7,7 +7,6 @@ import * as emailService from '#src/libs/sendMail.ts';
 import User from '#src/models/userModel.js';
 import { generateUniqueUser, generateUserDetails } from '#src/tests/seeds.js';
 import { authRequest, extractCookieFromRes } from '#src/tests/utils.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
 import appConfig from '#src/config/appConfig.js';
 
 // Mock sendEmail function

@@ -3,13 +3,11 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import mongoose, { Schema, CallbackWithoutResultAndOptionalError, Types } from 'mongoose';
 import validator from 'validator';
-
 import { IUser, IUserModel } from '#src/types/model.js';
 import ApiError from '#src/utils/ApiError.js';
 import { Chat } from '#src/models/userMessages.js';
 import appConfig from '#src/config/appConfig.js';
-import { ErrorCodes } from '@vin51435/studenhub-contracts';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { USER_ROLES, USER_TYPES } from '@vin51435/studenhub-contracts';

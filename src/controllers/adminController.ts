@@ -1,5 +1,4 @@
-import { ErrorCodes } from '@vin51435/studenhub-contracts';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 import { ApiAccessLog } from '#src/models/accessLogs.model.js';
 import { BannedIP } from '#src/models/BannedIP.model.js';
 import Community from '#src/models/community.model.js';

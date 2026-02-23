@@ -1,5 +1,4 @@
-import { ErrorCodes } from '@vin51435/studenhub-contracts';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 import Comment from '#src/models/postComment.model.js';
 import { CommentVote } from '#src/models/postCommentVote.model.js';
 import User from '#src/models/userModel.js';

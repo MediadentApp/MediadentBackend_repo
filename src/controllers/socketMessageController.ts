@@ -1,6 +1,5 @@
 import appConfig from '#src/config/appConfig.js';
-import { ErrorCodes, MESSAGE_STATUS } from '@vin51435/studenhub-contracts';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodes, MESSAGE_STATUS, responseMessages } from '@vin51435/studenhub-contracts';
 import userSockets, { findSocketByUserId } from '#src/helper/socketMap.js';
 import { Chat, GroupChat, Message, WebPushSubscription } from '#src/models/userMessages.js';
 import User from '#src/models/userModel.js';

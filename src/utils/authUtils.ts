@@ -1,5 +1,4 @@
-import { ErrorCodes } from '@vin51435/studenhub-contracts';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 import { IUser } from '#src/types/model.js';
 import { IResponseExtra } from '#src/types/api.response.js';
 import ApiError from '#src/utils/ApiError.js';

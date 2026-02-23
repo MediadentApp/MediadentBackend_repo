@@ -1,19 +1,15 @@
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
 import {
-  AIService,
-  GeminiModel,
-  InterviewDifficulty,
-  InterviewStatus,
-  InterviewType,
   MessageStatus,
-  QuestionStatus,
-  STTModel,
-  TTSModel,
+  PrepPalAnswerDTO,
+  PrepPalQuestionDTO,
+  PrepPalSessionDTO,
   UserRole,
+  UserUsageDTO,
 } from '@vin51435/studenhub-contracts';
 import { IUserAcademicDetails, IUserInterest } from '#src/types/request.userFormat.js';
-import { Document, HydratedDocument, Model, Types } from 'mongoose';
+import { Document, Model, Types } from 'mongoose';
 
 export interface IUser extends Document<Types.ObjectId> {
   firstName: string;
@@ -282,103 +278,20 @@ export interface IUserFormat extends Document {
   userInterest: IUserInterest[];
 }
 
-interface BaseUsage {
+export interface PrepPalSessionDocument extends Omit<PrepPalSessionDTO, 'user' | 'userUsage'> {
   user: Types.ObjectId;
-  ip: string;
-  date: Date;
-  service: AIService;
-  requests: number;
+  userUsage: Types.ObjectId;
 }
 
-export interface GeminiUsage extends BaseUsage {
-  service: 'Gemini';
-  model: GeminiModel;
-  inputTokens: number;
-  outputTokens: number;
+export interface UserUsageSchemaDocument extends Omit<UserUsageDTO, 'user'> {
+  user: Types.ObjectId;
 }
 
-export interface TtsUsage extends BaseUsage {
-  service: 'tts';
-  model: TTSModel;
-  characters: number;
-}
-
-export interface SttUsage extends BaseUsage {
-  service: 'stt';
-  seconds: number;
-}
-
-export type IUserUsage = GeminiUsage | TtsUsage | SttUsage;
-export type IUserUsageDocument = HydratedDocument<IUserUsage>;
-
-interface AppBaseUsage {
-  year: number;
-  month: number;
-  requests: number;
-}
-
-export interface IAppUsageGeminiUsage extends AppBaseUsage {
-  service: 'Gemini';
-  model: GeminiModel;
-  inputTokens: number;
-  outputTokens: number;
-}
-
-export interface IAppTtsUsage extends AppBaseUsage {
-  service: 'tts';
-  model: TTSModel;
-  characters: number;
-}
-
-export interface IAppSttUsage extends AppBaseUsage {
-  service: 'stt';
-  model: STTModel;
-  seconds: number;
-}
-
-export type IAppUsageMonthly = IAppUsageGeminiUsage | IAppTtsUsage | IAppSttUsage;
-
-export interface InterviewConfig {
-  difficulty: InterviewDifficulty;
-  maxQuestions: number;
-  timePerQuestionSec: number;
-  voiceEnabled: boolean;
-}
-
-export interface IPrepPalSession {
-  userId: Types.ObjectId;
-  userUsageId: Types.ObjectId;
-
-  interviewType: InterviewType;
-  topic: string;
-  config: InterviewConfig;
-
-  status: InterviewStatus;
-
-  startedAt: Date;
-  completedAt?: Date;
-
-  finalScore: number;
-
-  currentQuestionIndex: number;
-}
-
-export interface IPrepPalQuestion {
+export interface PrepPalQuestionDocument extends Omit<PrepPalQuestionDTO, 'session'> {
   session: Types.ObjectId;
-  index: number;
-  question: string;
-  status: QuestionStatus;
 }
 
-export interface IPrepPalAnswer {
+export interface PrepPalAnswerDocument extends Omit<PrepPalAnswerDTO, 'session' | 'question'> {
   session: Types.ObjectId;
   question: Types.ObjectId;
-  transcript: string;
-  audio: {
-    url: string;
-    durationSec: number;
-    mimeType: string;
-  };
-  evaluation: { score: number; feedback: string; improvement: string[]; strengths: string[] };
-  answeredAt: Date;
 }

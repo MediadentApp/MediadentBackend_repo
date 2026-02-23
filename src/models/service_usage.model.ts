@@ -1,8 +1,7 @@
-import { AI_SERVICES, ALL_AI_MODELS } from '@vin51435/studenhub-contracts';
-import { IAppUsageMonthly } from '#src/types/model.js';
+import { AI_SERVICES, ALL_AI_MODELS, AppUsageMonthlyDTO } from '@vin51435/studenhub-contracts';
 import { model, Schema } from 'mongoose';
 
-const appUsageMonthlySchema = new Schema<IAppUsageMonthly>(
+const appUsageMonthlySchema = new Schema<AppUsageMonthlyDTO>(
   {
     year: {
       type: Number,
@@ -36,28 +35,28 @@ const appUsageMonthlySchema = new Schema<IAppUsageMonthly>(
 
     inputTokens: {
       type: Number,
-      required: function (this: IAppUsageMonthly): boolean {
+      required: function (this: AppUsageMonthlyDTO): boolean {
         return this.service === 'Gemini';
       },
     },
 
     outputTokens: {
       type: Number,
-      required: function (this: IAppUsageMonthly): boolean {
+      required: function (this: AppUsageMonthlyDTO): boolean {
         return this.service === 'Gemini';
       },
     },
 
     characters: {
       type: Number,
-      required: function (this: IAppUsageMonthly): boolean {
+      required: function (this: AppUsageMonthlyDTO): boolean {
         return this.service === 'tts';
       },
     },
 
     seconds: {
       type: Number,
-      required: function (this: IAppUsageMonthly): boolean {
+      required: function (this: AppUsageMonthlyDTO): boolean {
         return this.service === 'stt';
       },
     },

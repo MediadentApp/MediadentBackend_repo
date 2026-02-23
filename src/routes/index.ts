@@ -27,7 +27,7 @@ router.use('/api/v1/user', protect, mainRoutes);
 router.use('/api/v1/center', protect, communityPostRoutes);
 router.use('/api/v1/comments', protect, commentRoutes);
 
-router.use('api/v1/PrepPal', protect, prepPalRoutes);
+router.use('/api/v1/prep-pal', protect, prepPalRoutes);
 
 router.use('/api/v1/testing', protect, restrict(USER_ROLES.ADMIN), testingRoutes);
 

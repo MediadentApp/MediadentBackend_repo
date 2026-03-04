@@ -1,7 +1,8 @@
 import { BannedIP } from '#src/models/BannedIP.model.js';
-import redisConnection from '#src/redis.js';
+import { getRedis } from '#src/config/redis.js';
 
 export const loadBannedIPsToRedis = async () => {
+  const redisConnection = getRedis();
   const bans = await BannedIP.find({}, { ip: 1, banNetwork: 1 }).lean();
   const pipeline = redisConnection.multi();
 
@@ -15,5 +16,5 @@ export const loadBannedIPsToRedis = async () => {
   }
 
   await pipeline.exec();
-  console.log(`✅ Loaded ${bans.length} banned IPs and subnets into Redis`);
+  console.log(`Loaded ${bans.length} banned IPs and subnets into Redis`);
 };

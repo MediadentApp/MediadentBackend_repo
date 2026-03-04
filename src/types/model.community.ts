@@ -1,5 +1,5 @@
 import { Document, ObjectId, Types } from 'mongoose';
-import { CommunityInviteStatus, CommunityRole, CommunityType, ReportStatus } from './enum.js';
+import { CommunityInviteStatus, CommunityRole, CommunityType, ReportStatus } from '@vin51435/studenhub-contracts';
 
 export interface ICommunity extends Document<ObjectId> {
   name: string;

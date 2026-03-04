@@ -1,6 +1,13 @@
 import { ErrorCodeType } from '#src/types/api.response.error.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
-import { MessageStatus, UserRole } from '@vin51435/studenhub-contracts';
+import {
+  MessageStatus,
+  PrepPalAnswerDTO,
+  PrepPalQuestionDTO,
+  PrepPalSessionDTO,
+  UserRole,
+  UserUsageDTO,
+} from '@vin51435/studenhub-contracts';
 import { IUserAcademicDetails, IUserInterest } from '#src/types/request.userFormat.js';
 import { Document, Model, Types } from 'mongoose';
 
@@ -269,4 +276,22 @@ export interface IUserFormat extends Document {
   userAcademicDetails: IUserAcademicDetails;
   userGender: string[];
   userInterest: IUserInterest[];
+}
+
+export interface PrepPalSessionDB extends Omit<PrepPalSessionDTO, 'user' | 'userUsage'> {
+  user: Types.ObjectId;
+  userUsage: Types.ObjectId;
+}
+
+export interface UserUsageSchemaDB extends Omit<UserUsageDTO, 'user'> {
+  user: Types.ObjectId;
+}
+
+export interface PrepPalQuestionDB extends Omit<PrepPalQuestionDTO, 'session'> {
+  session: Types.ObjectId;
+}
+
+export interface PrepPalAnswerDB extends Omit<PrepPalAnswerDTO, 'session' | 'question'> {
+  session: Types.ObjectId;
+  question: Types.ObjectId;
 }

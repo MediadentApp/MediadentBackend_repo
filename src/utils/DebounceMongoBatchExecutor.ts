@@ -65,7 +65,7 @@ export class DebouncedMongoBatchExecutor implements IDebouncedMongoBatchExecutor
   private buffer = new Map<string, GenericOperation>();
 
   /** Timeout reference for delayed execution */
-  private timeoutId: NodeJS.Timeout | null = null;
+  private timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Constructor for the executor.

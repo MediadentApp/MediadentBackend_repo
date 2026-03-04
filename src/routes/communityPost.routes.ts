@@ -18,9 +18,9 @@ import {
   updateCommunityBanner,
 } from '#src/controllers/communityPost.controller.js';
 import { communityCreationUpload, postUpload } from '#src/middlewares/multerPosts.js';
-import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.request.js';
+import { AppRequest, AppRequestParams } from '#src/types/api.request.js';
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
-import { AppResponse } from '#src/types/api.response.js';
+import { AppResponse, IApiResponse } from '#src/types/api.response.js';
 import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
 import { CommunityPostParam } from '#src/types/param.communityPost.js';
 import { IdParam, SlugParam } from '#src/types/param.js';
@@ -134,22 +134,15 @@ router.patch('/community/:id/follow/toggle', (req: AppRequestParams<IdParam>, re
  * POST /communitypost/:communityId
  * Creates a new post for a community.
  */
-router.post(
-  '/communitypost/:communityId',
-  postUpload,
-  (req: AppRequestBody<PostBody, CommunityPostParam>, res: AppResponse, next: NextFunction) =>
-    communityPost(req, res, next)
-);
-
+router.post<CommunityPostParam, IApiResponse, PostBody>('/communitypost/:communityId', postUpload, communityPost);
 /**
  * PATCH /communitypost/:communityId/:postId
  * Updates a post within a community.
  */
-router.patch(
+router.patch<CommunityPostParam, IApiResponse, PostBody>(
   '/communitypost/:communityId/:postId',
   postUpload,
-  (req: AppRequestBody<PostBody, CommunityPostParam>, res: AppResponse, next: NextFunction) =>
-    updateCommunityPost(req, res, next)
+  updateCommunityPost
 );
 
 /**

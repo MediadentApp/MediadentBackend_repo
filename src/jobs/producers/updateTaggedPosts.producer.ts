@@ -1,8 +1,8 @@
 import appConfig from '#src/config/appConfig.js';
-import { updateTaggedPostsQueue } from '#src/jobs/queues/updateTaggedPosts.queue.js';
+import { updateTaggedPostsQueue } from '../queues/index.js';
 
 export async function schedulePostRefresh() {
-  await updateTaggedPostsQueue.obliterate({ force: true });
+  // await updateTaggedPostsQueue.obliterate({ force: true });
   await updateTaggedPostsQueue.upsertJobScheduler(
     'refreshPosts',
     {

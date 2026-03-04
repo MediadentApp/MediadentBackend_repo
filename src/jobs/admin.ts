@@ -1,21 +1,30 @@
-import { postPopularityQueue } from '#src/jobs/queues/postPopularity.queue.js';
-import { postViewCleanupQueue } from '#src/jobs/queues/postView.queue.js';
-import { testQueue } from '#src/jobs/queues/test.queue.js';
-import { updateTaggedPostsQueue } from '#src/jobs/queues/updateTaggedPosts.queue.js';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 
-const serverAdapter = new ExpressAdapter();
-serverAdapter.setBasePath('/admin/queues');
+import { postPopularityQueue, postViewCleanupQueue, testQueue, updateTaggedPostsQueue } from './queues/index.js';
 
-const queues = [postViewCleanupQueue, testQueue, postPopularityQueue, updateTaggedPostsQueue].map(
-  q => new BullMQAdapter(q)
-);
+let serverAdapter: ExpressAdapter | null = null;
 
-createBullBoard({
-  queues,
-  serverAdapter,
-});
+export function initBullBoard() {
+  serverAdapter = new ExpressAdapter();
+  serverAdapter.setBasePath('/admin/queues');
 
-export default serverAdapter;
+  const queues = [postViewCleanupQueue, testQueue, postPopularityQueue, updateTaggedPostsQueue].map(
+    q => new BullMQAdapter(q)
+  );
+
+  createBullBoard({
+    queues,
+    serverAdapter,
+  });
+
+  return serverAdapter;
+}
+
+export function getBullBoardRouter() {
+  if (!serverAdapter) {
+    throw new Error('BullBoard not initialized');
+  }
+  return serverAdapter.getRouter();
+}

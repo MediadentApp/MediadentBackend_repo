@@ -1,7 +1,6 @@
 import { IBaseApiResponse } from '#src/types/api.response.js';
 import { Response } from 'express';
 import { PipelineStage } from 'mongoose';
-import { ParsedQs } from 'qs';
 
 export type AppPaginatedResponse<DataType = any> = Response<IPaginatedResponse<DataType>>;
 

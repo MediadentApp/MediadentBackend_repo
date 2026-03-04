@@ -1,9 +1,9 @@
 import { app } from '#src/app.js';
 import request from 'supertest';
-import responseMessages from '#src/config/constants/responseMessages.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { authRequest, extractCookieFromRes } from '#src/tests/utils.js';
 import * as fs from 'fs';
+import { responseMessages } from '@vin51435/studenhub-contracts';
 
 let token: string | undefined;
 

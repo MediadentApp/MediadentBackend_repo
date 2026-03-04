@@ -1,40 +1,43 @@
 import './loadenv.js';
 
-// import settings
-import './appSettings.js';
-
-import mongoose, { MongooseError } from 'mongoose';
-
-import { server } from '#src/app.js';
+import { mountBullBoard, server } from '#src/app.js';
 import { loadBannedIPsToRedis } from '#src/services/initBannedIPsToRedis.js';
+import { connectRedis } from '#src/config/redis.js';
+import { initQueues } from '#src/jobs/queues/index.js';
+import { initWorkders } from '#src/jobs/workers/index.js';
+import { initScheduledJobs } from '#src/jobs/scheduled/index.js';
+import { initBullBoard } from '#src/jobs/admin.js';
+import { connectRabbitMQ } from '#src/config/rabbit.js';
+import { initPublisher } from '#src/messaging/publisher.js';
+import { connectDB } from '#src/config/mongo.js';
 
-const isProductionOrStaging = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
-const useTestDatabase = process.env.USE_TEST_DATABASE !== 'false';
-const db_type = isProductionOrStaging || !useTestDatabase ? 'PRODUCTION' : 'TEST';
-const DB = isProductionOrStaging || !useTestDatabase ? process.env.DATABASE : process.env.TEST_DATABASE2;
-const DB_URI = DB?.replace('<PASSWORD>', process.env.DATABASE_PASSWORD || '');
-if (!DB_URI) {
-  throw new Error('Database connection string is missing.');
-}
-
-// Connect to MongoDB
-async function connectDB() {
-  try {
-    await mongoose.connect(DB_URI as string);
-    console.log(db_type, 'database connected successfully');
-
-    // Load banned IPs to Redis
-    await loadBannedIPsToRedis();
-  } catch (error) {
-    console.error('Database connection failed', error);
-    throw new MongooseError('Database connection failed');
-  }
-}
-connectDB();
-
-// Start the server
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const HOST = '0.0.0.0';
-server.listen(PORT, HOST, () => {
-  console.log(`Server is running on http://${HOST}:${PORT}`);
-});
+
+async function bootstrap() {
+  try {
+    await Promise.all([connectDB(), connectRedis(), connectRabbitMQ()]);
+
+    initPublisher();
+
+    // Initialize queues
+    initQueues();
+    initWorkders();
+
+    await initScheduledJobs();
+
+    initBullBoard();
+    mountBullBoard();
+
+    await loadBannedIPsToRedis();
+
+    server.listen(PORT, HOST, () => {
+      console.log(`Server running on http://${HOST}:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Application failed to start:', error);
+    process.exit(1);
+  }
+}
+
+bootstrap();

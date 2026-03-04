@@ -1,7 +1,6 @@
-import { IPost, IPostTag } from '#src/types/model.post.type.js';
+import { IPost } from '#src/types/model.post.type.js';
 import mongooseLeanVirtuals from 'mongoose-lean-virtuals';
 import mongoose, { Schema } from 'mongoose';
-import User from '#src/models/userModel.js';
 import userServiceHandler from '#src/services/user.service.js';
 import { deleteImagesFromS3 } from '#src/libs/s3.js';
 
@@ -30,7 +29,7 @@ const postSchema: Schema<IPost> = new Schema(
     commentsCount: { type: Number, default: 0, min: 0 },
     savesCount: { type: Number, default: 0, min: 0 },
 
-    popularityScore: { type: Number, default: 0, index: true },
+    popularityScore: { type: Number, default: 6, index: true },
     popularityUpdatedAt: Date,
     isDeleted: Boolean,
     isFlagged: Boolean,

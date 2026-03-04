@@ -1,5 +1,3 @@
-import { IResponseMessage } from '#src/types/api.response.messages.js';
-
 /**
  * Creates an object with only the key-value pairs from `body` that correspond to one of the given `fields`.
  * Useful for creating a MongoDB update object.

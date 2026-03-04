@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import redisConnection from '#src/redis.js';
+import { getRedis } from '#src/config/redis.js';
 import ApiError from '#src/utils/ApiError.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 
 const ipBanCheck = async (req: Request, res: Response, next: NextFunction) => {
+  const redisConnection = getRedis();
   const ip = req.ip || req.socket.remoteAddress || '';
   const subnet = ip.split('.').slice(0, 3).join('.');
 

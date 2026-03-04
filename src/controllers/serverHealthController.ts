@@ -1,4 +1,4 @@
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import { AppRequestParams } from '#src/types/api.request.js';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { SlugParam } from '#src/types/param.js';
@@ -21,7 +21,7 @@ export const unknownRoute = (req: Request, res: Response, next: NextFunction) =>
 export const health = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const dbStatus: string = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   const loadAvg: number[] = os.loadavg();
-  const memoryUsage: NodeJS.MemoryUsage = process.memoryUsage();
+  const memoryUsage: ReturnType<typeof process.memoryUsage> = process.memoryUsage();
 
   return res.status(200).json({
     status: 'success',
@@ -33,7 +33,7 @@ export const health = catchAsync(async (req: Request, res: Response, next: NextF
   });
 });
 
-export const ping = catchAsync(async (req: AppRequestParams<SlugParam>, res: Response, next: NextFunction) => {
+export const ping = catchAsync(async (req: AppRequestParams<SlugParam>, res: Response, _next: NextFunction) => {
   return res.status(200).json({
     status: 'success',
     message: `Pong from ${req.params.slug}`,

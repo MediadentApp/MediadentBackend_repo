@@ -1,5 +1,5 @@
-import { Document, ObjectId, Types } from 'mongoose';
-import { ReportStatus, VoteEnum } from './enum.js';
+import { Document, ObjectId } from 'mongoose';
+import { ReportStatus, VoteType } from '@vin51435/studenhub-contracts';
 import { ICommunity } from '#src/types/model.community.js';
 import { IUser } from '#src/types/model.js';
 
@@ -27,7 +27,7 @@ export interface IPost extends Document<ObjectId> {
   isSaved?: boolean; // would not be in schema
   isViewed?: boolean;
 
-  popularityScore?: { type: number; default: 6 };
+  popularityScore?: number;
   isDeleted?: boolean;
   isFlagged?: boolean;
   isApproved?: boolean;
@@ -41,7 +41,7 @@ export interface IPost extends Document<ObjectId> {
 export interface IPostVote extends Document {
   postId: ObjectId;
   userId: ObjectId;
-  voteType: VoteEnum;
+  voteType: VoteType;
 }
 
 export interface IPostSave extends Document {
@@ -67,7 +67,7 @@ export interface IPostComment extends Document<ObjectId> {
   children?: IPostComment[];
   childrenCount: number;
   isDeleted: boolean;
-  voteType: VoteEnum | null;
+  voteType: VoteType | null;
 
   createdAt: Date;
   updatedAt: Date;
@@ -82,7 +82,7 @@ export interface IPostView extends Document<ObjectId> {
 export interface ICommentVote extends Document {
   commentId: ObjectId;
   userId: ObjectId;
-  voteType: VoteEnum;
+  voteType: VoteType;
 }
 
 export interface IReportComment {

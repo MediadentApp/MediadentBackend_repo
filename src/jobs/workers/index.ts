@@ -1,5 +1,13 @@
-import '#src/jobs/workers/test.worker.js';
+import { initPostPopularityWorker } from './postPopularity.worker.js';
+import { initPostViewWorker } from './postView.worker.js';
+import { initRefreshPostsWorker } from './refreshPosts.worker.js';
+import { initTestWorker } from './test.worker.js';
 
-import '#src/jobs/workers/postView.worker.js';
-import '#src/jobs/workers/postPopularity.worker.js';
-import '#src/jobs/workers/refreshPosts.worker.js';
+export function initWorkders() {
+  initTestWorker();
+  initPostPopularityWorker();
+  initPostViewWorker();
+  initRefreshPostsWorker();
+
+  console.log('Workers initialized');
+}

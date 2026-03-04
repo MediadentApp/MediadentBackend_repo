@@ -1,5 +1,5 @@
 import appConfig from '#src/config/appConfig.js';
-import { postViewCleanupQueue } from '#src/jobs/queues/postView.queue.js';
+import { postViewCleanupQueue } from '../queues/index.js';
 
 export const schedulePostViewCleanup = async () => {
   await postViewCleanupQueue.upsertJobScheduler(

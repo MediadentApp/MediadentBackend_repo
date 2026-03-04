@@ -9,23 +9,14 @@ import { ParsedQs } from 'qs';
  * @param fn - The asynchronous function to wrap
  * @returns A function that handles the request, response, and next middleware function
  */
-const catchAsync = <
-  P = ParamsDictionary,
-  ResBody = any,
-  ReqBody = any,
-  ReqQuery = ParsedQs
->(
+const catchAsync = <P = ParamsDictionary, ResBody = any, ReqBody = any, ReqQuery = ParsedQs>(
   fn: (
     req: Request<P, ResBody, ReqBody, ReqQuery>,
     res: Response<ResBody>,
     next: NextFunction
   ) => Promise<void | Response<ResBody>>
 ) => {
-  return (
-    req: Request<P, ResBody, ReqBody, ReqQuery>,
-    res: Response<ResBody>,
-    next: NextFunction
-  ) => {
+  return (req: Request<P, ResBody, ReqBody, ReqQuery>, res: Response<ResBody>, next: NextFunction) => {
     fn(req, res, next).catch(next);
   };
 };

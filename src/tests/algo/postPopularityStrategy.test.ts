@@ -1,4 +1,4 @@
-import { describe, beforeAll, afterAll, beforeEach, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import mongoose from 'mongoose';
 
 import Post from '#src/models/post.model.js';
@@ -6,7 +6,7 @@ import Comment from '#src/models/postComment.model.js';
 import { PostSave } from '#src/models/postSave.model.js';
 import { PostView } from '#src/models/postView.model.js';
 import { PostVote } from '#src/models/postVote.model.js';
-import { VoteEnum } from '@vin51435/studenhub-contracts';
+import { VOTE_TYPES } from '@vin51435/studenhub-contracts';
 import postPopularityStrategy from '#src/recommendations/strategies/postPopularity.strategy.js';
 import { getObjectIds } from '#src/tests/unit/utils/ojbectId.js';
 
@@ -47,12 +47,12 @@ describe('postPopularityStrategy - multiple scenarios', () => {
       ...users.slice(views, views + upvotes).map(userId => ({
         postId: post._id,
         userId,
-        voteType: VoteEnum.upVote,
+        voteType: VOTE_TYPES.UPVOTE,
       })),
       ...users.slice(views + upvotes, views + upvotes + downvotes).map(userId => ({
         postId: post._id,
         userId,
-        voteType: VoteEnum.downVote,
+        voteType: VOTE_TYPES.DOWNVOTE,
       })),
     ]);
 
@@ -93,7 +93,7 @@ describe('postPopularityStrategy - multiple scenarios', () => {
   });
 
   describe('handles a post with no interactions', () => {
-    describe('but it\ss 1 hour old', () => {
+    describe('but it\\ss 1 hour old', () => {
       it('should give a boost', async () => {
         const post = await createPostWithInteractions({
           title: 'handles a post with no interactions but is 1 hour old, should give low score',
@@ -107,7 +107,7 @@ describe('postPopularityStrategy - multiple scenarios', () => {
       });
     });
 
-    describe('but it\s 1 day old', () => {
+    describe('but it\\s 1 day old', () => {
       it('should give low score', async () => {
         const post = await createPostWithInteractions({
           title: 'handles a post with no interactions but is 1 day old, should give lower score',

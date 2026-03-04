@@ -1,4 +1,4 @@
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes } from '@vin51435/studenhub-contracts';
 import { DeepFlatten } from '#src/utils/DeepFlatternTypes.js';
 
 export type ErrorCodeType = DeepFlatten<typeof ErrorCodes>;

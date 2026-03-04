@@ -69,11 +69,6 @@ export interface ISecondParticipantResponse {
   };
 }
 
-export interface IChatRequestBody {
-  userBId: Types.ObjectId;
-  chatId?: Types.ObjectId | null;
-}
-
 export interface IGetMessagesRequestBody {
   chatId: string;
   oldestMessageDate?: string;

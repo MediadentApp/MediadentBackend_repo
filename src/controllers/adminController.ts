@@ -1,11 +1,10 @@
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 import { ApiAccessLog } from '#src/models/accessLogs.model.js';
 import { BannedIP } from '#src/models/BannedIP.model.js';
 import Community from '#src/models/community.model.js';
 import Post from '#src/models/post.model.js';
 import User from '#src/models/userModel.js';
-import redisConnection from '#src/redis.js';
+import { getRedis } from '#src/config/redis.js';
 import { AppRequest } from '#src/types/api.request.js';
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse } from '#src/types/api.response.js';
@@ -179,6 +178,7 @@ export const getBannedIPs = catchAsync(
  */
 export const banIP = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { ip, reason, banNetwork = false } = req.body;
+  const redisConnection = getRedis();
 
   if (!ip) {
     return next(
@@ -210,6 +210,7 @@ export const banIP = catchAsync(async (req: Request, res: Response, next: NextFu
  */
 export const unbanIP = catchAsync(async (req: AppRequest<IdParam>, res: Response, next: NextFunction) => {
   const { id } = req.params;
+  const redisConnection = getRedis();
 
   if (!id) {
     return next(

@@ -1,5 +1,5 @@
 import { app } from '#src/app.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 import TempUser from '#src/models/tempUserModel.js';
 import request from 'supertest';
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
@@ -7,7 +7,6 @@ import * as emailService from '#src/libs/sendMail.ts';
 import User from '#src/models/userModel.js';
 import { generateUniqueUser, generateUserDetails } from '#src/tests/seeds.js';
 import { authRequest, extractCookieFromRes } from '#src/tests/utils.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
 import appConfig from '#src/config/appConfig.js';
 
 // Mock sendEmail function
@@ -369,7 +368,7 @@ describe('Authentication Tests:', () => {
 
           const res = await put('/api/v1/auth/signupdetails').send(generateUserDetails());
           expect(res.statusCode).toBe(200);
-          expect(res.body.redirectUrl).toBeUndefined;
+          expect(res.body.redirectUrl).toBeUndefined();
           expect(res.body.authenticated).toBe(true);
           expect(res.body.data.user).toBeDefined();
           expect(res.body.data.user).toBeTypeOf('object');

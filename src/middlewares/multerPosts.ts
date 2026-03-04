@@ -1,10 +1,10 @@
 import appConfig from '#src/config/appConfig.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 import ApiError from '#src/utils/ApiError.js';
 import { Request } from 'express';
 import multer from 'multer';
 import path from 'path';
+import type { Express } from 'express';
 
 // Allowed file types
 const allowedTypes = appConfig.app.post.allowedPostsImageType;
@@ -48,3 +48,21 @@ const profileUpload = multer({
   fileFilter: postFileFilter,
 });
 export const profileImageUpload = profileUpload.single('image');
+
+const audioFileFilter = (req: Request, file: Express.Multer.File, cb: any) => {
+  // Checks if the mimetype starts with "audio/" (e.g., audio/mpeg, audio/wav)
+  if (file.mimetype.startsWith('audio/')) {
+    return cb(null, true);
+  }
+
+  cb(new ApiError('Only audio files (mp3, wav, etc.) are allowed', 400, 'AUDIO_FILE_TYPE_INVALID'));
+};
+
+const audioUploadSet = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 15 * 1024 * 1024, // 15 MB
+  },
+  fileFilter: audioFileFilter,
+});
+export const audioUpload = audioUploadSet.single('audio');

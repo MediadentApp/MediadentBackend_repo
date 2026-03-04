@@ -10,6 +10,8 @@ import { communityPostRoutes } from '#src/routes/communityPost.routes.js';
 import { commentRoutes } from '#src/routes/comment.routes.js';
 import { USER_ROLES } from '@vin51435/studenhub-contracts';
 import { adminRoutes } from '#src/routes/admin.routes.js';
+import { testingRoutes } from './testing.routes.js';
+import { prepPalRoutes } from './prepPal.routes.js';
 
 const router: Router = express.Router();
 
@@ -24,5 +26,9 @@ router.use('/api/v1/userformat', userFormatApi);
 router.use('/api/v1/user', protect, mainRoutes);
 router.use('/api/v1/center', protect, communityPostRoutes);
 router.use('/api/v1/comments', protect, commentRoutes);
+
+router.use('/api/v1/prep-pal', protect, prepPalRoutes);
+
+router.use('/api/v1/testing', protect, restrict(USER_ROLES.ADMIN), testingRoutes);
 
 export { router as routes };

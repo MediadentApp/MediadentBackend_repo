@@ -22,7 +22,11 @@ export const findKeyValues = (input: any, key: string): any[] => {
     } else if (obj && typeof obj === 'object') {
       for (const [k, v] of Object.entries(obj)) {
         if (k === key) {
-          Array.isArray(v) ? results.push(...v) : results.push(v);
+          if (Array.isArray(v)) {
+            results.push(...v);
+          } else {
+            results.push(v);
+          }
         }
         if (typeof v === 'object' && v !== null) {
           search(v);

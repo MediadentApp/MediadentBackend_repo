@@ -1,5 +1,4 @@
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 import User from '#src/models/userModel.js';
 import { IUser } from '#src/types/model.js';
 import ApiError from '#src/utils/ApiError.js';

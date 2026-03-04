@@ -49,6 +49,6 @@ export const sendNodeMailerEmail = async (options: EmailOptions): Promise<void> 
     // console.log(`Email sent: ${info.response}`);
   } catch (error) {
     console.error('Email sending failed:', error);
-    throw new Error('Failed to send email. Please try again later.');
+    throw new Error('Failed to send email. Please try again later.', { cause: error });
   }
 };

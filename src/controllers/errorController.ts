@@ -1,9 +1,7 @@
-import e, { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { CastError, Error as MongooseError } from 'mongoose';
-
 import ApiError from '#src/utils/ApiError.js';
-import { ErrorCodes } from '#src/config/constants/errorCodes.js';
-import responseMessages from '#src/config/constants/responseMessages.js';
+import { ErrorCodes, responseMessages } from '@vin51435/studenhub-contracts';
 import { IResponseMessage } from '#src/types/api.response.messages.js';
 import { AxiosError } from 'axios';
 import appConfig from '#src/config/appConfig.js';
@@ -70,6 +68,17 @@ const handleJwtError = (): ApiError =>
 const handleJwtExpiredError = (): ApiError =>
   new ApiError(responseMessages.AUTH.TOKEN_EXPIRED, 401, ErrorCodes.CLIENT.UNAUTHENTICATED);
 
+const prodResponse = (err: ApiError) => {
+  return {
+    status: err.status,
+    errorCode: err.errorCode,
+    name: err.name,
+    message: err.message,
+    ...(err?.data ? { data: err.data } : {}),
+    ...(err?.redirectUrl ? { redirectUrl: err.redirectUrl } : {}),
+  };
+};
+
 const sendErrorDev = (err: ApiError, res: Response): void => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -78,19 +87,14 @@ const sendErrorDev = (err: ApiError, res: Response): void => {
     message: err.message,
     redirectUrl: err.redirectUrl,
     stack: err.stack,
-    error: err,
+    data: err.data,
+    error: prodResponse(err),
   });
 };
 
 const sendErrorProd = (err: ApiError, res: Response): void => {
   if (err.isOperational) {
-    res.status(err.statusCode).json({
-      status: err.status,
-      errorCode: err.errorCode,
-      name: err.name,
-      message: err.message,
-      redirectUrl: err?.redirectUrl ?? null,
-    });
+    res.status(err.statusCode).json(prodResponse(err));
   } else {
     console.error('ERROR 💥', err);
     res.status(500).json({
@@ -101,7 +105,7 @@ const sendErrorProd = (err: ApiError, res: Response): void => {
   }
 };
 
-const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction): void => {
+const globalErrorHandler = (err: any, req: Request, res: Response, _next: NextFunction): void => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'Internal Server Error';
 

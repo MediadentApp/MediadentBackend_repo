@@ -16,7 +16,6 @@ import { AppRequest, AppRequestBody, AppRequestParams } from '#src/types/api.req
 import { AppPaginatedRequest } from '#src/types/api.request.paginated.js';
 import { AppResponse } from '#src/types/api.response.js';
 import { AppPaginatedResponse } from '#src/types/api.response.paginated.js';
-import { PostSortOptions, PostSortRangeOptions, VoteEnum } from '#src/types/enum.js';
 import { ICommunity } from '#src/types/model.community.js';
 import { IPost } from '#src/types/model.post.type.js';
 import { CommunityPostParam } from '#src/types/param.communityPost.js';
@@ -31,6 +30,13 @@ import catchAsync from '#src/utils/catchAsync.js';
 import { getUpdateObj } from '#src/utils/dataManipulation.js';
 import { DebouncedExecutor } from '#src/utils/DebouncedExecutor.js';
 import { stringToObjectID } from '#src/utils/index.js';
+import {
+  POST_SORT_OPTIONS,
+  POST_SORT_RANGES,
+  PostSortOption,
+  PostSortRange,
+  VOTE_TYPES,
+} from '@vin51435/studenhub-contracts';
 import { NextFunction } from 'express';
 import mongoose from 'mongoose';
 
@@ -554,8 +560,8 @@ export const getAllCommunitypost = catchAsync(
   async (req: AppPaginatedRequest<{ communityId: string }>, res: AppPaginatedResponse, next: NextFunction) => {
     const { communityId } = req.params;
     const userId = req.user._id;
-    const sort = (req.query.sortField as PostSortOptions) ?? PostSortOptions.Hot;
-    let range = (req.query.range as PostSortRangeOptions) ?? PostSortRangeOptions.All;
+    const sort = (req.query.sortField as PostSortOption) ?? POST_SORT_OPTIONS.HOT;
+    let range = (req.query.range as PostSortRange) ?? POST_SORT_RANGES.ALL;
 
     const matchStage: Record<string, any> = {
       communityId: new mongoose.Types.ObjectId(communityId),
@@ -571,7 +577,7 @@ export const getAllCommunitypost = catchAsync(
         case 'Controversial':
           return { commentsCount: -1 };
         case 'Hot':
-          range = PostSortRangeOptions.Now;
+          range = POST_SORT_RANGES.NOW;
           return { popularityScore: -1 };
         default:
           return { popularityScore: -1 };
@@ -863,7 +869,7 @@ export const votePost = catchAsync(
     const userId = req.user._id;
     const voteId = `${userId}-${postId}`;
 
-    if (!Object.values(VoteEnum).includes(voteType)) {
+    if (!Object.values(VOTE_TYPES).includes(voteType)) {
       return next(
         new ApiError(responseMessages.CLIENT.MISSING_INVALID_INPUT, 400, ErrorCodes.CLIENT.MISSING_INVALID_INPUT)
       );
@@ -887,21 +893,21 @@ export const votePost = catchAsync(
           voteOp = PostVote.create({ postId, userId, voteType });
           updateOp = Post.updateOne(
             { _id: postId },
-            { $inc: voteType === VoteEnum.upVote ? { upvotesCount: 1 } : { downvotesCount: 1 } }
+            { $inc: voteType === VOTE_TYPES.UPVOTE ? { upvotesCount: 1 } : { downvotesCount: 1 } }
           );
         } else if (existingVote.voteType === voteType) {
           // Toggle vote off
           voteOp = PostVote.deleteOne({ _id: existingVote._id });
           updateOp = Post.updateOne(
             { _id: postId },
-            { $inc: voteType === VoteEnum.upVote ? { upvotesCount: -1 } : { downvotesCount: -1 } }
+            { $inc: voteType === VOTE_TYPES.UPVOTE ? { upvotesCount: -1 } : { downvotesCount: -1 } }
           );
         } else {
           // Switch vote
           voteOp = PostVote.updateOne({ _id: existingVote._id }, { voteType });
           updateOp = Post.updateOne(
             { _id: postId },
-            voteType === VoteEnum.upVote
+            voteType === VOTE_TYPES.UPVOTE
               ? { $inc: { upvotesCount: 1, downvotesCount: -1 } }
               : { $inc: { downvotesCount: 1, upvotesCount: -1 } }
           );
@@ -1098,7 +1104,7 @@ export const getUpvotedPosts = catchAsync(
         {
           $match: {
             userId,
-            voteType: VoteEnum.upVote,
+            voteType: VOTE_TYPES.UPVOTE,
           },
         },
       ],
@@ -1149,7 +1155,7 @@ export const getDownvotedPosts = catchAsync(
         {
           $match: {
             userId,
-            voteType: VoteEnum.downVote,
+            voteType: VOTE_TYPES.DOWNVOTE,
           },
         },
       ],
